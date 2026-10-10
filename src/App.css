@@ -73,6 +73,32 @@ textarea:focus-visible {
   white-space: normal;
 }
 
+.home-navigation-button {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 49px;
+  padding: 0;
+  border: 0;
+  color: #aab2ac;
+  background: transparent;
+}
+
+.home-navigation-button svg {
+  width: 27px;
+  height: 27px;
+  filter: drop-shadow(0 3px 5px #0008);
+  transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.home-navigation-button:hover svg {
+  transform: translateY(-3px);
+}
+
+.home-navigation-button[aria-pressed="true"] {
+  color: #e1e5e1;
+}
+
 .nav-icon { line-height: 1; }
 .nav-label-short { display: none; }
 
@@ -612,7 +638,8 @@ input[type="date"] {
   }
 
   .main-navigation .primary-button,
-  .main-navigation .secondary-button {
+  .main-navigation .secondary-button,
+  .home-navigation-button {
     flex-direction: column;
     min-height: 58px;
     padding: 7px 4px;
@@ -714,7 +741,7 @@ input[type="date"] {
   opacity: 1;
 }
 
-.indoor-game-editor {
+.volleyball-set-editor {
   margin-top: 22px;
   padding: 18px;
   border: 1px solid #344938;
@@ -722,22 +749,22 @@ input[type="date"] {
   background: #111a13;
 }
 
-.indoor-game-editor h3,
-.indoor-game-editor h4 {
+.volleyball-set-editor h3,
+.volleyball-set-editor h4 {
   margin: 0 0 12px;
 }
 
-.indoor-game-editor .diary-panel,
-.indoor-saved-set {
+.volleyball-set-editor .diary-panel,
+.volleyball-saved-set {
   margin: 10px 0;
 }
 
-.indoor-saved-set {
+.volleyball-saved-set {
   padding-top: 10px;
   border-top: 1px solid var(--border);
 }
 
-.indoor-delete-button {
+.volleyball-delete-action {
   color: #f0b3a7;
   border-color: #744d46;
   background: #2b1d1b;

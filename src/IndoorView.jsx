@@ -31,6 +31,7 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
   const [games, setGames] = useState([]);
   const [editingGame, setEditingGame] = useState(false);
   const [opponent, setOpponent] = useState("");
+  const [opponentLocked, setOpponentLocked] = useState(false);
   const [setDraft, setSetDraft] = useState(newSetDraft);
   const [gameSets, setGameSets] = useState([]);
   const [expandedDayId, setExpandedDayId] = useState(null);
@@ -50,6 +51,7 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
     setGames([]);
     setEditingGame(false);
     setOpponent("");
+    setOpponentLocked(false);
     setGameSets([]);
     setSetDraft(newSetDraft());
     setNotice("");
@@ -70,18 +72,20 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
 
   function addSet() {
     if (gameSets.length >= 5) return;
+    const opponentStrength = gameSets[0]?.opponentStrength ?? setDraft.opponentStrength;
     if (!isRating(setDraft.fitness) || !isRating(setDraft.intensity)
-      || !isRating(setDraft.technique) || !strengthOptions.includes(setDraft.opponentStrength)) {
+      || !isRating(setDraft.technique) || !strengthOptions.includes(opponentStrength)) {
       setNotice("Bitte gib für den Satz gültige Werte von 1 bis 10 und eine Gegnerstärke ein.");
       return;
     }
     setGameSets((previous) => [...previous, {
       id: crypto.randomUUID(), fitness: Number(setDraft.fitness),
-      opponentStrength: setDraft.opponentStrength,
+      opponentStrength,
       intensity: Number(setDraft.intensity), technique: Number(setDraft.technique),
       won: setDraft.won === "true",
     }]);
-    setSetDraft(newSetDraft());
+    setSetDraft({ ...newSetDraft(), opponentStrength });
+    if (opponent.trim()) setOpponentLocked(true);
     setNotice("");
   }
 
@@ -95,6 +99,7 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
     }]);
     setEditingGame(false);
     setOpponent("");
+    setOpponentLocked(false);
     setGameSets([]);
     setSetDraft(newSetDraft());
     setNotice("");
@@ -181,28 +186,39 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
               </div>)}
             </div>}
 
-            {editingGame ? <div className="indoor-game-editor">
+            {editingGame ? <div className="volleyball-set-editor">
               <h3>Spiel {games.length + 1}</h3>
-              <label className="field-label" htmlFor="indoor-opponent">Gegner (optional)</label>
-              <input id="indoor-opponent" className="field" value={opponent}
-                onChange={(event) => setOpponent(event.target.value)} placeholder="z. B. Teamname" />
+              {!opponentLocked ? <>
+                <label className="field-label" htmlFor="indoor-opponent">Gegner (optional)</label>
+                <input id="indoor-opponent" className="field" value={opponent}
+                  onChange={(event) => setOpponent(event.target.value)} placeholder="z. B. Teamname" />
+              </> : <p>Gegner: {opponent}</p>}
 
               {gameSets.length > 0 && <div className="volleyball-day-list">
                 <h4>Erfasste Sätze</h4>
                 {gameSets.map((set, index) => <div className="diary-panel" key={set.id}>
                   <strong>Satz {index + 1}</strong>
                   <p>{set.won ? "Gewonnen" : "Verloren"} · {strengthLabels[set.opponentStrength]}</p>
-                  <p>Fitness {set.fitness}/10 · Intensität {set.intensity}/10 · Technik {set.technique}/10</p>
+                  <p>Fitness zu Satzbeginn: {set.fitness}/10</p>
+                  <p>Intensität: {set.intensity}/10</p>
+                  <p>Technische Leistung: {set.technique}/10</p>
                 </div>)}
-                <button type="button" className="secondary-button" onClick={() => setGameSets((previous) => previous.slice(0, -1))}>
+                <button type="button" className="secondary-button" onClick={() => {
+                  const lastSet = gameSets.at(-1);
+                  setGameSets((previous) => previous.slice(0, -1));
+                  if (gameSets.length === 1) {
+                    setSetDraft((previous) => ({ ...previous, opponentStrength: lastSet.opponentStrength }));
+                    setOpponentLocked(false);
+                  }
+                }}>
                   Letzten Satz entfernen
                 </button>
               </div>}
 
               {gameSets.length < 5 && <>
                 <h4>Satz {gameSets.length + 1}</h4>
-                <StrengthStepper value={setDraft.opponentStrength} options={strengthOptions}
-                  onChange={(opponentStrength) => setSetDraft((previous) => ({ ...previous, opponentStrength }))} />
+                {gameSets.length === 0 && <StrengthStepper value={setDraft.opponentStrength} options={strengthOptions}
+                  onChange={(opponentStrength) => setSetDraft((previous) => ({ ...previous, opponentStrength }))} />}
                 <RatingStepper id="indoor-set-fitness" label="Fitness zu Satzbeginn (1–10)"
                   value={setDraft.fitness} onChange={(fitness) => setSetDraft((previous) => ({ ...previous, fitness }))} />
                 <RatingStepper id="indoor-set-intensity" label="Spielintensität (1–10)"
@@ -222,7 +238,7 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
               </button>}
               {games.length > 0 && <button type="button" className="secondary-button" onClick={() => {
                 if (gameSets.length && !window.confirm("Die ungespeicherten Sätze dieses Spiels verwerfen?")) return;
-                setGameSets([]); setOpponent(""); setEditingGame(false);
+                setGameSets([]); setOpponent(""); setOpponentLocked(false); setEditingGame(false);
               }}>Spiel abbrechen</button>}
             </div> : <button type="button" className="secondary-button" onClick={() => setEditingGame(true)}>
               ＋ Weiteres Spiel erfassen
@@ -262,15 +278,17 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
                 <h4>Spiel {index + 1}{game.opponent ? ` · ${game.opponent}` : ""}</h4>
                 {game.setIds.map((setId, setIndex) => {
                   const set = day.sets.find((item) => item.id === setId);
-                  return set && <div className="indoor-saved-set" key={setId}>
+                  return set && <div className="volleyball-saved-set" key={setId}>
                     <strong>Satz {setIndex + 1} · {set.won ? "Gewonnen" : "Verloren"}</strong>
                     <p>Gegnerstärke: {strengthLabels[set.opponentStrength]}</p>
-                    <p>Fitness {set.fitness}/10 · Intensität {set.intensity}/10 · Technik {set.technique}/10</p>
+                    <p>Fitness zu Satzbeginn: {set.fitness}/10</p>
+                    <p>Intensität: {set.intensity}/10</p>
+                    <p>Technische Leistung: {set.technique}/10</p>
                   </div>;
                 })}
               </div>)}
             </div>}
-            <button type="button" className="secondary-button indoor-delete-button" onClick={() => {
+            <button type="button" className="secondary-button volleyball-delete-action" onClick={() => {
               if (!window.confirm("Diesen Hallenvolleyball-Spieltag wirklich löschen?")) return;
               setVolleyballDays((previous) => previous.filter((item) => item.id !== day.id));
               setExpandedDayId(null);

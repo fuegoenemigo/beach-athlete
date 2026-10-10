@@ -740,18 +740,6 @@ function App() {
 
         <button
           type="button"
-          className={activeArea === "home" ? "primary-button" : "secondary-button"}
-          aria-label="Startseite"
-          aria-pressed={activeArea === "home"}
-          onClick={() => selectArea("home")}
-        >
-          <span className="nav-icon" aria-hidden="true">🏠</span>
-          <span className="nav-label-long">Startseite</span>
-          <span className="nav-label-short">Start</span>
-        </button>
-
-        <button
-          type="button"
           className={activeArea === "beach" ? "primary-button" : "secondary-button"}
           aria-label="Beachvolleyball"
           aria-pressed={activeArea === "beach"}
@@ -783,6 +771,16 @@ function App() {
         >
           <span className="nav-icon" aria-hidden="true">💪</span>
           <span>Training</span>
+        </button>
+
+        <button type="button" className="home-navigation-button"
+          aria-label="Startseite" aria-pressed={activeArea === "home"}
+          onClick={() => selectArea("home")}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" />
+            <path d="M9 21v-7h6v7" />
+          </svg>
         </button>
 
       </nav>
@@ -1753,7 +1751,8 @@ function App() {
                       )}
 
                       {!volleyballSets.some((set) => set.isLastSet) && (
-                        <>
+                        <div className="volleyball-set-editor">
+                          <h3>Satz {volleyballSets.length + 1}</h3>
                           <StrengthStepper
                             value={volleyballSetDraft.opponentStrength}
                             options={allowedStrengths[volleyballType] ?? []}
@@ -1814,7 +1813,7 @@ function App() {
                             onClick={() => addVolleyballSet(true)}>
                             ✓ Das war mein letzter Satz
                           </button>
-                        </>
+                        </div>
                       )}
 
                       {volleyballSets.length > 0 && (
@@ -1833,6 +1832,10 @@ function App() {
                               <p>Ergebnis: {set.won ? "Gewonnen" : "Verloren"}</p>
                             </div>
                           ))}
+                          <button type="button" className="secondary-button"
+                            onClick={() => setVolleyballSets((previous) => previous.slice(0, -1))}>
+                            Letzten Satz entfernen
+                          </button>
                         </div>
                       )}
 
@@ -1874,18 +1877,11 @@ function App() {
                 </>
               )}
 
-              <div className="exercise-actions">
-                <button
-                  type="button"
-                  className="secondary-button"
-                  onClick={() => {
-                    setShowVolleyballForm(false);
-                    resetVolleyballDraft();
-                  }}
-                >
-                  Abbrechen
-                </button>
-              </div>
+              <button type="button" className="secondary-button" onClick={() => {
+                if (volleyballSets.length && !window.confirm("Diesen ungespeicherten Spieltag verwerfen?")) return;
+                setShowVolleyballForm(false);
+                resetVolleyballDraft();
+              }}>Abbrechen</button>
             </div>
           )}
 
@@ -1902,33 +1898,19 @@ function App() {
                 .sort((a, b) => b.date.localeCompare(a.date))
                 .map((day) => (
 
-                  <div
-                    className="diary-panel"
-                    key={day.id}
-                    onClick={() =>
-                      setSelectedVolleyballDayId(
-                        selectedVolleyballDayId === day.id ? null : day.id
-                      )
-                    }
-                    style={{ cursor: "pointer", position: "relative" }}
-                  >
-
+                  <div className="diary-panel" key={day.id}>
                     <div className="volleyball-day-header">
                       <h3>{formatDate(day.date)}</h3>
-                      <span className="volleyball-day-arrow">
-                        {selectedVolleyballDayId === day.id ? "⌃" : "⌄"}
-                      </span>
+                      <span>{(day.sets ?? []).length} {(day.sets ?? []).length === 1 ? "Satz" : "Sätze"}</span>
                     </div>
 
-
-
-                    <h3>
+                    <p>
                       {{
                         openPlay: "🏐 Open Play",
                         testMatch: "🤝 Testspiel",
                         tournament: "🏆 Turnier",
-                      }[day.gameType] ?? day.gameType ?? "❓ Unbekannt"}
-                    </h3>
+                      }[day.gameType] ?? day.gameType ?? "❓ Unbekannt"} · {(day.sets ?? []).length} {(day.sets ?? []).length === 1 ? "Satz" : "Sätze"}
+                    </p>
 
                     {day.gameType === "testMatch" && day.opponent && (
                       <p>Gegner: {day.opponent}</p>
@@ -1945,67 +1927,42 @@ function App() {
                       </>
                     )}
 
-                    <p>Tagesform zu Beginn: {day.fitness}/10</p>
-
-                    <p>Erschöpfung am Ende: {day.endFatigue ?? "–"}/10</p>
-                    <p>Gespielte Sätze: {(day.sets ?? []).length}</p>
+                    <p>Tagesform zu Beginn: {day.fitness}/10 · Erschöpfung am Ende: {day.endFatigue ?? "–"}/10</p>
                     {day.notes && <p>{day.notes}</p>}
 
-                    <button
-                      type="button"
-                      className="volleyball-delete-button"
-                      aria-label="Spieltag löschen"
-                      onClick={(event) => {
-                        event.stopPropagation();
-
-                        if (window.confirm("Möchtest du diesen Spieltag wirklich löschen?")) {
-                          setVolleyballDays((previous) =>
-                            previous.filter((item) => item.id !== day.id)
-                          );
-                          setSelectedVolleyballDayId(null);
-                        }
-                      }}
-                    >
-                      ×
+                    <button type="button" className="secondary-button"
+                      aria-expanded={selectedVolleyballDayId === day.id}
+                      onClick={() => setSelectedVolleyballDayId(
+                        selectedVolleyballDayId === day.id ? null : day.id
+                      )}>
+                      {selectedVolleyballDayId === day.id ? "Details schließen" : "Sätze anzeigen"}
                     </button>
 
                     {selectedVolleyballDayId === day.id && (
                       <div className="volleyball-day-list">
-
-
-
-                        <div className="volleyball-set-divider volleyball-set-divider-strong" />
-
                         {(day.sets ?? []).length === 0 ? (
                           <p className="helper-text">Keine Sätze gespeichert.</p>
                         ) : (
-
                           (day.sets ?? []).map((set, index) => (
-                            <div key={set.id}>
-                              {index > 0 && <div className="volleyball-set-divider" />}
-                              <h4>Satz {index + 1}</h4>
-
-                              <p>
-                                Gegnerstärke: {{
-                                  weaker3: "−3",
-                                  weaker2: "−2",
-                                  weaker1: "−1",
-                                  equal: "0",
-                                  stronger1: "+1",
-                                  stronger2: "+2",
-                                  stronger3: "+3",
-                                }[set.opponentStrength] ?? set.opponentStrength}
-                              </p>
+                            <div className="volleyball-saved-set" key={set.id}>
+                              <strong>Satz {index + 1} · {set.won ? "Gewonnen" : "Verloren"}</strong>
+                              <p>Gegnerstärke: {strengthLabels[set.opponentStrength] ?? set.opponentStrength}</p>
                               <p>Fitness zu Satzbeginn: {set.fitness ?? "–"}/10</p>
                               <p>Intensität: {set.intensity}/10</p>
                               <p>Technische Leistung: {set.technique}/10</p>
-                              <p>Ergebnis: {set.won ? "Gewonnen" : "Verloren"}</p>
                             </div>
                           ))
                         )}
-
                       </div>
                     )}
+                    <button type="button" className="secondary-button volleyball-delete-action"
+                      onClick={() => {
+                        if (!window.confirm("Möchtest du diesen Spieltag wirklich löschen?")) return;
+                        setVolleyballDays((previous) => previous.filter((item) => item.id !== day.id));
+                        setSelectedVolleyballDayId(null);
+                      }}>
+                      Spieltag löschen
+                    </button>
                   </div>
                 ))
             )}
