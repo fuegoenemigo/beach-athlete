@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { isVolleyballDateTaken } from "./syncPolicy.js";
 import { appendTournamentGame, finishTournament } from "./tournament.js";
+import { appendRegularGame, finishRegularDay } from "./regularDay.js";
 import { gameStatus, isCompletedGame } from "./gameRules.js";
 import { beachSetOpponent } from "./beachOpponents.js";
 import { RatingStepper, SetResultHeading, StrengthStepper } from "./VolleyballInputs.jsx";
@@ -44,7 +45,6 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const [fitness, setFitness] = useState("5");
   const [fatigue, setFatigue] = useState("5");
   const [notes, setNotes] = useState("");
-  const [games, setGames] = useState([]);
   const [editingGame, setEditingGame] = useState(false);
   const [opponent, setOpponent] = useState("");
   const [opponentLocked, setOpponentLocked] = useState(false);
@@ -53,17 +53,18 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const [tournamentName, setTournamentName] = useState("");
   const [tournamentLocation, setTournamentLocation] = useState("");
   const [tournamentPlace, setTournamentPlace] = useState("");
-  const [activeTournamentId, setActiveTournamentId] = useState(null);
+  const [activeDayId, setActiveDayId] = useState(null);
   const [expandedDayId, setExpandedDayId] = useState(null);
   const [editingLegacySetId, setEditingLegacySetId] = useState(null);
   const [legacyOpponentEdit, setLegacyOpponentEdit] = useState("");
-  const activeTournament = volleyballDays.find((day) => day.id === activeTournamentId);
+  const activeDay = volleyballDays.find((day) => day.id === activeDayId);
+  const activeTournament = activeDay?.gameType === "tournament" ? activeDay : null;
   const savedDays = volleyballDays.filter((day) => day.type === sport)
     .sort((a, b) => b.date.localeCompare(a.date));
   const takenDates = volleyballDays.filter((day) => day.type === "beach" || day.type === "indoor")
     .map((day) => day.date);
   const dateAvailable = Boolean(date) && (!isVolleyballDateTaken(volleyballDays, date)
-    || activeTournament?.date === date);
+    || activeDay?.date === date);
   const allowedStrengths = beach ? beachStrengths[gameType] ?? strengthOptions : strengthOptions;
   const currentGameStatus = gameStatus(gameSets, sport);
 
@@ -82,27 +83,27 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     setFitness("5");
     setFatigue("5");
     setNotes("");
-    setGames([]);
     setTournamentName("");
     setTournamentLocation("");
     setTournamentPlace("");
-    setActiveTournamentId(null);
+    setActiveDayId(null);
     resetGame();
     setNotice("");
     setShowForm(true);
   }
 
-  function resumeTournament(day) {
+  function resumeDay(day) {
+    if (gameSets.length && !window.confirm("Ungespeicherte Sätze des aktuellen Spiels verwerfen?")) return;
     setDate(day.date);
     setMonth(day.date.slice(0, 7));
-    setGameType("tournament");
+    setGameType(day.gameType);
     setFitness(String(day.fitness));
     setFatigue(String(day.endFatigue ?? 5));
     setNotes(day.notes ?? "");
     setTournamentName(day.tournamentName ?? "");
     setTournamentLocation(day.tournamentLocation ?? "");
     setTournamentPlace(String(day.tournamentPlace ?? ""));
-    setActiveTournamentId(day.id);
+    setActiveDayId(day.id);
     resetGame();
     setShowForm(true);
     setNotice("");
@@ -143,7 +144,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     }
     const game = { id: crypto.randomUUID(), opponent: opponent.trim(), sets: gameSets };
     if (gameType === "tournament") {
-      if (activeTournamentId && !activeTournament) {
+      if (activeDayId && !activeTournament) {
         setNotice("Dieses Turnier wurde nicht gefunden. Bitte öffne es erneut aus der Übersicht.");
         return;
       }
@@ -164,33 +165,49 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
       setVolleyballDays((previous) => activeTournament
         ? previous.map((day) => day.id === updated.id ? updated : day)
         : [...previous, updated]);
-      setActiveTournamentId(updated.id);
+      setActiveDayId(updated.id);
       setNotice(isLastGame ? "Letztes Spiel gespeichert. Bitte trage die Platzierung ein."
         : "Turnierspiel gespeichert. Du kannst später weitere Spiele hinzufügen.");
     } else {
-      setGames((previous) => [...previous, game]);
-      setNotice("");
+      if (activeDayId && !activeDay) {
+        setNotice("Dieser Spieltag wurde nicht gefunden. Bitte öffne ihn erneut aus der Übersicht.");
+        return;
+      }
+      if (!activeDay && !dateAvailable) {
+        setNotice("Bitte wähle ein freies Datum im Kalender.");
+        return;
+      }
+      let updated;
+      try {
+        updated = appendRegularGame(activeDay, { date, sport, gameType, fitness }, game);
+      } catch (error) {
+        setNotice(error.message);
+        return;
+      }
+      setVolleyballDays((previous) => activeDay
+        ? previous.map((day) => day.id === updated.id ? updated : day)
+        : [...previous, updated]);
+      setActiveDayId(updated.id);
+      setNotice("Spiel gespeichert. Du kannst später weitere Spiele hinzufügen.");
     }
     resetGame();
   }
 
   function saveDay() {
-    if (!dateAvailable || !games.length || editingGame || !isRating(fitness) || !isRating(fatigue)
-      || games.some((game) => !isCompletedGame(game.sets, sport))) {
-      setNotice("Bitte schließe mindestens ein Spiel ab und prüfe Datum und Tageswerte.");
+    if (!activeDay || editingGame) {
+      setNotice("Bitte schließe zuerst das aktuelle Spiel ab.");
       return;
     }
-    const day = {
-      id: crypto.randomUUID(), date, type: sport, gameType,
-      fitness: Number(fitness), endFatigue: Number(fatigue), notes: notes.trim(),
-      games: games.map((game) => ({ id: game.id, opponent: game.opponent,
-        setIds: game.sets.map((set) => set.id) })),
-      sets: games.flatMap((game) => game.sets.map((set) => ({ ...set, gameId: game.id,
-        ...(beach && gameType === "testMatch" ? { opponent: game.opponent } : {}) }))),
-      createdAt: new Date().toISOString(),
-    };
-    setVolleyballDays((previous) => [...previous, day]);
+    let finished;
+    try {
+      finished = finishRegularDay(activeDay, fatigue, notes);
+    } catch (error) {
+      setNotice(error.message);
+      return;
+    }
+    setVolleyballDays((previous) => previous.map((day) => day.id === finished.id ? finished : day));
     setShowForm(false);
+    setActiveDayId(null);
     setNotice(`${label}-Spieltag gespeichert.`);
   }
 
@@ -203,7 +220,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
       const finished = finishTournament(activeTournament, tournamentPlace, fatigue, notes);
       setVolleyballDays((previous) => previous.map((day) => day.id === finished.id ? finished : day));
       setShowForm(false);
-      setActiveTournamentId(null);
+      setActiveDayId(null);
       setNotice("Turnier mit Platzierung gespeichert.");
     } catch (error) {
       setNotice(error.message);
@@ -221,10 +238,10 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   }
 
   function cancelForm() {
-    if ((gameSets.length || (!activeTournament && games.length))
+    if (gameSets.length
       && !window.confirm("Ungespeicherte Spiele und Sätze verwerfen?")) return;
     setShowForm(false);
-    setActiveTournamentId(null);
+    setActiveDayId(null);
     resetGame();
     setNotice("");
   }
@@ -253,7 +270,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
       {!showForm && <button type="button" className="primary-button" onClick={startDay}>＋ Spieltag erfassen</button>}
 
       {showForm && <div className="volleyball-form">
-        {!activeTournament && <>
+        {!activeDay && <>
           <span className="field-label">Datum</span>
           <div className="beach-calendar">
             <div className="beach-calendar-header">
@@ -280,7 +297,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
             Bitte wähle ein freies Datum. Durchgestrichene Tage haben bereits einen Beach- oder Hallenvolleyball-Spieltag.
           </p>}
         </>}
-        {activeTournament && <p><strong>{formatDate(activeTournament.date)}</strong> · {activeTournament.tournamentName}</p>}
+        {activeDay && <p><strong>{formatDate(activeDay.date)}</strong> · {gameLabel(activeDay.gameType)}</p>}
 
         {dateAvailable && <>
           {!gameType && <div>
@@ -303,23 +320,24 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
             {gameType === "tournament" && activeTournament && <p>
               {activeTournament.tournamentName} · {activeTournament.tournamentLocation}
             </p>}
-            {!activeTournament && <RatingStepper id={`${sport}-day-fitness`}
+            {!activeDay && <RatingStepper id={`${sport}-day-fitness`}
               label="Wie fit warst du zu Beginn? (1–10)" value={fitness} onChange={setFitness} />}
 
-            {(gameType === "tournament" ? activeTournament?.games ?? [] : games).length > 0 &&
+            {activeDay?.games?.length > 0 &&
               <div className="volleyball-day-list">
                 <h3>Erfasste Spiele</h3>
-                {(gameType === "tournament" ? activeTournament?.games ?? [] : games).map((game, index) =>
+                {activeDay.games.map((game, index) =>
                   <div className="diary-panel" key={game.id}>
                     <h4>Spiel {index + 1}{game.opponent ? ` · ${game.opponent}` : ""}</h4>
-                    <p>{gameType === "tournament" ? game.setIds.length : game.sets.length} Sätze</p>
+                    <p>{game.setIds.length} Sätze</p>
                     {game.isLastGame && <p>✓ Letztes Spiel des Turniers</p>}
                   </div>)}
               </div>}
 
-            {editingGame && (!activeTournament || activeTournament.tournamentStatus === "ongoing")
+            {editingGame && (!activeDay || activeDay.tournamentStatus === "ongoing"
+              || activeDay.dayStatus === "ongoing")
               ? <div className="volleyball-set-editor">
-                <h3>Spiel {(gameType === "tournament" ? activeTournament?.games.length ?? 0 : games.length) + 1}</h3>
+                <h3>Spiel {(activeDay?.games.length ?? 0) + 1}</h3>
                 {!opponentLocked ? <>
                   <label className="field-label" htmlFor={`${sport}-opponent`}>
                     Gegner {beach && gameType === "testMatch" ? "" : "(optional)"}
@@ -370,19 +388,20 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                 </p>}
                 {currentGameStatus.finished && <>
                   <button type="button" className="last-set-button" onClick={() => completeGame(false)}>
-                    {gameType === "tournament" ? "✓ Spiel speichern · Turnier fortsetzen" : "✓ Spiel abschließen"}
+                    {gameType === "tournament" ? "✓ Spiel speichern · Turnier fortsetzen" : "✓ Spiel speichern · Spieltag fortsetzen"}
                   </button>
                   {gameType === "tournament" && <button type="button" className="last-set-button last-game-button"
                     onClick={() => completeGame(true)}>🏁 Das war mein letztes Spiel</button>}
                 </>}
-                {(games.length > 0 || activeTournament) && <button type="button" className="secondary-button"
+                {activeDay && <button type="button" className="secondary-button"
                   onClick={() => {
                     if (gameSets.length && !window.confirm("Ungespeicherte Sätze dieses Spiels verwerfen?")) return;
                     resetGame();
                   }}>Spiel abbrechen</button>}
               </div> : null}
 
-            {!editingGame && (gameType !== "tournament" || activeTournament?.tournamentStatus === "ongoing") &&
+            {!editingGame && (activeDay?.tournamentStatus === "ongoing"
+              || activeDay?.dayStatus === "ongoing") &&
               <button type="button" className="secondary-button" onClick={() => setEditingGame(true)}>
                 ＋ Weiteres Spiel erfassen
               </button>}
@@ -404,18 +423,18 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
               </button>
             </>}
 
-            {gameType !== "tournament" && games.length > 0 && !editingGame && <>
+            {gameType !== "tournament" && activeDay?.dayStatus === "ongoing" && !editingGame && <>
               <RatingStepper id={`${sport}-day-fatigue`}
                 label="Erschöpfung am Ende des Spieltags (1–10)" value={fatigue} onChange={setFatigue} />
               <label className="field-label" htmlFor={`${sport}-day-notes`}>Notizen (optional)</label>
               <textarea id={`${sport}-day-notes`} className="field" rows="3" value={notes}
                 onChange={(event) => setNotes(event.target.value)} />
-              <button type="button" className="primary-button" onClick={saveDay}>Spieltag speichern</button>
+              <button type="button" className="primary-button" onClick={saveDay}>Spieltag abschließen</button>
             </>}
           </>}
         </>}
         <button type="button" className="secondary-button" onClick={cancelForm}>
-          {activeTournament ? "Für später schließen" : "Abbrechen"}
+          {activeDay ? "Für später schließen" : "Abbrechen"}
         </button>
       </div>}
 
@@ -433,14 +452,17 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                 : day.tournamentStatus === "pendingPlacement" ? "Letztes Spiel gespeichert – Platzierung offen"
                   : day.tournamentPlace != null ? `Platzierung: ${day.tournamentPlace}. Platz` : ""}</p>
             </>}
+            {day.dayStatus === "ongoing" && <p>Spieltag läuft – weitere Spiele möglich</p>}
             <p>Tagesform zu Beginn: {day.fitness ?? "–"}/10
               {day.endFatigue != null && ` · Erschöpfung am Ende: ${day.endFatigue}/10`}</p>
             {day.notes && <p>{day.notes}</p>}
             {day.gameType === "tournament" && day.games
               && day.tournamentStatus !== "completed" && <button type="button" className="primary-button"
-                onClick={() => resumeTournament(day)}>
+                onClick={() => resumeDay(day)}>
                 {day.tournamentStatus === "pendingPlacement" ? "Platzierung eintragen" : "Turnier fortsetzen"}
               </button>}
+            {day.dayStatus === "ongoing" && <button type="button" className="primary-button"
+              onClick={() => resumeDay(day)}>Spieltag fortsetzen</button>}
             <button type="button" className="secondary-button" aria-expanded={expandedDayId === day.id}
               onClick={() => { setEditingLegacySetId(null); setExpandedDayId(expandedDayId === day.id ? null : day.id); }}>
               {expandedDayId === day.id ? "Details schließen" : day.games ? "Spiele anzeigen" : "Sätze anzeigen"}
@@ -485,7 +507,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
             <button type="button" className="secondary-button volleyball-delete-action" onClick={() => {
               if (!window.confirm(`Diesen ${label}-Spieltag wirklich löschen?`)) return;
               setVolleyballDays((previous) => previous.filter((item) => item.id !== day.id));
-              if (activeTournamentId === day.id) { setShowForm(false); setActiveTournamentId(null); }
+              if (activeDayId === day.id) { setShowForm(false); setActiveDayId(null); }
               setExpandedDayId(null);
             }}>Spieltag löschen</button>
           </div>)}

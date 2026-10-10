@@ -10,7 +10,8 @@ function isGameDay(day) {
   const regular = day.type === 'indoor' ? day.gameType === 'matchDay'
     : day.gameType === 'openPlay' || day.gameType === 'testMatch'
   if ((!tournament && !regular) || !isRating(day.fitness)
-    || (!tournament && !isRating(day.endFatigue))
+    || (!tournament && (day.dayStatus === 'ongoing'
+      ? day.endFatigue !== null : !isRating(day.endFatigue)))
     || !Array.isArray(day.games) || day.games.length === 0
     || !day.sets.every((set) => set && typeof set.id === 'string'
       && typeof set.gameId === 'string' && isRating(set.fitness)
@@ -26,6 +27,8 @@ function isGameDay(day) {
       || day.games.filter((game) => game.isLastGame).length !== (day.tournamentStatus === 'ongoing' ? 0 : 1)
       || (day.tournamentStatus !== 'ongoing' && !day.games.at(-1)?.isLastGame)) return false
   }
+  if (!tournament && day.dayStatus !== undefined
+    && !['ongoing', 'completed'].includes(day.dayStatus)) return false
   const setIds = new Set(day.sets.map((set) => set?.id))
   const assignedIds = day.games.flatMap((game) => Array.isArray(game?.setIds) ? game.setIds : [])
   return day.games.every((game) => game && typeof game.id === 'string'
