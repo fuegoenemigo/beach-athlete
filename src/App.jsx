@@ -106,6 +106,57 @@ const allowedStrengths = {
   tournament: ["weaker1", "equal", "stronger1"],
 };
 
+const strengthLabels = {
+  weaker3: "3 Stufen schwächer",
+  weaker2: "2 Stufen schwächer",
+  weaker1: "1 Stufe schwächer",
+  equal: "Gleich stark",
+  stronger1: "1 Stufe stärker",
+  stronger2: "2 Stufen stärker",
+  stronger3: "3 Stufen stärker",
+};
+
+function RatingStepper({ id, label, value, onChange }) {
+  const number = Number(value);
+  const valid = isRating(value);
+
+  function step(direction) {
+    onChange(String(valid ? Math.max(1, Math.min(10, number + direction)) : 5));
+  }
+
+  return (
+    <>
+      <label className="field-label" htmlFor={id}>{label}</label>
+      <div className="beach-stepper">
+        <button type="button" className="beach-stepper-button" aria-label={`${label}: verringern`}
+          disabled={valid && number <= 1} onClick={() => step(-1)}>▼</button>
+        <input id={id} className="field beach-stepper-value" type="number" inputMode="numeric"
+          min="1" max="10" step="1" value={value}
+          onChange={(event) => onChange(event.target.value)} />
+        <button type="button" className="beach-stepper-button" aria-label={`${label}: erhöhen`}
+          disabled={valid && number >= 10} onClick={() => step(1)}>▲</button>
+      </div>
+    </>
+  );
+}
+
+function StrengthStepper({ value, options, onChange }) {
+  const index = options.indexOf(value);
+
+  return (
+    <div className="beach-strength-field" role="group" aria-label="Gegnerstärke im Verhältnis zu euch">
+      <span className="field-label">Gegnerstärke im Verhältnis zu euch</span>
+      <div className="beach-stepper">
+        <button type="button" className="beach-stepper-button" aria-label="Gegnerstärke verringern"
+          disabled={index <= 0} onClick={() => onChange(options[index - 1])}>▼</button>
+        <output className="beach-stepper-display" aria-live="polite">{strengthLabels[value]}</output>
+        <button type="button" className="beach-stepper-button" aria-label="Gegnerstärke erhöhen"
+          disabled={index >= options.length - 1} onClick={() => onChange(options[index + 1])}>▲</button>
+      </div>
+    </div>
+  );
+}
+
 const newExercise = (name, type = "strength") => ({
   id: crypto.randomUUID(),
   name,
@@ -186,7 +237,6 @@ function App() {
     technique: "5",
     fitness: "5",
     won: "true",
-    isLastSet: false,
   });
   const [exerciseLibrary, setExerciseLibrary] = useState(loadExerciseLibrary);
   const [showExerciseManager, setShowExerciseManager] = useState(false);
@@ -337,7 +387,6 @@ function App() {
       technique: "5",
       fitness: "5",
       won: "true",
-      isLastSet: false,
     });
   }
 
@@ -351,7 +400,7 @@ function App() {
     setShowVolleyballForm(true);
   }
 
-  function addVolleyballSet() {
+  function addVolleyballSet(isLastSet) {
     if (!hasAvailableBeachDate) return;
     if (!allowedStrengths[volleyballType]?.includes(volleyballSetDraft.opponentStrength)
       || !isRating(volleyballSets.length === 0 ? volleyballFitness : volleyballSetDraft.fitness)
@@ -370,7 +419,7 @@ function App() {
       intensity: Number(volleyballSetDraft.intensity),
       technique: Number(volleyballSetDraft.technique),
       won: volleyballSetDraft.won === "true",
-      isLastSet: volleyballSetDraft.isLastSet,
+      isLastSet,
     };
 
     setVolleyballSets((previous) => [...previous, newSet]);
@@ -381,8 +430,8 @@ function App() {
       technique: "5",
       fitness: "5",
       won: "true",
-      isLastSet: false,
     });
+    setNotice("");
   }
 
   function saveBeachVolleyballDay() {
@@ -1742,112 +1791,42 @@ function App() {
                       )}
 
                       {volleyballSets.length === 0 && (
-                        <>
-                          <label className="field-label" htmlFor="beach-fitness">
-                            Wie fit warst du zu Beginn? (1–10)
-                          </label>
-                          <input
-                            id="beach-fitness"
-                            className="field"
-                            type="number"
-                            min="1"
-                            max="10"
-                            value={volleyballFitness}
-                            onChange={(event) => setVolleyballFitness(event.target.value)}
-                          />
-                        </>
+                        <RatingStepper id="beach-fitness" label="Wie fit warst du zu Beginn? (1–10)"
+                          value={volleyballFitness} onChange={setVolleyballFitness} />
                       )}
 
                       {!volleyballSets.some((set) => set.isLastSet) && (
                         <>
-                          <label className="field-label" htmlFor="set-opponent-strength">
-                            Gegnerstärke im Verhältnis zu euch
-                          </label>
-                          <select
-                            id="set-opponent-strength"
-                            className="field"
+                          <StrengthStepper
                             value={volleyballSetDraft.opponentStrength}
-                            onChange={(event) =>
+                            options={allowedStrengths[volleyballType] ?? []}
+                            onChange={(opponentStrength) =>
                               setVolleyballSetDraft((previous) => ({
                                 ...previous,
-                                opponentStrength: event.target.value,
+                                opponentStrength,
                               }))
                             }
-                          >
-
-                            <option value="weaker3" hidden={volleyballType !== "openPlay"}>
-                              3 Stufen schwächer
-                            </option>
-                            <option value="weaker2" hidden={volleyballType === "tournament"}>
-                              2 Stufen schwächer
-                            </option>
-                            <option value="weaker1">1 Stufe schwächer</option>
-                            <option value="equal">Gleich stark</option>
-                            <option value="stronger1">1 Stufe stärker</option>
-                            <option value="stronger2" hidden={volleyballType === "tournament"}>
-                              2 Stufen stärker
-                            </option>
-                            <option value="stronger3" hidden={volleyballType !== "openPlay"}>
-                              3 Stufen stärker
-                            </option>
-                          </select>
+                          />
 
                           {volleyballSets.length > 0 && (
-                            <>
-                              <label className="field-label" htmlFor="set-fitness">
-                                Wie fit warst du zu Beginn dieses Satzes? (1–10)
-                              </label>
-                              <input
-                                id="set-fitness"
-                                className="field"
-                                type="number"
-                                min="1"
-                                max="10"
-                                value={volleyballSetDraft.fitness}
-                                onChange={(event) =>
-                                  setVolleyballSetDraft((previous) => ({
-                                    ...previous,
-                                    fitness: event.target.value,
-                                  }))
-                                }
-                              />
-                            </>
+                            <RatingStepper id="set-fitness"
+                              label="Wie fit warst du zu Beginn dieses Satzes? (1–10)"
+                              value={volleyballSetDraft.fitness}
+                              onChange={(fitness) => setVolleyballSetDraft((previous) => ({
+                                ...previous, fitness,
+                              }))} />
                           )}
-                          <label className="field-label" htmlFor="set-intensity">
-                            Spielintensität (1–10)
-                          </label>
-                          <input
-                            id="set-intensity"
-                            className="field"
-                            type="number"
-                            min="1"
-                            max="10"
+                          <RatingStepper id="set-intensity" label="Spielintensität (1–10)"
                             value={volleyballSetDraft.intensity}
-                            onChange={(event) =>
-                              setVolleyballSetDraft((previous) => ({
-                                ...previous,
-                                intensity: event.target.value,
-                              }))
-                            }
-                          />
+                            onChange={(intensity) => setVolleyballSetDraft((previous) => ({
+                              ...previous, intensity,
+                            }))} />
 
-                          <label className="field-label" htmlFor="set-technique">
-                            Technische Leistung (1–10)
-                          </label>
-                          <input
-                            id="set-technique"
-                            className="field"
-                            type="number"
-                            min="1"
-                            max="10"
+                          <RatingStepper id="set-technique" label="Technische Leistung (1–10)"
                             value={volleyballSetDraft.technique}
-                            onChange={(event) =>
-                              setVolleyballSetDraft((previous) => ({
-                                ...previous,
-                                technique: event.target.value,
-                              }))
-                            }
-                          />
+                            onChange={(technique) => setVolleyballSetDraft((previous) => ({
+                              ...previous, technique,
+                            }))} />
 
                           <label className="field-label" htmlFor="set-result">
                             Satzergebnis
@@ -1867,26 +1846,16 @@ function App() {
                             <option value="false">Verloren</option>
                           </select>
 
-                          <label className="checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={volleyballSetDraft.isLastSet}
-                              onChange={(event) =>
-                                setVolleyballSetDraft((previous) => ({
-                                  ...previous,
-                                  isLastSet: event.target.checked,
-                                }))
-                              }
-                            />
-                            Das ist der letzte Satz des Spieltags
-                          </label>
-
                           <button
                             type="button"
                             className="secondary-button"
-                            onClick={addVolleyballSet}
+                            onClick={() => addVolleyballSet(false)}
                           >
                             ＋ Satz hinzufügen
+                          </button>
+                          <button type="button" className="last-set-button"
+                            onClick={() => addVolleyballSet(true)}>
+                            ✓ Das war mein letzter Satz
                           </button>
                         </>
                       )}
@@ -1899,15 +1868,7 @@ function App() {
                             <div className="diary-panel" key={set.id}>
                               <h4>Satz {index + 1}</h4>
                               <p>
-                                Gegnerstärke: {{
-                                  weaker3: "3 Stufen schwächer",
-                                  weaker2: "2 Stufen schwächer",
-                                  weaker1: "1 Stufe schwächer",
-                                  equal: "Gleich stark",
-                                  stronger1: "1 Stufe stärker",
-                                  stronger2: "2 Stufen stärker",
-                                  stronger3: "3 Stufen stärker",
-                                }[set.opponentStrength]}
+                                Gegnerstärke: {strengthLabels[set.opponentStrength]}
                               </p>
                               <p>Fitness zu Satzbeginn: {set.fitness ?? "–"}/10</p>
                               <p>Intensität: {set.intensity}/10</p>
@@ -1920,19 +1881,10 @@ function App() {
 
                       {volleyballSets.some((set) => set.isLastSet) && (
                         <>
-
-                          <label className="field-label" htmlFor="beach-fatigue">
-                            Erschöpfung am Ende des Spieltags (1–10)
-                          </label>
-                          <input
-                            id="beach-fatigue"
-                            className="field"
-                            type="number"
-                            min="1"
-                            max="10"
+                          <RatingStepper id="beach-fatigue"
+                            label="Erschöpfung am Ende des Spieltags (1–10)"
                             value={volleyballFatigue}
-                            onChange={(event) => setVolleyballFatigue(event.target.value)}
-                          />
+                            onChange={setVolleyballFatigue} />
                           <p className="helper-text">
                             1 = überhaupt nicht erschöpft, 10 = völlig erschöpft.
                           </p>

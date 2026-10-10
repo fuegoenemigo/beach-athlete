@@ -209,6 +209,80 @@ textarea:focus-visible {
   color: #68736a;
 }
 
+.beach-stepper {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) 52px;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.beach-stepper-button {
+  min-height: 50px;
+  border: 1px solid #496b43;
+  border-radius: 11px;
+  color: var(--green);
+  background: #1a2a1d;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.beach-stepper-button:hover:not(:disabled) {
+  background: #29452b;
+}
+
+.beach-stepper-button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.beach-stepper-value {
+  height: 50px;
+  text-align: center;
+  font-size: 1.15rem;
+  font-weight: 750;
+  appearance: textfield;
+}
+
+.beach-stepper-value::-webkit-inner-spin-button,
+.beach-stepper-value::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.beach-stepper-display {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 50px;
+  padding: 7px 5px;
+  border: 1px solid #344037;
+  border-radius: 11px;
+  color: #f3f5f3;
+  background: #0e120f;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.last-set-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 49px;
+  margin-top: 10px;
+  padding: 12px 16px;
+  border: 1px solid #b99759;
+  border-radius: 12px;
+  color: #ffe6b5;
+  background: #3b3020;
+  font-weight: 750;
+}
+
+.last-set-button:hover {
+  background: #514028;
+}
+
 input[type="date"] {
   color-scheme: dark;
 }
