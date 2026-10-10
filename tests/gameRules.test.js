@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { gameStatus, isCompletedGame } from '../src/gameRules.js'
+import { gameStatus, isCompletedGame, isRecordableGame } from '../src/gameRules.js'
 
 const sets = (...results) => results.map((won) => ({ won }))
 
@@ -23,10 +23,22 @@ test('indoor game stops at the third win or loss, even on the fourth set', () =>
   assert.equal(isCompletedGame(sets(true, true, true, false), 'indoor'), false)
 })
 
-test('unfinished tournament games cannot be saved', () => {
+test('games are not automatically finished before the win threshold', () => {
   for (const sport of ['beach', 'indoor']) {
     const required = sport === 'beach' ? 2 : 3
     assert.equal(isCompletedGame(sets(...Array(required - 1).fill(true)), sport), false)
     assert.equal(isCompletedGame(sets(...Array(required).fill(true)), sport), true)
   }
+})
+
+test('a game can be ended deliberately after one set in both sports', () => {
+  for (const sport of ['beach', 'indoor']) {
+    assert.equal(isRecordableGame(sets(true), sport), false)
+    assert.equal(isRecordableGame(sets(true), sport, true), true)
+    assert.equal(isRecordableGame(sets(false), sport, true), true)
+    assert.equal(isRecordableGame([], sport, true), false)
+  }
+  assert.equal(isRecordableGame(sets(true, true), 'beach', true), false)
+  assert.equal(isRecordableGame(sets(true, true, false), 'beach', false), false)
+  assert.equal(isRecordableGame(sets(true, false, true, true), 'indoor', false), true)
 })

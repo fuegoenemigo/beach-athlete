@@ -33,6 +33,7 @@ function isGameDay(day) {
   const assignedIds = day.games.flatMap((game) => Array.isArray(game?.setIds) ? game.setIds : [])
   return day.games.every((game) => game && typeof game.id === 'string'
     && typeof game.opponent === 'string'
+    && (game.endedEarly === undefined || typeof game.endedEarly === 'boolean')
     && Array.isArray(game.setIds) && game.setIds.length >= 1
     && game.setIds.length <= (day.type === 'beach' ? 3 : 5)
     && game.setIds.every((id) => setIds.has(id)

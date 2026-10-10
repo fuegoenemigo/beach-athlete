@@ -12,3 +12,11 @@ export function isCompletedGame(sets, sport) {
   return gameStatus(sets, sport).finished
     && !gameStatus(sets.slice(0, -1), sport).finished
 }
+
+export function isRecordableGame(sets, sport, endedEarly = false) {
+  if (!Array.isArray(sets) || sets.length < 1
+    || sets.length > (sport === 'beach' ? 3 : 5)
+    || sets.some((set) => typeof set?.won !== 'boolean')
+    || gameStatus(sets.slice(0, -1), sport).finished) return false
+  return endedEarly ? !gameStatus(sets, sport).finished : isCompletedGame(sets, sport)
+}

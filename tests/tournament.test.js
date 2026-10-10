@@ -48,3 +48,14 @@ test('legacy beach records remain readable', () => {
     gameType: 'tournament', tournamentLocation: 'Berlin', tournamentPlace: 3,
     sets: [{ id: 'old-set', won: true }] }), true)
 })
+
+test('beach and indoor tournaments accept a deliberately shortened one-set game', () => {
+  for (const sport of ['beach', 'indoor']) {
+    const shortGame = { ...game('short', 1), endedEarly: true }
+    const pending = appendTournamentGame(null, details(sport), shortGame, true)
+    assert.equal(pending.tournamentStatus, 'pendingPlacement')
+    assert.equal(pending.games[0].endedEarly, true)
+    assert.equal(valid(JSON.parse(JSON.stringify(pending))), true)
+    assert.equal(valid(finishTournament(pending, 3, 5, '')), true)
+  }
+})

@@ -1,4 +1,4 @@
-import { isCompletedGame } from './gameRules.js'
+import { isRecordableGame } from './gameRules.js'
 import { isRating, strengthOptions } from './volleyballValues.js'
 
 export function appendRegularGame(day, details, game) {
@@ -9,15 +9,16 @@ export function appendRegularGame(day, details, game) {
     || (day && (day.date !== details.date || day.type !== details.sport
       || day.gameType !== details.gameType || day.dayStatus !== 'ongoing'))
     || typeof game.id !== 'string' || typeof game.opponent !== 'string'
+    || (game.endedEarly !== undefined && typeof game.endedEarly !== 'boolean')
     || (details.gameType === 'testMatch' && !game.opponent.trim())
-    || !isCompletedGame(game.sets, details.sport)
+    || !isRecordableGame(game.sets, details.sport, game.endedEarly)
     || game.sets.some((set) => typeof set.id !== 'string' || !isRating(set.fitness)
       || !isRating(set.intensity) || !isRating(set.technique)
       || !strengthOptions.includes(set.opponentStrength))) {
     throw new Error('Bitte prüfe Spieltag und Sätze vor dem Speichern.')
   }
   const storedGame = { id: game.id, opponent: game.opponent.trim(),
-    setIds: game.sets.map((set) => set.id) }
+    setIds: game.sets.map((set) => set.id), endedEarly: Boolean(game.endedEarly) }
   const sets = game.sets.map((set) => ({ ...set, gameId: game.id,
     ...(details.gameType === 'testMatch' ? { opponent: storedGame.opponent } : {}) }))
   return {

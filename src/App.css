@@ -60,7 +60,7 @@ textarea:focus-visible {
 
 .main-navigation {
   display: grid;
-  grid-template-columns: 60px repeat(3, minmax(0, 1fr));
+  grid-template-columns: 68px repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 18px;
 }
@@ -636,10 +636,10 @@ input[type="date"] {
     right: 0;
     bottom: 0;
     left: 0;
-    grid-template-columns: 48px repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    grid-template-columns: 66px repeat(3, minmax(0, 1fr));
+    gap: 8px;
     margin: 0;
-    padding: 8px max(11px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px));
+    padding: 8px max(11px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(11px, env(safe-area-inset-left, 0px));
     border-top: 1px solid #354039;
     background: rgba(14, 20, 16, 0.97);
   }

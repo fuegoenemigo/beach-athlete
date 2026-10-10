@@ -1,5 +1,5 @@
 import { isRating, strengthOptions } from './volleyballValues.js'
-import { isCompletedGame } from './gameRules.js'
+import { isRecordableGame } from './gameRules.js'
 
 export function appendTournamentGame(day, details, game, isLastGame) {
   if (day && (day.gameType !== 'tournament' || day.type !== details.sport
@@ -12,8 +12,9 @@ export function appendTournamentGame(day, details, game, isLastGame) {
   const maxSets = details.sport === 'beach' ? 3 : 5
   if (!['beach', 'indoor'].includes(details.sport) || !details.date
     || (!day && (!details.name.trim() || !details.location.trim() || !isRating(details.fitness)))
-    || !isCompletedGame(game.sets, details.sport) || game.sets.length > maxSets
+    || !isRecordableGame(game.sets, details.sport, game.endedEarly) || game.sets.length > maxSets
     || typeof game.opponent !== 'string'
+    || (game.endedEarly !== undefined && typeof game.endedEarly !== 'boolean')
     || game.sets.some((set) => !isRating(set.fitness) || !isRating(set.intensity)
       || !isRating(set.technique) || !strengthOptions.includes(set.opponentStrength)
       || typeof set.won !== 'boolean')) {
@@ -23,6 +24,7 @@ export function appendTournamentGame(day, details, game, isLastGame) {
     id: game.id,
     opponent: game.opponent.trim(),
     setIds: game.sets.map((set) => set.id),
+    endedEarly: Boolean(game.endedEarly),
     isLastGame,
   };
   const sets = game.sets.map((set) => ({ ...set, gameId: game.id }));

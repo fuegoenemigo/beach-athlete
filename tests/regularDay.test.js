@@ -49,3 +49,17 @@ test('incomplete games are not saved and prior completed days remain valid', () 
   legacy.endFatigue = 7
   assert.equal(valid(legacy), true)
 })
+
+test('one-set beach and indoor training games are saved when ended deliberately', () => {
+  for (const [sport, gameType] of [['beach', 'openPlay'], ['beach', 'testMatch'], ['indoor', 'matchDay']]) {
+    const details = { date: '2026-10-10', sport, gameType, fitness: 7 }
+    const shortGame = { ...game('short', sport), endedEarly: true,
+      sets: [game('short', sport).sets[0]] }
+    const day = appendRegularGame(null, details, shortGame)
+    assert.equal(day.games[0].endedEarly, true)
+    assert.equal(day.sets.length, 1)
+    assert.equal(valid(JSON.parse(JSON.stringify(day))), true)
+    const finished = finishRegularDay(day, 6, '')
+    assert.equal(valid(finished), true)
+  }
+})

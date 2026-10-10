@@ -2,7 +2,7 @@ import { useState } from "react";
 import { isVolleyballDateTaken } from "./syncPolicy.js";
 import { appendTournamentGame, finishTournament } from "./tournament.js";
 import { appendRegularGame, finishRegularDay } from "./regularDay.js";
-import { gameStatus, isCompletedGame } from "./gameRules.js";
+import { gameStatus, isRecordableGame } from "./gameRules.js";
 import { beachSetOpponent } from "./beachOpponents.js";
 import { RatingStepper, SetResultHeading, StrengthStepper } from "./VolleyballInputs.jsx";
 import { isRating, strengthLabels, strengthOptions } from "./volleyballValues.js";
@@ -138,11 +138,12 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   }
 
   function completeGame(isLastGame = false) {
-    if (!isCompletedGame(gameSets, sport)) {
-      setNotice(`Dieses Spiel endet erst nach ${currentGameStatus.winsNeeded} gewonnenen oder verlorenen Sätzen.`);
+    const endedEarly = !currentGameStatus.finished;
+    if (!isRecordableGame(gameSets, sport, endedEarly)) {
+      setNotice("Füge mindestens einen gültigen Satz hinzu, bevor du das Spiel speicherst.");
       return;
     }
-    const game = { id: crypto.randomUUID(), opponent: opponent.trim(), sets: gameSets };
+    const game = { id: crypto.randomUUID(), opponent: opponent.trim(), sets: gameSets, endedEarly };
     if (gameType === "tournament") {
       if (activeDayId && !activeTournament) {
         setNotice("Dieses Turnier wurde nicht gefunden. Bitte öffne es erneut aus der Übersicht.");
@@ -330,6 +331,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                   <div className="diary-panel" key={game.id}>
                     <h4>Spiel {index + 1}{game.opponent ? ` · ${game.opponent}` : ""}</h4>
                     <p>{game.setIds.length} Sätze</p>
+                    {game.endedEarly && <p>Nach {game.setIds.length} {game.setIds.length === 1 ? "Satz" : "Sätzen"} beendet</p>}
                     {game.isLastGame && <p>✓ Letztes Spiel des Turniers</p>}
                   </div>)}
               </div>}
@@ -386,9 +388,11 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                 {currentGameStatus.finished && <p className="helper-text" role="status">
                   Spiel beendet: {currentGameStatus.wins}:{currentGameStatus.losses} Sätze.
                 </p>}
-                {currentGameStatus.finished && <>
+                {gameSets.length > 0 && <>
                   <button type="button" className="last-set-button" onClick={() => completeGame(false)}>
-                    {gameType === "tournament" ? "✓ Spiel speichern · Turnier fortsetzen" : "✓ Spiel speichern · Spieltag fortsetzen"}
+                    {currentGameStatus.finished
+                      ? gameType === "tournament" ? "✓ Spiel speichern · Turnier fortsetzen" : "✓ Spiel speichern · Spieltag fortsetzen"
+                      : "✓ Spiel hier beenden und speichern"}
                   </button>
                   {gameType === "tournament" && <button type="button" className="last-set-button last-game-button"
                     onClick={() => completeGame(true)}>🏁 Das war mein letztes Spiel</button>}
@@ -471,6 +475,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
               {day.games ? day.games.map((game, index) => <div className="diary-panel" key={game.id}>
                 <h4>Spiel {index + 1}{game.opponent ? ` · ${game.opponent}` : ""}
                   {game.isLastGame ? " · Letztes Spiel" : ""}</h4>
+                {game.endedEarly && <p>Nach {game.setIds.length} {game.setIds.length === 1 ? "Satz" : "Sätzen"} beendet</p>}
                 {game.setIds.map((setId, setIndex) => {
                   const set = day.sets.find((item) => item.id === setId);
                   return set && <div className="volleyball-saved-set" key={setId}>
