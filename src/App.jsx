@@ -738,6 +738,15 @@ function App() {
 
       <nav className="main-navigation" aria-label="Hauptnavigation">
 
+        <button type="button" className="home-navigation-button"
+          aria-label="Startseite" aria-pressed={activeArea === "home"}
+          onClick={() => selectArea("home")}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M2 10.5 12 2.5l10 8-2 2.5-8-6.5-8 6.5Z" />
+            <rect x="5" y="11" width="14" height="10" rx="0.6" />
+          </svg>
+        </button>
+
         <button
           type="button"
           className={activeArea === "beach" ? "primary-button" : "secondary-button"}
@@ -771,16 +780,6 @@ function App() {
         >
           <span className="nav-icon" aria-hidden="true">💪</span>
           <span>Training</span>
-        </button>
-
-        <button type="button" className="home-navigation-button"
-          aria-label="Startseite" aria-pressed={activeArea === "home"}
-          onClick={() => selectArea("home")}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" />
-            <path d="M9 21v-7h6v7" />
-          </svg>
         </button>
 
       </nav>

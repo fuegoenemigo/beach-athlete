@@ -80,23 +80,19 @@ textarea:focus-visible {
   min-height: 49px;
   padding: 0;
   border: 0;
-  color: #aab2ac;
+  color: #939b96;
   background: transparent;
 }
 
 .home-navigation-button svg {
   width: 27px;
   height: 27px;
-  filter: drop-shadow(0 3px 5px #0008);
-  transition: transform 0.18s ease, color 0.18s ease;
+  fill: currentColor;
+  transition: transform 0.18s ease;
 }
 
 .home-navigation-button:hover svg {
   transform: translateY(-3px);
-}
-
-.home-navigation-button[aria-pressed="true"] {
-  color: #e1e5e1;
 }
 
 .nav-icon { line-height: 1; }
