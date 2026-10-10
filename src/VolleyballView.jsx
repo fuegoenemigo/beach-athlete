@@ -472,21 +472,24 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
               {expandedDayId === day.id ? "Details schließen" : day.games ? "Spiele anzeigen" : "Sätze anzeigen"}
             </button>
             {expandedDayId === day.id && <div className="volleyball-day-list">
-              {day.games ? day.games.map((game, index) => <div className="diary-panel" key={game.id}>
-                <h4>Spiel {index + 1}{game.opponent ? ` · ${game.opponent}` : ""}
-                  {game.isLastGame ? " · Letztes Spiel" : ""}</h4>
-                {game.endedEarly && <p>Nach {game.setIds.length} {game.setIds.length === 1 ? "Satz" : "Sätzen"} beendet</p>}
-                {game.setIds.map((setId, setIndex) => {
-                  const set = day.sets.find((item) => item.id === setId);
-                  return set && <div className="volleyball-saved-set" key={setId}>
+              {day.games ? day.games.map((game, index) => {
+                const gameSets = game.setIds.map((setId) => day.sets.find((set) => set.id === setId));
+                const sharedStrength = new Set(gameSets.map((set) => set?.opponentStrength)).size === 1
+                  ? gameSets[0]?.opponentStrength : null;
+                return <div className="diary-panel" key={game.id}>
+                  <h4>Spiel {index + 1}{game.opponent ? ` · ${game.opponent}` : ""}
+                    {game.isLastGame ? " · Letztes Spiel" : ""}</h4>
+                  {sharedStrength && <p>Gegnerstärke: {strengthLabels[sharedStrength] ?? sharedStrength}</p>}
+                  {game.endedEarly && <p>Nach {game.setIds.length} {game.setIds.length === 1 ? "Satz" : "Sätzen"} beendet</p>}
+                  {gameSets.map((set, setIndex) => set && <div className="volleyball-saved-set" key={set.id}>
                     <SetResultHeading number={setIndex + 1} won={set.won} />
-                    <p>Gegnerstärke: {strengthLabels[set.opponentStrength]}</p>
+                    {!sharedStrength && <p>Gegnerstärke: {strengthLabels[set.opponentStrength] ?? set.opponentStrength}</p>}
                     <p>Fitness zu Satzbeginn: {set.fitness}/10</p>
                     <p>Intensität: {set.intensity}/10</p>
                     <p>Technische Leistung: {set.technique}/10</p>
-                  </div>;
-                })}
-              </div>) : (day.sets ?? []).map((set, index) => <div className="volleyball-saved-set" key={set.id}>
+                  </div>)}
+                </div>;
+              }) : (day.sets ?? []).map((set, index) => <div className="volleyball-saved-set" key={set.id}>
                 <SetResultHeading number={index + 1} won={set.won} />
                 {day.gameType === "testMatch" && <>
                   <p>Gegner: {beachSetOpponent(day, set) ?? "Nicht einzeln erfasst"}</p>
