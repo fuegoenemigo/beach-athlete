@@ -752,9 +752,10 @@ function App() {
         <button type="button" className="home-navigation-button"
           aria-label="Startseite" aria-pressed={activeArea === "home"}
           onClick={() => selectArea("home")}>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3.1 10.7 11.2 2.9a1.2 1.2 0 0 1 1.6 0l8.1 7.8a1 1 0 0 1-.7 1.7H3.8a1 1 0 0 1-.7-1.7Z" />
-            <rect x="4.6" y="14" width="14.8" height="8.4" rx="1.6" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" />
+            <path d="M9 21v-7h6v7" />
           </svg>
         </button>
 
