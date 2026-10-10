@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { isVolleyballDateTaken } from "./syncPolicy.js";
-import { RatingStepper, StrengthStepper } from "./VolleyballInputs.jsx";
+import { RatingStepper, StrengthStepper, SetResultHeading } from "./VolleyballInputs.jsx";
 import { isRating, strengthLabels, strengthOptions } from "./volleyballValues.js";
 
 const today = () => new Date().toLocaleDateString("sv-SE");
@@ -197,8 +197,8 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
               {gameSets.length > 0 && <div className="volleyball-day-list">
                 <h4>Erfasste Sätze</h4>
                 {gameSets.map((set, index) => <div className="diary-panel" key={set.id}>
-                  <strong>Satz {index + 1}</strong>
-                  <p>{set.won ? "Gewonnen" : "Verloren"} · {strengthLabels[set.opponentStrength]}</p>
+                  <SetResultHeading number={index + 1} won={set.won} />
+                  <p>Gegnerstärke: {strengthLabels[set.opponentStrength]}</p>
                   <p>Fitness zu Satzbeginn: {set.fitness}/10</p>
                   <p>Intensität: {set.intensity}/10</p>
                   <p>Technische Leistung: {set.technique}/10</p>
@@ -279,7 +279,7 @@ export default function IndoorView({ volleyballDays, setVolleyballDays, setNotic
                 {game.setIds.map((setId, setIndex) => {
                   const set = day.sets.find((item) => item.id === setId);
                   return set && <div className="volleyball-saved-set" key={setId}>
-                    <strong>Satz {setIndex + 1} · {set.won ? "Gewonnen" : "Verloren"}</strong>
+                    <SetResultHeading number={setIndex + 1} won={set.won} />
                     <p>Gegnerstärke: {strengthLabels[set.opponentStrength]}</p>
                     <p>Fitness zu Satzbeginn: {set.fitness}/10</p>
                     <p>Intensität: {set.intensity}/10</p>

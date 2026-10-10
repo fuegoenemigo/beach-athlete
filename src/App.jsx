@@ -7,8 +7,9 @@ import { isAthleteData, isVolleyballDateTaken } from "./syncPolicy.js";
 import CloudAccount from "./CloudAccount.jsx";
 import HomeView from "./HomeView.jsx";
 import IndoorView from "./IndoorView.jsx";
-import { RatingStepper, StrengthStepper } from "./VolleyballInputs.jsx";
+import { RatingStepper, StrengthStepper, SetResultHeading } from "./VolleyballInputs.jsx";
 import { isRating, strengthLabels } from "./volleyballValues.js";
+import { beachSetOpponent } from "./beachOpponents.js";
 
 
 
@@ -172,16 +173,18 @@ function App() {
   const [showVolleyballForm, setShowVolleyballForm] = useState(false);
   const [volleyballType, setVolleyballType] = useState("");
   const [selectedVolleyballDayId, setSelectedVolleyballDayId] = useState(null);
+  const [editingBeachSetId, setEditingBeachSetId] = useState(null);
+  const [beachOpponentEdit, setBeachOpponentEdit] = useState("");
   const [volleyballDate, setVolleyballDate] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(() => today().slice(0, 7));
   const [volleyballFitness, setVolleyballFitness] = useState("5");
   const [volleyballFatigue, setVolleyballFatigue] = useState("5");
   const [volleyballNotes, setVolleyballNotes] = useState("");
-  const [volleyballOpponent, setVolleyballOpponent] = useState("");
   const [volleyballTournamentLocation, setVolleyballTournamentLocation] = useState("");
   const [volleyballTournamentPlace, setVolleyballTournamentPlace] = useState("");
   const [volleyballSets, setVolleyballSets] = useState([]);
   const [volleyballSetDraft, setVolleyballSetDraft] = useState({
+    opponent: "",
     opponentStrength: "equal",
     intensity: "5",
     technique: "5",
@@ -334,11 +337,11 @@ function App() {
     setVolleyballFitness("5");
     setVolleyballFatigue("5");
     setVolleyballNotes("");
-    setVolleyballOpponent("");
     setVolleyballTournamentLocation("");
     setVolleyballTournamentPlace("");
     setVolleyballSets([]);
     setVolleyballSetDraft({
+      opponent: "",
       opponentStrength: "equal",
       intensity: "5",
       technique: "5",
@@ -359,6 +362,10 @@ function App() {
 
   function addVolleyballSet(isLastSet) {
     if (!hasAvailableBeachDate) return;
+    if (volleyballType === "testMatch" && !volleyballSetDraft.opponent.trim()) {
+      setNotice("Bitte gib für diesen Testspiel-Satz den Gegner ein.");
+      return;
+    }
     if (!allowedStrengths[volleyballType]?.includes(volleyballSetDraft.opponentStrength)
       || !isRating(volleyballSets.length === 0 ? volleyballFitness : volleyballSetDraft.fitness)
       || !isRating(volleyballSetDraft.intensity)
@@ -369,6 +376,7 @@ function App() {
 
     const newSet = {
       id: crypto.randomUUID(),
+      opponent: volleyballType === "testMatch" ? volleyballSetDraft.opponent.trim() : "",
       fitness: volleyballSets.length === 0
         ? Number(volleyballFitness)
         : Number(volleyballSetDraft.fitness),
@@ -382,6 +390,7 @@ function App() {
     setVolleyballSets((previous) => [...previous, newSet]);
 
     setVolleyballSetDraft({
+      opponent: "",
       opponentStrength: "equal",
       intensity: "5",
       technique: "5",
@@ -418,7 +427,9 @@ function App() {
       date: volleyballDate,
       type: "beach",
       gameType: volleyballType,
-      opponent: volleyballOpponent.trim(),
+      opponent: volleyballType === "testMatch"
+        && new Set(volleyballSets.map((set) => set.opponent)).size === 1
+        ? volleyballSets[0]?.opponent ?? "" : "",
       tournamentLocation: volleyballTournamentLocation.trim(),
       tournamentPlace: volleyballTournamentPlace
         ? Number(volleyballTournamentPlace)
@@ -742,8 +753,8 @@ function App() {
           aria-label="Startseite" aria-pressed={activeArea === "home"}
           onClick={() => selectArea("home")}>
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M2 10.5 12 2.5l10 8-2 2.5-8-6.5-8 6.5Z" />
-            <rect x="5" y="11" width="14" height="10" rx="0.6" />
+            <path d="M3.1 10.7 11.2 2.9a1.2 1.2 0 0 1 1.6 0l8.1 7.8a1 1 0 0 1-.7 1.7H3.8a1 1 0 0 1-.7-1.7Z" />
+            <rect x="4.6" y="14" width="14.8" height="8.4" rx="1.6" />
           </svg>
         </button>
 
@@ -1694,22 +1705,6 @@ function App() {
 
                   {volleyballType && (
                     <>
-                      {volleyballType === "testMatch" && (
-                        <>
-                          <label className="field-label" htmlFor="beach-opponent">
-                            Gegner / gegnerisches Team
-                          </label>
-                          <input
-                            id="beach-opponent"
-                            className="field"
-                            type="text"
-                            value={volleyballOpponent}
-                            onChange={(event) => setVolleyballOpponent(event.target.value)}
-                            placeholder="z. B. Team Müller / Schmidt"
-                          />
-                        </>
-                      )}
-
                       {volleyballType === "tournament" && (
                         <>
                           <label className="field-label" htmlFor="beach-tournament-location">
@@ -1752,6 +1747,17 @@ function App() {
                       {!volleyballSets.some((set) => set.isLastSet) && (
                         <div className="volleyball-set-editor">
                           <h3>Satz {volleyballSets.length + 1}</h3>
+                          {volleyballType === "testMatch" && <>
+                            <label className="field-label" htmlFor="beach-set-opponent">
+                              Gegner / gegnerisches Team
+                            </label>
+                            <input id="beach-set-opponent" className="field" type="text"
+                              value={volleyballSetDraft.opponent}
+                              onChange={(event) => setVolleyballSetDraft((previous) => ({
+                                ...previous, opponent: event.target.value,
+                              }))}
+                              placeholder="z. B. Team Müller / Schmidt" />
+                          </>}
                           <StrengthStepper
                             value={volleyballSetDraft.opponentStrength}
                             options={allowedStrengths[volleyballType] ?? []}
@@ -1821,14 +1827,14 @@ function App() {
 
                           {volleyballSets.map((set, index) => (
                             <div className="diary-panel" key={set.id}>
-                              <h4>Satz {index + 1}</h4>
+                              <SetResultHeading number={index + 1} won={set.won} />
+                              {volleyballType === "testMatch" && <p>Gegner: {set.opponent}</p>}
                               <p>
                                 Gegnerstärke: {strengthLabels[set.opponentStrength]}
                               </p>
                               <p>Fitness zu Satzbeginn: {set.fitness ?? "–"}/10</p>
                               <p>Intensität: {set.intensity}/10</p>
                               <p>Technische Leistung: {set.technique}/10</p>
-                              <p>Ergebnis: {set.won ? "Gewonnen" : "Verloren"}</p>
                             </div>
                           ))}
                           <button type="button" className="secondary-button"
@@ -1911,8 +1917,10 @@ function App() {
                       }[day.gameType] ?? day.gameType ?? "❓ Unbekannt"} · {(day.sets ?? []).length} {(day.sets ?? []).length === 1 ? "Satz" : "Sätze"}
                     </p>
 
-                    {day.gameType === "testMatch" && day.opponent && (
-                      <p>Gegner: {day.opponent}</p>
+                    {day.gameType === "testMatch" && day.opponent
+                      && !(day.sets ?? []).every((set) => set.opponent) && (
+                      <p>{(day.sets ?? []).length === 1
+                        ? "Gegner" : "Bisheriger Spieltagsgegner (nicht allen Sätzen zugeordnet)"}: {day.opponent}</p>
                     )}
 
                     {day.gameType === "tournament" && (
@@ -1931,9 +1939,10 @@ function App() {
 
                     <button type="button" className="secondary-button"
                       aria-expanded={selectedVolleyballDayId === day.id}
-                      onClick={() => setSelectedVolleyballDayId(
-                        selectedVolleyballDayId === day.id ? null : day.id
-                      )}>
+                      onClick={() => {
+                        setEditingBeachSetId(null);
+                        setSelectedVolleyballDayId(selectedVolleyballDayId === day.id ? null : day.id);
+                      }}>
                       {selectedVolleyballDayId === day.id ? "Details schließen" : "Sätze anzeigen"}
                     </button>
 
@@ -1944,7 +1953,38 @@ function App() {
                         ) : (
                           (day.sets ?? []).map((set, index) => (
                             <div className="volleyball-saved-set" key={set.id}>
-                              <strong>Satz {index + 1} · {set.won ? "Gewonnen" : "Verloren"}</strong>
+                              <SetResultHeading number={index + 1} won={set.won} />
+                              {day.gameType === "testMatch" && <>
+                                <p>Gegner: {beachSetOpponent(day, set) ?? "Nicht einzeln erfasst"}</p>
+                                {editingBeachSetId === set.id ? <div className="beach-opponent-editor">
+                                  <label className="field-label" htmlFor={`beach-opponent-edit-${set.id}`}>
+                                    Gegner für Satz {index + 1}
+                                  </label>
+                                  <input id={`beach-opponent-edit-${set.id}`} className="field"
+                                    value={beachOpponentEdit}
+                                    onChange={(event) => setBeachOpponentEdit(event.target.value)} />
+                                  <button type="button" className="secondary-button" onClick={() => {
+                                    const opponent = beachOpponentEdit.trim();
+                                    if (!opponent) {
+                                      setNotice("Bitte gib einen Gegnernamen ein.");
+                                      return;
+                                    }
+                                    setVolleyballDays((previous) => previous.map((item) => item.id === day.id
+                                      ? { ...item, sets: item.sets.map((savedSet) => savedSet.id === set.id
+                                        ? { ...savedSet, opponent } : savedSet) } : item));
+                                    setEditingBeachSetId(null);
+                                    setNotice("Gegner für den Satz gespeichert.");
+                                  }}>Gegner speichern</button>
+                                  <button type="button" className="secondary-button"
+                                    onClick={() => setEditingBeachSetId(null)}>Abbrechen</button>
+                                </div> : <button type="button" className="secondary-button"
+                                  onClick={() => {
+                                    setBeachOpponentEdit(beachSetOpponent(day, set) ?? "");
+                                    setEditingBeachSetId(set.id);
+                                  }}>
+                                  {set.opponent ? "Gegner ändern" : "Gegner nachtragen"}
+                                </button>}
+                              </>}
                               <p>Gegnerstärke: {strengthLabels[set.opponentStrength] ?? set.opponentStrength}</p>
                               <p>Fitness zu Satzbeginn: {set.fitness ?? "–"}/10</p>
                               <p>Intensität: {set.intensity}/10</p>
@@ -1959,6 +1999,7 @@ function App() {
                         if (!window.confirm("Möchtest du diesen Spieltag wirklich löschen?")) return;
                         setVolleyballDays((previous) => previous.filter((item) => item.id !== day.id));
                         setSelectedVolleyballDayId(null);
+                        setEditingBeachSetId(null);
                       }}>
                       Spieltag löschen
                     </button>

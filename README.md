@@ -30,6 +30,8 @@ Beim Start öffnet sich die Startseite. Sie zeigt einen anklickbaren Monatskalen
 
 In den Volleyball-Kalendern ist ein Datum nur für einen Beach- oder Hallen-Spieltag verfügbar. Trainingseinheiten können am selben Datum weiterhin stattfinden. Ein Hallen-Spieltag kann mehrere Spiele enthalten; jedes Spiel enthält einen bis fünf Sätze mit eigenen Bewertungen. Hallen-Turniere folgen später.
 
+Bei Beach-Testspielen wird der Gegner pro Satz erfasst. Für ältere Spieltage mit nur einem gemeinsamen Gegnernamen kann der Gegner in den Satzdetails nachgetragen werden; unterschiedliche frühere Gegner lassen sich aus dem alten Eintrag nicht automatisch ableiten.
+
 ## GitHub Pages und iPhone
 
 Die GitHub-Actions-Datei `.github/workflows/pages.yml` baut und veröffentlicht die App bei einem Push auf `main`. Das Repository ist [fuegoenemigo/beach-athlete](https://github.com/fuegoenemigo/beach-athlete), die veröffentlichte App ist unter [fuegoenemigo.github.io/beach-athlete](https://fuegoenemigo.github.io/beach-athlete/) erreichbar. Die Pages-Quelle ist **GitHub Actions**. Der Build verwendet den Pfad `/<Repositoryname>/`.

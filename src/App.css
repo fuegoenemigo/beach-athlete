@@ -80,13 +80,13 @@ textarea:focus-visible {
   min-height: 49px;
   padding: 0;
   border: 0;
-  color: #939b96;
+  color: #b6beb8;
   background: transparent;
 }
 
 .home-navigation-button svg {
-  width: 27px;
-  height: 27px;
+  width: 30px;
+  height: 30px;
   fill: currentColor;
   transition: transform 0.18s ease;
 }
@@ -764,6 +764,38 @@ input[type="date"] {
   color: #f0b3a7;
   border-color: #744d46;
   background: #2b1d1b;
+}
+
+.set-result-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 10px;
+}
+
+.set-result-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.set-result-mark.is-win { color: #9bee7b; }
+.set-result-mark.is-loss { color: #f27575; }
+
+.beach-opponent-editor {
+  margin: 12px 0 18px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #101711;
+}
+
+.beach-opponent-editor .field-label {
+  margin-top: 0;
 }
 
 @media (max-width: 420px) {

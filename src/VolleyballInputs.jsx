@@ -40,3 +40,15 @@ export function StrengthStepper({ value, options, onChange }) {
     </div>
   );
 }
+
+export function SetResultHeading({ number, won }) {
+  return (
+    <h4 className="set-result-heading">
+      <span className={`set-result-mark ${won ? "is-win" : "is-loss"}`}
+        role="img" aria-label={won ? "Gewonnen" : "Verloren"}>
+        {won ? "✓" : "✕"}
+      </span>
+      Satz {number}
+    </h4>
+  );
+}
