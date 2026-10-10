@@ -1,6 +1,6 @@
 # Beach Athlete
 
-Persönliches Sporttagebuch für Training und Beachvolleyball. React + Vite, lokale Speicherung im Browser und Firebase-Synchronisierung nach Anmeldung. Zielplattform: iPhone 15 Pro. Die App besitzt ein Manifest, Installations-Icons und einen Service Worker für die Offline-App-Dateien. Homescreen, Offline-Neustart und Update wurden auf dem iPhone geprüft.
+Persönliches Sporttagebuch für Training, Beachvolleyball und Hallenvolleyball. React + Vite, lokale Speicherung im Browser und Firebase-Synchronisierung nach Anmeldung. Zielplattform: iPhone 15 Pro. Die App besitzt ein Manifest, Installations-Icons und einen Service Worker für die Offline-App-Dateien. Homescreen, Offline-Neustart und Update wurden auf dem iPhone geprüft.
 
 ## Projektgrundlagen
 
@@ -24,9 +24,11 @@ npm.cmd run lint
 npm.cmd test
 ```
 
-Die App speichert Training, Übungsbibliothek und Beach-Spieltage weiterhin sofort in `localStorage`. Backups lassen sich im Trainingsbereich als JSON exportieren und importieren. Nach Anmeldung mit einem persönlichen E-Mail/Passwort-Konto synchronisiert sie dieselben Rohdaten zusätzlich mit Firestore. Bei gleichzeitigen Änderungen auf zwei Geräten fragt sie, welche Version erhalten bleiben soll; vor der Entscheidung kann die lokale Version exportiert werden.
+Die App speichert Training, Übungsbibliothek sowie Beach- und Hallen-Spieltage weiterhin sofort in `localStorage`. Backups lassen sich im Trainingsbereich als JSON exportieren und importieren. Nach Anmeldung mit einem persönlichen E-Mail/Passwort-Konto synchronisiert sie dieselben Rohdaten zusätzlich mit Firestore. Bei gleichzeitigen Änderungen auf zwei Geräten fragt sie, welche Version erhalten bleiben soll; vor der Entscheidung kann die lokale Version exportiert werden.
 
 Beim Start öffnet sich die Startseite. Sie zeigt einen anklickbaren Monatskalender sowie Platzhalter für Statistiken und die Spielerkarte. Diese Vorschauen enthalten bewusst noch keine berechneten Werte. Über die vier Reiter am unteren Bildschirmrand sind Startseite, Beachvolleyball, Hallenvolleyball und Training erreichbar.
+
+In den Volleyball-Kalendern ist ein Datum nur für einen Beach- oder Hallen-Spieltag verfügbar. Trainingseinheiten können am selben Datum weiterhin stattfinden. Ein Hallen-Spieltag kann mehrere Spiele enthalten; jedes Spiel enthält einen bis fünf Sätze mit eigenen Bewertungen. Hallen-Turniere folgen später.
 
 ## GitHub Pages und iPhone
 

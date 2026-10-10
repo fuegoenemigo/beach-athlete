@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
+import { chooseInitialSync, dataHash, isAthleteData, isVolleyballDateTaken } from '../src/syncPolicy.js'
 
 const library = [{ name: 'Kniebeugen', category: 'Krafttraining', type: 'strength' }]
 const empty = () => ({ sessions: [], exerciseLibrary: structuredClone(library), volleyballDays: [] })
@@ -37,4 +37,42 @@ test('different account and malformed data never silently overwrite cloud', () =
   assert.equal(chooseInitialSync(withTraining(), remote(empty()), meta, 'user-2', library), 'conflict')
   assert.equal(chooseInitialSync(withTraining(), { ...remote(empty()), sessions: {} }, null, 'user-1', library), 'invalid')
   assert.equal(isAthleteData({ ...empty(), volleyballDays: [null] }), false)
+})
+
+test('beach and indoor volleyball reserve the same calendar date, training does not', () => {
+  const beachDay = { id: 'beach-1', date: '2026-10-10', type: 'beach', sets: [] }
+  const indoorDay = { id: 'indoor-1', date: '2026-10-11', type: 'indoor', sets: [] }
+  assert.equal(isVolleyballDateTaken([beachDay, indoorDay], '2026-10-10'), true)
+  assert.equal(isVolleyballDateTaken([beachDay, indoorDay], '2026-10-11'), true)
+  assert.equal(isVolleyballDateTaken([beachDay, indoorDay], '2026-10-12'), false)
+  assert.equal(isAthleteData({ ...withTraining(), volleyballDays: [beachDay] }), true)
+})
+
+test('indoor games keep their own sets and cannot exceed five sets', () => {
+  const sets = Array.from({ length: 5 }, (_, index) => ({
+    id: `set-${index}`, gameId: 'game-1', fitness: 5, intensity: 6,
+    technique: 7, opponentStrength: 'equal', won: index % 2 === 0,
+  }))
+  const day = {
+    id: 'indoor-1', date: '2026-10-10', type: 'indoor', gameType: 'matchDay',
+    fitness: 5, endFatigue: 7,
+    games: [{ id: 'game-1', opponent: 'Team A', setIds: sets.map((set) => set.id) }], sets,
+  }
+  assert.equal(isAthleteData({ ...empty(), volleyballDays: [day] }), true)
+  const secondSet = { ...sets[0], id: 'set-second-game', gameId: 'game-2' }
+  const twoGames = { ...day,
+    games: [...day.games, { id: 'game-2', opponent: 'Team B', setIds: [secondSet.id] }],
+    sets: [...sets, secondSet],
+  }
+  assert.equal(isAthleteData({ ...empty(), volleyballDays: [twoGames] }), true)
+  assert.equal(isAthleteData({ ...empty(), volleyballDays: [{ ...twoGames,
+    sets: [...sets, { ...secondSet, gameId: 'game-1' }],
+  }] }), false)
+  assert.equal(isAthleteData({ ...empty(), volleyballDays: [{ ...day,
+    games: [{ ...day.games[0], setIds: [...day.games[0].setIds, 'set-6'] }],
+    sets: [...sets, { ...sets[0], id: 'set-6' }],
+  }] }), false)
+  assert.equal(isAthleteData({ ...empty(), volleyballDays: [{ ...day,
+    games: [{ ...day.games[0], setIds: ['set-0', 'set-0'] }],
+  }] }), false)
 })

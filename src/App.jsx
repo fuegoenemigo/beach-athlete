@@ -3,9 +3,12 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { installUpdate, isUpdateAvailable } from "./pwa.js";
 import { CloudSync } from "./cloudSync.js";
-import { isAthleteData } from "./syncPolicy.js";
+import { isAthleteData, isVolleyballDateTaken } from "./syncPolicy.js";
 import CloudAccount from "./CloudAccount.jsx";
 import HomeView from "./HomeView.jsx";
+import IndoorView from "./IndoorView.jsx";
+import { RatingStepper, StrengthStepper } from "./VolleyballInputs.jsx";
+import { isRating, strengthLabels } from "./volleyballValues.js";
 
 
 
@@ -98,64 +101,11 @@ const TRAINING_CATEGORIES = [
 ];
 
 const today = () => new Date().toLocaleDateString("sv-SE");
-const isRating = (value) => value !== "" && Number.isInteger(Number(value))
-  && Number(value) >= 1 && Number(value) <= 10;
 const allowedStrengths = {
   openPlay: ["weaker3", "weaker2", "weaker1", "equal", "stronger1", "stronger2", "stronger3"],
   testMatch: ["weaker2", "weaker1", "equal", "stronger1", "stronger2"],
   tournament: ["weaker1", "equal", "stronger1"],
 };
-
-const strengthLabels = {
-  weaker3: "3 Stufen schwächer",
-  weaker2: "2 Stufen schwächer",
-  weaker1: "1 Stufe schwächer",
-  equal: "Gleich stark",
-  stronger1: "1 Stufe stärker",
-  stronger2: "2 Stufen stärker",
-  stronger3: "3 Stufen stärker",
-};
-
-function RatingStepper({ id, label, value, onChange }) {
-  const number = Number(value);
-  const valid = isRating(value);
-
-  function step(direction) {
-    onChange(String(valid ? Math.max(1, Math.min(10, number + direction)) : 5));
-  }
-
-  return (
-    <>
-      <label className="field-label" htmlFor={id}>{label}</label>
-      <div className="beach-stepper">
-        <button type="button" className="beach-stepper-button" aria-label={`${label}: verringern`}
-          disabled={valid && number <= 1} onClick={() => step(-1)}>▼</button>
-        <input id={id} className="field beach-stepper-value" type="number" inputMode="numeric"
-          min="1" max="10" step="1" value={value}
-          onChange={(event) => onChange(event.target.value)} />
-        <button type="button" className="beach-stepper-button" aria-label={`${label}: erhöhen`}
-          disabled={valid && number >= 10} onClick={() => step(1)}>▲</button>
-      </div>
-    </>
-  );
-}
-
-function StrengthStepper({ value, options, onChange }) {
-  const index = options.indexOf(value);
-
-  return (
-    <div className="beach-strength-field" role="group" aria-label="Gegnerstärke im Verhältnis zu euch">
-      <span className="field-label">Gegnerstärke im Verhältnis zu euch</span>
-      <div className="beach-stepper">
-        <button type="button" className="beach-stepper-button" aria-label="Gegnerstärke verringern"
-          disabled={index <= 0} onClick={() => onChange(options[index - 1])}>▼</button>
-        <output className="beach-stepper-display" aria-live="polite">{strengthLabels[value]}</output>
-        <button type="button" className="beach-stepper-button" aria-label="Gegnerstärke erhöhen"
-          disabled={index >= options.length - 1} onClick={() => onChange(options[index + 1])}>▲</button>
-      </div>
-    </div>
-  );
-}
 
 const newExercise = (name, type = "strength") => ({
   id: crypto.randomUUID(),
@@ -400,7 +350,7 @@ function App() {
   function openVolleyballForm() {
     resetVolleyballDraft();
     const currentDate = today();
-    if (!takenBeachDates.includes(currentDate)) {
+    if (!isVolleyballDateTaken(volleyballDays, currentDate)) {
       setVolleyballDate(currentDate);
     }
     setNotice("");
@@ -447,9 +397,7 @@ function App() {
       return;
     }
     if (
-      volleyballDays.some(
-        (day) => day.type === "beach" && day.date === volleyballDate
-      )
+      isVolleyballDateTaken(volleyballDays, volleyballDate)
     ) {
       setNotice("Für dieses Datum existiert bereits ein Spieltag.");
       return;
@@ -490,7 +438,7 @@ function App() {
 
   const calendarDays = getCalendarDays(calendarMonth);
   const takenBeachDates = volleyballDays
-    .filter((day) => day.type === "beach")
+    .filter((day) => day.type === "beach" || day.type === "indoor")
     .map((day) => day.date);
   const hasAvailableBeachDate = Boolean(volleyballDate) &&
     !takenBeachDates.includes(volleyballDate);
@@ -1710,7 +1658,7 @@ function App() {
 
               {!hasAvailableBeachDate && (
                 <p className="helper-text" role="status">
-                  Bitte wähle ein freies Datum. Durchgestrichene Tage haben bereits einen Beachvolleyball-Spieltag.
+                  Bitte wähle ein freies Datum. Durchgestrichene Tage haben bereits einen Beach- oder Hallenvolleyball-Spieltag.
                 </p>
               )}
 
@@ -2065,28 +2013,10 @@ function App() {
         </section>
       )}
 
-      {activeArea === "indoor" && (
-        <section className="diary-panel">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">VOLLEYBALL</p>
-              <h2>🏟️ Hallenvolleyball</h2>
-            </div>
-          </div>
-
-          <p>
-            Erfasse deine Hallenvolleyball-Spieltage und dokumentiere
-            deine einzelnen Sätze.
-          </p>
-
-          <button
-            className="primary-button"
-            onClick={() => setNotice("Hallenvolleyball: Die Spieltag-Erfassung bauen wir als Nächstes.")}
-          >
-            ＋ Spieltag erfassen
-          </button>
-        </section>
-      )}
+      <div hidden={activeArea !== "indoor"}>
+        <IndoorView volleyballDays={volleyballDays}
+          setVolleyballDays={setVolleyballDays} setNotice={setNotice} />
+      </div>
       <footer className="app-footer">
         BEACH ATHLETE <span>•</span> DEIN WEG, DEINE DATEN
       </footer>

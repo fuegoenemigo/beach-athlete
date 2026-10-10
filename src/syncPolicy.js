@@ -1,3 +1,29 @@
+import { isRating, strengthOptions } from './volleyballValues.js'
+
+export function isVolleyballDateTaken(days, date) {
+  return days.some((day) => day.date === date
+    && (day.type === 'beach' || day.type === 'indoor'))
+}
+
+function isIndoorDay(day) {
+  if (day.gameType !== 'matchDay' || !isRating(day.fitness) || !isRating(day.endFatigue)
+    || !Array.isArray(day.games) || day.games.length === 0
+    || !day.sets.every((set) => set && typeof set.id === 'string'
+      && typeof set.gameId === 'string' && isRating(set.fitness)
+      && isRating(set.intensity) && isRating(set.technique)
+      && strengthOptions.includes(set.opponentStrength) && typeof set.won === 'boolean')) return false
+  const setIds = new Set(day.sets.map((set) => set?.id))
+  const assignedIds = day.games.flatMap((game) => Array.isArray(game?.setIds) ? game.setIds : [])
+  return day.games.every((game) => game && typeof game.id === 'string'
+    && typeof game.opponent === 'string'
+    && Array.isArray(game.setIds) && game.setIds.length >= 1 && game.setIds.length <= 5
+    && game.setIds.every((id) => setIds.has(id)
+      && day.sets.find((set) => set?.id === id)?.gameId === game.id))
+    && assignedIds.length === day.sets.length
+    && new Set(day.games.map((game) => game.id)).size === day.games.length
+    && new Set(assignedIds).size === assignedIds.length
+}
+
 export function isAthleteData(data) {
   return data && Array.isArray(data.sessions)
     && Array.isArray(data.exerciseLibrary)
@@ -9,7 +35,8 @@ export function isAthleteData(data) {
       && typeof item.name === 'string' && typeof item.category === 'string')
     && data.volleyballDays.every((item) => item && typeof item === 'object'
       && typeof item.id === 'string' && typeof item.date === 'string'
-      && Array.isArray(item.sets))
+      && Array.isArray(item.sets)
+      && (item.type !== 'indoor' || isIndoorDay(item)))
 }
 
 export function isRemoteData(data) {

@@ -714,6 +714,35 @@ input[type="date"] {
   opacity: 1;
 }
 
+.indoor-game-editor {
+  margin-top: 22px;
+  padding: 18px;
+  border: 1px solid #344938;
+  border-radius: 14px;
+  background: #111a13;
+}
+
+.indoor-game-editor h3,
+.indoor-game-editor h4 {
+  margin: 0 0 12px;
+}
+
+.indoor-game-editor .diary-panel,
+.indoor-saved-set {
+  margin: 10px 0;
+}
+
+.indoor-saved-set {
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.indoor-delete-button {
+  color: #f0b3a7;
+  border-color: #744d46;
+  background: #2b1d1b;
+}
+
 @media (max-width: 420px) {
   .beach-calendar {
     padding: 8px;
