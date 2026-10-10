@@ -21,7 +21,7 @@ export default function DataSecurity({ cloudState, onResolve, onRetry, onExport,
         </div>
       )}
 
-      <p>Exportiere eine Sicherung deiner Trainingseinheiten, Übungsbibliothek und Volleyball-Spieltage oder stelle sie aus einer Datei wieder her.</p>
+      <p>Exportiere eine Sicherung deiner Trainingseinheiten, Trainingsvorlagen, Übungsbibliothek und Volleyball-Spieltage oder stelle sie aus einer Datei wieder her.</p>
       <div className="exercise-actions">
         <button className="secondary-button" type="button" onClick={onExport}>Daten exportieren</button>
         <label className="secondary-button">

@@ -14,6 +14,17 @@
   margin-top: 24px;
 }
 
+.training-start-grid,
+.training-activity-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.training-start-grid {
+  margin-bottom: 16px;
+}
+
 .training-activities h3 {
   margin: 0 0 12px;
 }
@@ -31,10 +42,14 @@
   font-size: 1rem;
 }
 
+.training-previous {
+  margin: 14px 0 0;
+  color: var(--green);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
 .training-activity-fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
   margin-top: 15px;
 }
 
@@ -51,6 +66,64 @@
 .training-library-list {
   padding-top: 18px;
   border-top: 1px solid var(--border);
+}
+
+.training-set,
+.training-legacy {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #1b251c;
+}
+
+.training-legacy {
+  background: #24231b;
+}
+
+.training-set-heading,
+.training-plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.training-set-note {
+  margin-top: 12px;
+}
+
+.training-plan-row {
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.training-plan-row > div {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+}
+
+.training-plan-editor,
+.training-custom {
+  margin-top: 18px;
+}
+
+.training-custom {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.training-custom summary,
+.training-library summary {
+  cursor: pointer;
+}
+
+.training-group-heading {
+  margin: 18px 0 4px;
+  color: var(--green);
+  font-size: 0.9rem;
 }
 
 .training-finish-actions {
@@ -89,10 +162,16 @@
   min-width: 110px;
 }
 
+.training-group-select {
+  width: auto;
+  min-width: 120px;
+}
+
 .training-library-item .text-button {
   min-height: 36px;
 }
 
 @media (max-width: 370px) {
-  .training-activity-fields { grid-template-columns: 1fr; }
+  .training-activity-fields,
+  .training-start-grid { grid-template-columns: 1fr; }
 }

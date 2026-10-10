@@ -13,6 +13,7 @@ import VolleyballView from "./VolleyballView.jsx";
 
 const EXERCISES = [
   { name: "Bankdrücken", type: "strength", category: "Krafttraining", muscleGroup: "Brust" },
+  { name: "Schrägbankdrücken", type: "strength", category: "Krafttraining", muscleGroup: "Brust" },
   { name: "Kniebeugen", type: "strength", category: "Krafttraining", muscleGroup: "Beine" },
   { name: "Kreuzheben", type: "strength", category: "Krafttraining", muscleGroup: "Rücken" },
   { name: "Klimmzüge", type: "strength", category: "Krafttraining", muscleGroup: "Rücken" },
@@ -63,6 +64,11 @@ function loadSessions() {
     (items) => isAthleteData({ sessions: items, exerciseLibrary: [], volleyballDays: [] }));
 }
 
+function loadTrainingPlans() {
+  return loadStoredArray("beach-athlete-training-plans", [],
+    (items) => isAthleteData({ sessions: [], exerciseLibrary: [], volleyballDays: [], trainingPlans: items }));
+}
+
 function loadVolleyballDays() {
   return loadStoredArray("beach-athlete-volleyball", [],
     (items) => isAthleteData({ sessions: [], exerciseLibrary: [], volleyballDays: items }));
@@ -94,6 +100,7 @@ function App() {
   const [activeArea, setActiveArea] = useState("home");
   const [homeViewKey, setHomeViewKey] = useState(0);
   const [exerciseLibrary, setExerciseLibrary] = useState(loadExerciseLibrary);
+  const [trainingPlans, setTrainingPlans] = useState(loadTrainingPlans);
   const [notice, setNotice] = useState("");
   const [criticalNotice, setCriticalNotice] = useState("");
   const [updateAvailable, setUpdateAvailable] = useState(isUpdateAvailable);
@@ -110,6 +117,7 @@ function App() {
       onApply: (data) => {
         setSessions(data.sessions);
         setExerciseLibrary(data.exerciseLibrary);
+        setTrainingPlans(data.trainingPlans);
         setVolleyballDays(data.volleyballDays);
       },
       defaultLibrary: EXERCISES,
@@ -123,8 +131,8 @@ function App() {
   }, [storageDamaged]);
 
   useEffect(() => {
-    cloudRef.current?.updateData({ sessions, exerciseLibrary, volleyballDays });
-  }, [sessions, exerciseLibrary, volleyballDays]);
+    cloudRef.current?.updateData({ sessions, exerciseLibrary, volleyballDays, trainingPlans });
+  }, [sessions, exerciseLibrary, volleyballDays, trainingPlans]);
 
   useEffect(() => {
     const showUpdate = () => setUpdateAvailable(true);
@@ -145,6 +153,10 @@ function App() {
   }, [exerciseLibrary, storageDamaged]);
 
   useEffect(() => {
+    if (!storageDamaged) saveLocally("beach-athlete-training-plans", trainingPlans, setCriticalNotice);
+  }, [trainingPlans, storageDamaged]);
+
+  useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(""), 4500);
     return () => window.clearTimeout(timer);
@@ -152,9 +164,10 @@ function App() {
 
   function exportData() {
     const backup = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       sessions,
       exerciseLibrary,
+      trainingPlans,
       volleyballDays,
       exportedAt: new Date().toISOString(),
     };
@@ -166,7 +179,7 @@ function App() {
   function exportRawData() {
     try {
       const rawLocalStorage = Object.fromEntries(
-        ["beach-athlete-diary", "beach-athlete-exercises", "beach-athlete-volleyball"]
+        ["beach-athlete-diary", "beach-athlete-exercises", "beach-athlete-volleyball", "beach-athlete-training-plans"]
           .map((key) => [key, localStorage.getItem(key)])
       );
       downloadJson(`beach-athlete-rohdaten-${today()}.json`, { rawLocalStorage });
@@ -194,6 +207,7 @@ function App() {
       const imported = {
         sessions: backup.sessions,
         exerciseLibrary: backup.exerciseLibrary,
+        trainingPlans: backup.trainingPlans ?? [],
         volleyballDays: backup.volleyballDays ?? [],
       };
       if (!isAthleteData(imported)) {
@@ -201,13 +215,14 @@ function App() {
       }
 
       const confirmed = window.confirm(
-        "Möchtest du Training, Übungsbibliothek sowie Beach- und Hallenvolleyball-Spieltage durch die Sicherung ersetzen?"
+        "Möchtest du Training, Trainingsvorlagen, Übungsbibliothek sowie Beach- und Hallenvolleyball-Spieltage durch die Sicherung ersetzen?"
       );
 
       if (!confirmed) return;
 
       setSessions(imported.sessions);
       setExerciseLibrary(imported.exerciseLibrary);
+      setTrainingPlans(imported.trainingPlans);
       setVolleyballDays(imported.volleyballDays);
       setNotice("Daten wurden erfolgreich wiederhergestellt.");
     } catch {
@@ -324,6 +339,7 @@ function App() {
       <div hidden={activeArea !== "training"}>
         <TrainingView sessions={sessions} setSessions={setSessions}
           exerciseLibrary={exerciseLibrary} setExerciseLibrary={setExerciseLibrary}
+          trainingPlans={trainingPlans} setTrainingPlans={setTrainingPlans}
           setNotice={setNotice} />
       </div>
 

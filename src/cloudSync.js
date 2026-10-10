@@ -152,6 +152,7 @@ export class CloudSync {
       sessions: remote.sessions,
       exerciseLibrary: remote.exerciseLibrary,
       volleyballDays: remote.volleyballDays,
+      trainingPlans: remote.trainingPlans ?? [],
     }
     this.data = data
     this.remember(remote.revision, dataHash(data))
@@ -220,6 +221,7 @@ export class CloudSync {
       sessions: this.data.sessions,
       exerciseLibrary: this.data.exerciseLibrary,
       volleyballDays: this.data.volleyballDays,
+      trainingPlans: this.data.trainingPlans ?? [],
     }
     if (!isAthleteData(payload)) {
       this.publish('error', 'Lokale Daten haben ein ungültiges Format. Bitte sichere sie als Datei.')
@@ -243,7 +245,7 @@ export class CloudSync {
         }
         transaction.set(reference, {
           ...payload,
-          schemaVersion: 1,
+          schemaVersion: 2,
           revision,
           updatedAt: serverTimestamp(),
         })
