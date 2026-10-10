@@ -1,7 +1,10 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import { installUpdate, isUpdateAvailable } from "./pwa.js";
+import { CloudSync } from "./cloudSync.js";
+import { isAthleteData } from "./syncPolicy.js";
+import CloudAccount from "./CloudAccount.jsx";
 
 
 
@@ -31,16 +34,24 @@ const EXERCISES = [
   { name: "Radfahren", type: "distance", category: "Ausdauer", muscleGroup: "Ausdauer" },
 ];
 
-function loadExerciseLibrary() {
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem("beach-athlete-exercises")
-    );
+const damagedStorageKeys = new Set();
 
-    return Array.isArray(saved) ? saved : EXERCISES;
+function loadStoredArray(key, fallback, validate) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && validate(parsed)) return parsed;
   } catch {
-    return EXERCISES;
+    // Keep the original value in localStorage for manual recovery.
   }
+  damagedStorageKeys.add(key);
+  return fallback;
+}
+
+function loadExerciseLibrary() {
+  return loadStoredArray("beach-athlete-exercises", EXERCISES,
+    (items) => isAthleteData({ sessions: [], exerciseLibrary: items, volleyballDays: [] }));
 }
 
 const TRAINING_CATEGORIES = [
@@ -86,6 +97,13 @@ const TRAINING_CATEGORIES = [
 ];
 
 const today = () => new Date().toLocaleDateString("sv-SE");
+const isRating = (value) => value !== "" && Number.isInteger(Number(value))
+  && Number(value) >= 1 && Number(value) <= 10;
+const allowedStrengths = {
+  openPlay: ["weaker3", "weaker2", "weaker1", "equal", "stronger1", "stronger2", "stronger3"],
+  testMatch: ["weaker2", "weaker1", "equal", "stronger1", "stronger2"],
+  tournament: ["weaker1", "equal", "stronger1"],
+};
 
 const newExercise = (name, type = "strength") => ({
   id: crypto.randomUUID(),
@@ -101,24 +119,13 @@ const newExercise = (name, type = "strength") => ({
 });
 
 function loadSessions() {
-  try {
-    const saved = JSON.parse(localStorage.getItem("beach-athlete-diary"));
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
-  }
+  return loadStoredArray("beach-athlete-diary", [],
+    (items) => isAthleteData({ sessions: items, exerciseLibrary: [], volleyballDays: [] }));
 }
 
 function loadVolleyballDays() {
-  try {
-    const saved = JSON.parse(
-      localStorage.getItem("beach-athlete-volleyball")
-    );
-
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
-  }
+  return loadStoredArray("beach-athlete-volleyball", [],
+    (items) => isAthleteData({ sessions: [], exerciseLibrary: [], volleyballDays: items }));
 }
 
 function saveLocally(key, value, onError) {
@@ -127,6 +134,18 @@ function saveLocally(key, value, onError) {
   } catch {
     onError("Speichern auf diesem Gerät fehlgeschlagen. Bitte exportiere deine Daten und prüfe den freien Speicherplatz.");
   }
+}
+
+function downloadJson(filename, value) {
+  const file = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(file);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 function getCalendarDays(calendarMonth) {
@@ -183,6 +202,34 @@ function App() {
   const [customMuscleGroup, setCustomMuscleGroup] = useState("Brust");
   const [notice, setNotice] = useState("");
   const [updateAvailable, setUpdateAvailable] = useState(isUpdateAvailable);
+  const storageDamaged = damagedStorageKeys.size > 0;
+  const [cloudState, setCloudState] = useState(() => storageDamaged
+    ? { status: "unavailable", email: "", message: "Lokale Daten sind beschädigt. Speicherung und Synchronisierung wurden zum Schutz angehalten." }
+    : { status: "loading", email: "", message: "" });
+  const cloudRef = useRef(null);
+
+  useEffect(() => {
+    if (storageDamaged) return;
+    const cloud = new CloudSync({
+      onState: setCloudState,
+      onApply: (data) => {
+        setSessions(data.sessions);
+        setExerciseLibrary(data.exerciseLibrary);
+        setVolleyballDays(data.volleyballDays);
+      },
+      defaultLibrary: EXERCISES,
+    });
+    cloudRef.current = cloud;
+    cloud.start();
+    return () => {
+      cloud.stop();
+      cloudRef.current = null;
+    };
+  }, [storageDamaged]);
+
+  useEffect(() => {
+    cloudRef.current?.updateData({ sessions, exerciseLibrary, volleyballDays });
+  }, [sessions, exerciseLibrary, volleyballDays]);
 
   useEffect(() => {
     const showUpdate = () => setUpdateAvailable(true);
@@ -191,40 +238,41 @@ function App() {
   }, []);
 
   useEffect(() => {
-    saveLocally("beach-athlete-diary", sessions, setNotice);
-  }, [sessions]);
+    if (!storageDamaged) saveLocally("beach-athlete-diary", sessions, setNotice);
+  }, [sessions, storageDamaged]);
 
   useEffect(() => {
-    saveLocally("beach-athlete-volleyball", volleyballDays, setNotice);
-  }, [volleyballDays]);
+    if (!storageDamaged) saveLocally("beach-athlete-volleyball", volleyballDays, setNotice);
+  }, [volleyballDays, storageDamaged]);
 
   useEffect(() => {
-    saveLocally("beach-athlete-exercises", exerciseLibrary, setNotice);
-  }, [exerciseLibrary]);
+    if (!storageDamaged) saveLocally("beach-athlete-exercises", exerciseLibrary, setNotice);
+  }, [exerciseLibrary, storageDamaged]);
 
   function exportData() {
     const backup = {
+      schemaVersion: 1,
       sessions,
       exerciseLibrary,
       volleyballDays,
       exportedAt: new Date().toISOString(),
     };
 
-    const file = new Blob(
-      [JSON.stringify(backup, null, 2)],
-      { type: "application/json" }
-    );
-
-    const url = URL.createObjectURL(file);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = `beach-athlete-backup-${today()}.json`;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    downloadJson(`beach-athlete-backup-${today()}.json`, backup);
     setNotice("Datensicherung wurde heruntergeladen.");
+  }
+
+  function exportRawData() {
+    try {
+      const rawLocalStorage = Object.fromEntries(
+        ["beach-athlete-diary", "beach-athlete-exercises", "beach-athlete-volleyball"]
+          .map((key) => [key, localStorage.getItem(key)])
+      );
+      downloadJson(`beach-athlete-rohdaten-${today()}.json`, { rawLocalStorage });
+      setNotice("Rohdaten wurden heruntergeladen. Bitte bewahre diese Datei auf.");
+    } catch {
+      setNotice("Rohdaten konnten nicht gelesen werden. Bitte schließe die App nicht und kontaktiere mich.");
+    }
   }
 
   async function importData(event) {
@@ -232,14 +280,22 @@ function App() {
 
     if (!file) return;
 
+    if (storageDamaged) {
+      setNotice("Import ist angehalten, bis die beschädigten lokalen Daten gesichert und geprüft wurden.");
+      event.target.value = "";
+      return;
+    }
+
     try {
       const content = await file.text();
       const backup = JSON.parse(content);
 
-      if (
-        !Array.isArray(backup.sessions) ||
-        !Array.isArray(backup.exerciseLibrary)
-      ) {
+      const imported = {
+        sessions: backup.sessions,
+        exerciseLibrary: backup.exerciseLibrary,
+        volleyballDays: backup.volleyballDays ?? [],
+      };
+      if (!isAthleteData(imported)) {
         throw new Error("Ungültige Sicherungsdatei");
       }
 
@@ -249,11 +305,9 @@ function App() {
 
       if (!confirmed) return;
 
-      setSessions(backup.sessions);
-      setExerciseLibrary(backup.exerciseLibrary);
-      setVolleyballDays(
-        Array.isArray(backup.volleyballDays) ? backup.volleyballDays : []
-      );
+      setSessions(imported.sessions);
+      setExerciseLibrary(imported.exerciseLibrary);
+      setVolleyballDays(imported.volleyballDays);
       setNotice("Daten wurden erfolgreich wiederhergestellt.");
     } catch {
       setNotice(
@@ -297,6 +351,13 @@ function App() {
 
   function addVolleyballSet() {
     if (!hasAvailableBeachDate) return;
+    if (!allowedStrengths[volleyballType]?.includes(volleyballSetDraft.opponentStrength)
+      || !isRating(volleyballSets.length === 0 ? volleyballFitness : volleyballSetDraft.fitness)
+      || !isRating(volleyballSetDraft.intensity)
+      || !isRating(volleyballSetDraft.technique)) {
+      setNotice("Bitte gib gültige Werte von 1 bis 10 und eine passende Gegnerstärke ein.");
+      return;
+    }
 
     const newSet = {
       id: crypto.randomUUID(),
@@ -333,6 +394,17 @@ function App() {
       )
     ) {
       setNotice("Für dieses Datum existiert bereits ein Spieltag.");
+      return;
+    }
+    if (!allowedStrengths[volleyballType]
+      || volleyballSets.length === 0
+      || !volleyballSets.at(-1).isLastSet
+      || !isRating(volleyballFitness)
+      || !isRating(volleyballFatigue)
+      || (volleyballTournamentPlace !== ""
+        && (!Number.isInteger(Number(volleyballTournamentPlace))
+          || Number(volleyballTournamentPlace) < 1))) {
+      setNotice("Bitte prüfe Spieltagstyp, Sätze und Zahlenwerte vor dem Speichern.");
       return;
     }
     const newDay = {
@@ -678,6 +750,20 @@ function App() {
         </button>
 
       </nav>
+
+      <button type="button" className="sync-status"
+        onClick={() => {
+          setActiveArea("training");
+          window.setTimeout(() => document.getElementById("cloud-account")?.scrollIntoView({ behavior: "smooth" }), 0);
+        }}
+        aria-label="Synchronisierungsstatus anzeigen">
+        {cloudState.status === "ready" ? "☁ Cloud aktuell" :
+          cloudState.status === "pending" || cloudState.status === "saving" ? "☁ Synchronisierung läuft" :
+            cloudState.status === "signedOut" ? "◌ Nur auf diesem Gerät" :
+              cloudState.status === "conflict" ? "⚠ Datenkonflikt prüfen" :
+                cloudState.status === "offline" ? "◌ Cloud offline" :
+                  cloudState.status === "unavailable" || cloudState.status === "error" ? "⚠ Daten prüfen" : "◌ Cloud prüfen"}
+      </button>
 
       {updateAvailable && (
         <div className="update-notice" role="status">
@@ -1384,6 +1470,20 @@ function App() {
                 <h2>Datensicherung</h2>
               </div>
             </div>
+
+            <CloudAccount
+              state={cloudState}
+              onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}
+              onRetry={() => cloudRef.current?.retry()}
+              onExport={exportData}
+            />
+
+            {storageDamaged && (
+              <div className="cloud-conflict" role="alert">
+                <p>Lokale Daten konnten nicht gelesen werden. Sie wurden nicht überschrieben. Exportiere die Rohdaten und bewahre die Datei auf.</p>
+                <button className="secondary-button" type="button" onClick={exportRawData}>Rohdaten exportieren</button>
+              </div>
+            )}
 
             <p>
               Sichere deine Trainingshistorie und Übungsbibliothek

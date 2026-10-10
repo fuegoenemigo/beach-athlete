@@ -23,7 +23,7 @@ npm.cmd run build
 npm.cmd run lint
 ```
 
-Die App speichert Training, Übungsbibliothek und Beach-Spieltage in `localStorage`. Backups lassen sich im Trainingsbereich als JSON exportieren und importieren. Unterschiedliche Browser oder Adressen teilen diesen Speicher nicht automatisch.
+Die App speichert Training, Übungsbibliothek und Beach-Spieltage weiterhin sofort in `localStorage`. Backups lassen sich im Trainingsbereich als JSON exportieren und importieren. Nach Anmeldung mit einem persönlichen E-Mail/Passwort-Konto synchronisiert sie dieselben Rohdaten zusätzlich mit Firestore. Bei gleichzeitigen Änderungen auf zwei Geräten fragt sie, welche Version erhalten bleiben soll; vor der Entscheidung kann die lokale Version exportiert werden.
 
 ## GitHub Pages und iPhone
 
@@ -33,10 +33,12 @@ Auf GitHub Free benötigt Pages ein öffentliches Repository. Der Programmcode u
 
 Auf dem iPhone die HTTPS-Adresse in Safari öffnen und über **Teilen → Zum Home-Bildschirm** hinzufügen. Nach dem ersten vollständigen Laden sollten die App-Dateien offline bereitstehen. Diese Funktion und die iOS-Bedienung müssen noch auf einem echten iPhone geprüft werden.
 
-Vor einem Wechsel von der lokalen Entwicklungsadresse oder einem anderen Browser zur GitHub-Pages-Adresse ein JSON-Backup exportieren und dort importieren. Bis die Firebase-Anmeldung und Datensynchronisierung in der App implementiert sind, findet **keine automatische Synchronisierung** statt. Das Installieren der App allein überträgt keine Daten zwischen Adressen oder Geräten.
+Vor dem ersten Gerätewechsel auf dem Gerät mit den bisherigen Einträgen ein JSON-Backup exportieren. Danach **auf diesem Gerät und unter der bisherigen Adresse** im Bereich „Datensicherung“ ein persönliches Konto erstellen oder anmelden und warten, bis „Cloud aktuell“ angezeigt wird. Erst dann auf dem iPhone die Pages-Adresse öffnen und sich mit demselben Konto anmelden. Ein Browser auf einer anderen Adresse hat zunächst einen eigenen lokalen Speicher; das Backup bleibt deshalb eine zusätzliche Absicherung.
+
+Offline bleiben vorhandene Daten und Eingaben auf dem jeweiligen Gerät nutzbar. Die Cloud-Synchronisierung benötigt wieder Internet. Vor dem Wechsel oder Löschen eines Geräts auf „Cloud aktuell“ warten und sicherheitshalber ein Backup exportieren. Ein echter iPhone-Test für Homescreen, Flugmodus, Neustart, Eingabe und Update steht noch aus.
 
 ## Firebase: Infrastruktur eingerichtet
 
 Firebase-Projekt: `beach-athlete-fuegoenemigo`; Web-App: `Beach Athlete Web`. Die kostenlose Firestore-Standarddatenbank wurde beim ersten Deployment in `nam5` (USA) angelegt. Die Firestore-Regeln unter `firestore.rules` und der E-Mail/Passwort-Anbieter aus `firebase.json` sind veröffentlicht. Die Web-Konfiguration liegt lokal in der ignorierten `.env.local` und als GitHub-Repository-Variablen für den Pages-Build vor.
 
-Die Regeln erlauben Lese- und Schreibzugriff nur dem angemeldeten Besitzer unter `users/<uid>/`. Die App verwendet Firebase aktuell noch nicht zur Anmeldung oder Synchronisierung: Training, Übungsbibliothek und Spieltage bleiben vorerst ausschließlich im lokalen Browserspeicher. Migration und Synchronisierung müssen implementiert und geprüft werden, bevor ein Gerätewechsel ohne JSON-Backup möglich ist.
+Die Regeln erlauben Lese- und Schreibzugriff nur dem angemeldeten Besitzer unter `users/<uid>/`. Die App synchronisiert Training, Übungsbibliothek und Beach-Spieltage in einem versionierten Dokument je Konto. Sie übernimmt vorhandene lokale Daten beim ersten Login, lädt auf einem neuen Gerät den Cloud-Stand und hält bei konkurrierenden Änderungen zur Auswahl an. Ein Testkonto hat Anmeldung sowie erlaubte und verweigerte Firestore-Zugriffe erfolgreich geprüft; die Ende-zu-Ende-Bedienung auf dem iPhone muss noch mit dem persönlichen Konto geprüft werden.

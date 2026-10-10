@@ -452,6 +452,42 @@ input[type="date"] {
   font-size: 0.9rem;
 }
 
+.cloud-account {
+  margin: 0 0 24px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--panel-light);
+}
+
+.cloud-account h3 { margin: 0 0 8px; }
+.cloud-account p { line-height: 1.5; }
+.cloud-account form { display: grid; gap: 8px; }
+.cloud-account .field { width: 100%; }
+.cloud-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.cloud-actions button { min-height: 44px; }
+.cloud-conflict { border-top: 1px solid var(--border); margin-top: 16px; }
+.text-button {
+  min-height: 44px;
+  padding: 8px 4px;
+  border: 0;
+  background: none;
+  color: var(--green);
+  text-decoration: underline;
+}
+
+.sync-status {
+  display: block;
+  min-height: 44px;
+  margin: 8px 0 14px auto;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .app-footer {
   padding: 18px 0 8px;
   color: #667168;
