@@ -27,7 +27,7 @@ Die App speichert Training, Übungsbibliothek und Beach-Spieltage in `localStora
 
 ## GitHub Pages und iPhone
 
-Die GitHub-Actions-Datei `.github/workflows/pages.yml` baut und veröffentlicht die App bei einem Push auf `main`. Das lokale Git-Repository ist angelegt; GitHub-Konto, Remote-Repository und Veröffentlichung fehlen noch. Nach der Anmeldung werden das Repository erstellt, die Dateien hochgeladen und unter **Settings → Pages → Build and deployment** die Quelle **GitHub Actions** aktiviert. Für ein normales Projekt-Repository verwendet der Build automatisch den Pfad `/<Repositoryname>/`.
+Die GitHub-Actions-Datei `.github/workflows/pages.yml` baut und veröffentlicht die App bei einem Push auf `main`. Das Repository ist [fuegoenemigo/beach-athlete](https://github.com/fuegoenemigo/beach-athlete), die veröffentlichte App ist unter [fuegoenemigo.github.io/beach-athlete](https://fuegoenemigo.github.io/beach-athlete/) erreichbar. Die Pages-Quelle ist **GitHub Actions**. Der Build verwendet den Pfad `/<Repositoryname>/`.
 
 Auf GitHub Free benötigt Pages ein öffentliches Repository. Der Programmcode und die App-Adresse sind dann öffentlich erreichbar. Persönliche Projektnotizen (`docs/`), lokale Firebase-Konfiguration und exportierte Backups sind vom Git-Upload ausgeschlossen. Deine späteren Trainingsdaten dürfen ausschließlich unter deinem angemeldeten Firebase-Benutzer gespeichert werden.
 
