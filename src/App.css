@@ -529,6 +529,18 @@ input[type="date"] {
   font-size: 0.9rem;
 }
 
+.transient-notice {
+  animation: notice-fade-out 500ms ease-in 4s forwards;
+}
+
+@keyframes notice-fade-out {
+  to { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transient-notice { animation: none; }
+}
+
 .cloud-account {
   margin: 0 0 24px;
   padding: 18px;

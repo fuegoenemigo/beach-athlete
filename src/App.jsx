@@ -253,6 +253,7 @@ function App() {
   const [customExercise, setCustomExercise] = useState("");
   const [customMuscleGroup, setCustomMuscleGroup] = useState("Brust");
   const [notice, setNotice] = useState("");
+  const [criticalNotice, setCriticalNotice] = useState("");
   const [updateAvailable, setUpdateAvailable] = useState(isUpdateAvailable);
   const storageDamaged = damagedStorageKeys.size > 0;
   const [cloudState, setCloudState] = useState(() => storageDamaged
@@ -290,16 +291,22 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!storageDamaged) saveLocally("beach-athlete-diary", sessions, setNotice);
+    if (!storageDamaged) saveLocally("beach-athlete-diary", sessions, setCriticalNotice);
   }, [sessions, storageDamaged]);
 
   useEffect(() => {
-    if (!storageDamaged) saveLocally("beach-athlete-volleyball", volleyballDays, setNotice);
+    if (!storageDamaged) saveLocally("beach-athlete-volleyball", volleyballDays, setCriticalNotice);
   }, [volleyballDays, storageDamaged]);
 
   useEffect(() => {
-    if (!storageDamaged) saveLocally("beach-athlete-exercises", exerciseLibrary, setNotice);
+    if (!storageDamaged) saveLocally("beach-athlete-exercises", exerciseLibrary, setCriticalNotice);
   }, [exerciseLibrary, storageDamaged]);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(""), 4500);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
 
   function exportData() {
     const backup = {
@@ -323,7 +330,7 @@ function App() {
       downloadJson(`beach-athlete-rohdaten-${today()}.json`, { rawLocalStorage });
       setNotice("Rohdaten wurden heruntergeladen. Bitte bewahre diese Datei auf.");
     } catch {
-      setNotice("Rohdaten konnten nicht gelesen werden. Bitte schließe die App nicht und kontaktiere mich.");
+      setCriticalNotice("Rohdaten konnten nicht gelesen werden. Bitte schließe die App nicht und kontaktiere mich.");
     }
   }
 
@@ -333,7 +340,7 @@ function App() {
     if (!file) return;
 
     if (storageDamaged) {
-      setNotice("Import ist angehalten, bis die beschädigten lokalen Daten gesichert und geprüft wurden.");
+      setCriticalNotice("Import ist angehalten, bis die beschädigten lokalen Daten gesichert und geprüft wurden.");
       event.target.value = "";
       return;
     }
@@ -765,12 +772,13 @@ function App() {
 
   function selectArea(area) {
     if (area === "home") setHomeViewKey((key) => key + 1);
+    setNotice("");
     setActiveArea(area);
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   return (
-    <main className="app">
+    <main className="app" onClickCapture={() => { if (notice) setNotice(""); }}>
       <header className="app-header">
         <div>
           <p className="eyebrow">DEIN TRAINING. DEINE ENTWICKLUNG.</p>
@@ -854,7 +862,8 @@ function App() {
         </div>
       )}
 
-      {notice && <p className="notice-message" role="status">{notice}</p>}
+      {criticalNotice && <p className="notice-message" role="alert">{criticalNotice}</p>}
+      {notice && <p className="notice-message transient-notice" role="status">{notice}</p>}
 
       {activeArea === "home" && <HomeView key={homeViewKey} />}
 
