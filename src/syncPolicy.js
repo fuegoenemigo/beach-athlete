@@ -5,18 +5,33 @@ export function isVolleyballDateTaken(days, date) {
     && (day.type === 'beach' || day.type === 'indoor'))
 }
 
-function isIndoorDay(day) {
-  if (day.gameType !== 'matchDay' || !isRating(day.fitness) || !isRating(day.endFatigue)
+function isGameDay(day) {
+  const tournament = day.gameType === 'tournament'
+  const regular = day.type === 'indoor' ? day.gameType === 'matchDay'
+    : day.gameType === 'openPlay' || day.gameType === 'testMatch'
+  if ((!tournament && !regular) || !isRating(day.fitness)
+    || (!tournament && !isRating(day.endFatigue))
     || !Array.isArray(day.games) || day.games.length === 0
     || !day.sets.every((set) => set && typeof set.id === 'string'
       && typeof set.gameId === 'string' && isRating(set.fitness)
       && isRating(set.intensity) && isRating(set.technique)
       && strengthOptions.includes(set.opponentStrength) && typeof set.won === 'boolean')) return false
+  if (tournament) {
+    if (typeof day.tournamentName !== 'string' || !day.tournamentName.trim()
+      || typeof day.tournamentLocation !== 'string' || !day.tournamentLocation.trim()
+      || !['ongoing', 'pendingPlacement', 'completed'].includes(day.tournamentStatus)) return false
+    const completed = day.tournamentStatus === 'completed'
+    if (completed !== (Number.isInteger(day.tournamentPlace) && day.tournamentPlace >= 1)
+      || (completed ? !isRating(day.endFatigue) : day.endFatigue !== null)
+      || day.games.filter((game) => game.isLastGame).length !== (day.tournamentStatus === 'ongoing' ? 0 : 1)
+      || (day.tournamentStatus !== 'ongoing' && !day.games.at(-1)?.isLastGame)) return false
+  }
   const setIds = new Set(day.sets.map((set) => set?.id))
   const assignedIds = day.games.flatMap((game) => Array.isArray(game?.setIds) ? game.setIds : [])
   return day.games.every((game) => game && typeof game.id === 'string'
     && typeof game.opponent === 'string'
-    && Array.isArray(game.setIds) && game.setIds.length >= 1 && game.setIds.length <= 5
+    && Array.isArray(game.setIds) && game.setIds.length >= 1
+    && game.setIds.length <= (day.type === 'beach' ? 3 : 5)
     && game.setIds.every((id) => setIds.has(id)
       && day.sets.find((set) => set?.id === id)?.gameId === game.id))
     && assignedIds.length === day.sets.length
@@ -36,7 +51,7 @@ export function isAthleteData(data) {
     && data.volleyballDays.every((item) => item && typeof item === 'object'
       && typeof item.id === 'string' && typeof item.date === 'string'
       && Array.isArray(item.sets)
-      && (item.type !== 'indoor' || isIndoorDay(item)))
+      && (item.games ? isGameDay(item) : item.type !== 'indoor'))
 }
 
 export function isRemoteData(data) {

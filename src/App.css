@@ -305,6 +305,16 @@ textarea:focus-visible {
   background: #514028;
 }
 
+.last-game-button {
+  border-color: #8fb89b;
+  color: #e4f4e7;
+  background: #244331;
+}
+
+.last-game-button:hover {
+  background: #315941;
+}
+
 input[type="date"] {
   color-scheme: dark;
 }

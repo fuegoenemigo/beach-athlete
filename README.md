@@ -28,9 +28,9 @@ Die App speichert Training, Übungsbibliothek sowie Beach- und Hallen-Spieltage 
 
 Beim Start öffnet sich die Startseite. Sie zeigt einen anklickbaren Monatskalender sowie Platzhalter für Statistiken und die Spielerkarte. Diese Vorschauen enthalten bewusst noch keine berechneten Werte. Über die vier Reiter am unteren Bildschirmrand sind Startseite, Beachvolleyball, Hallenvolleyball und Training erreichbar.
 
-In den Volleyball-Kalendern ist ein Datum nur für einen Beach- oder Hallen-Spieltag verfügbar. Trainingseinheiten können am selben Datum weiterhin stattfinden. Ein Hallen-Spieltag kann mehrere Spiele enthalten; jedes Spiel enthält einen bis fünf Sätze mit eigenen Bewertungen. Hallen-Turniere folgen später.
+In den Volleyball-Kalendern ist ein Datum nur für einen Beach- oder Hallen-Spieltag verfügbar. Trainingseinheiten können am selben Datum weiterhin stattfinden. Ein Beach-Spieltag kann mehrere Spiele mit je bis zu drei Sätzen enthalten; in der Halle sind es bis zu fünf Sätze pro Spiel. Bei Turnieren werden Name und Austragungsort erfasst. Jedes Turnierspiel wird sofort gespeichert, sodass sich am selben Tag nach erneutem Öffnen weitere Spiele ergänzen lassen. Erst wenn das letzte Spiel markiert wurde, fragt die App nach Platzierung und Erschöpfung.
 
-Bei Beach-Testspielen wird der Gegner pro Satz erfasst. Für ältere Spieltage mit nur einem gemeinsamen Gegnernamen kann der Gegner in den Satzdetails nachgetragen werden; unterschiedliche frühere Gegner lassen sich aus dem alten Eintrag nicht automatisch ableiten.
+Bei neuen Beach-Testspielen wird der Gegner pro Spiel erfasst. Für ältere Spieltage mit nur einem gemeinsamen Gegnernamen kann der Gegner weiterhin in den Satzdetails nachgetragen werden; unterschiedliche frühere Gegner lassen sich aus dem alten Eintrag nicht automatisch ableiten.
 
 ## GitHub Pages und iPhone
 
@@ -48,4 +48,4 @@ Offline bleiben vorhandene Daten und Eingaben auf dem jeweiligen Gerät nutzbar.
 
 Firebase-Projekt: `beach-athlete-fuegoenemigo`; Web-App: `Beach Athlete Web`. Die kostenlose Firestore-Standarddatenbank wurde beim ersten Deployment in `nam5` (USA) angelegt. Die Firestore-Regeln unter `firestore.rules` und der E-Mail/Passwort-Anbieter aus `firebase.json` sind veröffentlicht. Die Web-Konfiguration liegt lokal in der ignorierten `.env.local` und als GitHub-Repository-Variablen für den Pages-Build vor.
 
-Die Regeln erlauben Lese- und Schreibzugriff nur dem angemeldeten Besitzer unter `users/<uid>/`. Die App synchronisiert Training, Übungsbibliothek und Beach-Spieltage in einem versionierten Dokument je Konto. Sie übernimmt vorhandene lokale Daten beim ersten Login, lädt auf einem neuen Gerät den Cloud-Stand und hält bei konkurrierenden Änderungen zur Auswahl an. Ein Testkonto hat Anmeldung sowie erlaubte und verweigerte Firestore-Zugriffe erfolgreich geprüft; die Datenübernahme und Synchronisierung wurden zusätzlich mit dem persönlichen Konto auf dem iPhone bestätigt.
+Die Regeln erlauben Lese- und Schreibzugriff nur dem angemeldeten Besitzer unter `users/<uid>/`. Die App synchronisiert Training, Übungsbibliothek sowie Beach- und Hallen-Spieltage in einem versionierten Dokument je Konto. Sie übernimmt vorhandene lokale Daten beim ersten Login, lädt auf einem neuen Gerät den Cloud-Stand und hält bei konkurrierenden Änderungen zur Auswahl an. Ein Testkonto hat Anmeldung sowie erlaubte und verweigerte Firestore-Zugriffe erfolgreich geprüft; die Datenübernahme und Synchronisierung wurden zusätzlich mit dem persönlichen Konto auf dem iPhone bestätigt.
