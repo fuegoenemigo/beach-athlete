@@ -33,7 +33,7 @@ Auf GitHub Free benötigt Pages ein öffentliches Repository. Der Programmcode u
 
 Auf dem iPhone die HTTPS-Adresse in Safari öffnen und über **Teilen → Zum Home-Bildschirm** hinzufügen. Nach dem ersten vollständigen Laden sollten die App-Dateien offline bereitstehen. Diese Funktion und die iOS-Bedienung müssen noch auf einem echten iPhone geprüft werden.
 
-Vor einem Wechsel von der lokalen Entwicklungsadresse oder einem anderen Browser zur GitHub-Pages-Adresse ein JSON-Backup exportieren und dort importieren. Bis Firebase eingerichtet ist, findet **keine automatische Synchronisierung** statt. Das Installieren der App allein überträgt keine Daten zwischen Adressen oder Geräten.
+Vor einem Wechsel von der lokalen Entwicklungsadresse oder einem anderen Browser zur GitHub-Pages-Adresse ein JSON-Backup exportieren und dort importieren. Bis die Firebase-Anmeldung und Datensynchronisierung in der App implementiert sind, findet **keine automatische Synchronisierung** statt. Das Installieren der App allein überträgt keine Daten zwischen Adressen oder Geräten.
 
 ## Firebase: Infrastruktur eingerichtet
 
