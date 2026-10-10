@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { isVolleyballDateTaken } from "./syncPolicy.js";
 import { appendTournamentGame, finishTournament } from "./tournament.js";
+import { gameStatus, isCompletedGame } from "./gameRules.js";
 import { beachSetOpponent } from "./beachOpponents.js";
 import { RatingStepper, SetResultHeading, StrengthStepper } from "./VolleyballInputs.jsx";
 import { isRating, strengthLabels, strengthOptions } from "./volleyballValues.js";
@@ -64,6 +65,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const dateAvailable = Boolean(date) && (!isVolleyballDateTaken(volleyballDays, date)
     || activeTournament?.date === date);
   const allowedStrengths = beach ? beachStrengths[gameType] ?? strengthOptions : strengthOptions;
+  const currentGameStatus = gameStatus(gameSets, sport);
 
   function resetGame() {
     setEditingGame(false);
@@ -113,7 +115,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   }
 
   function addSet() {
-    if (gameSets.length >= maxSets) return;
+    if (gameSets.length >= maxSets || currentGameStatus.finished) return;
     if (beach && gameType === "testMatch" && !opponent.trim()) {
       setNotice("Bitte gib den Gegner für dieses Testspiel ein.");
       return;
@@ -135,8 +137,8 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   }
 
   function completeGame(isLastGame = false) {
-    if (!gameSets.length) {
-      setNotice("Füge für dieses Spiel mindestens einen Satz hinzu.");
+    if (!isCompletedGame(gameSets, sport)) {
+      setNotice(`Dieses Spiel endet erst nach ${currentGameStatus.winsNeeded} gewonnenen oder verlorenen Sätzen.`);
       return;
     }
     const game = { id: crypto.randomUUID(), opponent: opponent.trim(), sets: gameSets };
@@ -173,7 +175,8 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   }
 
   function saveDay() {
-    if (!dateAvailable || !games.length || editingGame || !isRating(fitness) || !isRating(fatigue)) {
+    if (!dateAvailable || !games.length || editingGame || !isRating(fitness) || !isRating(fatigue)
+      || games.some((game) => !isCompletedGame(game.sets, sport))) {
       setNotice("Bitte schließe mindestens ein Spiel ab und prüfe Datum und Tageswerte.");
       return;
     }
@@ -344,7 +347,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                   }}>Letzten Satz entfernen</button>
                 </div>}
 
-                {gameSets.length < maxSets && <>
+                {!currentGameStatus.finished && gameSets.length < maxSets && <>
                   <h4>Satz {gameSets.length + 1}</h4>
                   {gameSets.length === 0 && <StrengthStepper value={setDraft.opponentStrength}
                     options={allowedStrengths}
@@ -362,10 +365,10 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                   </select>
                   <button type="button" className="secondary-button" onClick={addSet}>＋ Satz hinzufügen</button>
                 </>}
-                {gameSets.length === maxSets && <p className="helper-text">
-                  {maxSets} Sätze erfasst – dieses Spiel kann nun abgeschlossen werden.
+                {currentGameStatus.finished && <p className="helper-text" role="status">
+                  Spiel beendet: {currentGameStatus.wins}:{currentGameStatus.losses} Sätze.
                 </p>}
-                {gameSets.length > 0 && <>
+                {currentGameStatus.finished && <>
                   <button type="button" className="last-set-button" onClick={() => completeGame(false)}>
                     {gameType === "tournament" ? "✓ Spiel speichern · Turnier fortsetzen" : "✓ Spiel abschließen"}
                   </button>

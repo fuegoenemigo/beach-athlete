@@ -1,4 +1,5 @@
 import { isRating, strengthOptions } from './volleyballValues.js'
+import { isCompletedGame } from './gameRules.js'
 
 export function appendTournamentGame(day, details, game, isLastGame) {
   if (day && (day.gameType !== 'tournament' || day.type !== details.sport
@@ -11,7 +12,7 @@ export function appendTournamentGame(day, details, game, isLastGame) {
   const maxSets = details.sport === 'beach' ? 3 : 5
   if (!['beach', 'indoor'].includes(details.sport) || !details.date
     || (!day && (!details.name.trim() || !details.location.trim() || !isRating(details.fitness)))
-    || !Array.isArray(game.sets) || game.sets.length < 1 || game.sets.length > maxSets
+    || !isCompletedGame(game.sets, details.sport) || game.sets.length > maxSets
     || typeof game.opponent !== 'string'
     || game.sets.some((set) => !isRating(set.fitness) || !isRating(set.intensity)
       || !isRating(set.technique) || !strengthOptions.includes(set.opponentStrength)
