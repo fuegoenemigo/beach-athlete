@@ -76,3 +76,17 @@ test('indoor games keep their own sets and cannot exceed five sets', () => {
     games: [{ ...day.games[0], setIds: ['set-0', 'set-0'] }],
   }] }), false)
 })
+
+test('legacy and new training entries on the same date remain cloud-compatible', () => {
+  const data = { ...empty(), sessions: [
+    { id: 'old', date: '2026-10-10', title: 'Krafttraining', category: 'Krafttraining',
+      exercises: [{ id: 'bench', name: 'Bankdrücken', type: 'strength',
+        sets: '3', reps: '10', weight: '60' }] },
+    { id: 'new', date: '2026-10-10', title: 'Mobility', category: 'Mobility',
+      durationMinutes: '30', intensity: '3', notes: 'Beweglichkeit', status: 'completed',
+      exercises: [] },
+  ] }
+  assert.equal(isAthleteData(data), true)
+  assert.equal(chooseInitialSync(data, null, null, 'user-1', library), 'upload')
+  assert.equal(dataHash(JSON.parse(JSON.stringify(data))), dataHash(data))
+})

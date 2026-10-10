@@ -1,0 +1,98 @@
+.training-view {
+  display: grid;
+  gap: 18px;
+}
+
+.training-view .diary-intro,
+.training-view .diary-panel {
+  margin: 0;
+}
+
+.training-session-basics,
+.training-activities,
+.training-add-activity {
+  margin-top: 24px;
+}
+
+.training-activities h3 {
+  margin: 0 0 12px;
+}
+
+.training-activity {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #111a13;
+}
+
+.training-activity h4 {
+  margin: 5px 0 0;
+  font-size: 1rem;
+}
+
+.training-activity-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.training-field {
+  display: grid;
+  align-content: end;
+  gap: 7px;
+  color: #dbe2dc;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.training-add-activity,
+.training-library-list {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.training-finish-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.training-finish-actions button {
+  margin-top: 0;
+}
+
+.training-library summary {
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 750;
+}
+
+.training-library-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.training-library-item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.training-library-item span {
+  flex: 1;
+  min-width: 110px;
+}
+
+.training-library-item .text-button {
+  min-height: 36px;
+}
+
+@media (max-width: 370px) {
+  .training-activity-fields { grid-template-columns: 1fr; }
+}

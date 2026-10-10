@@ -31,7 +31,7 @@ function getMonthCells(date) {
   ]
 }
 
-export default function HomeView() {
+export default function HomeView({ children }) {
   const [selectedFeature, setSelectedFeature] = useState(null)
   const currentDate = new Date()
   const monthLabel = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(currentDate)
@@ -118,6 +118,7 @@ export default function HomeView() {
         </span>
         <span className="home-widget-note">Attribute und Bewertung gestalten wir gemeinsam.</span>
       </button>
+      {children}
     </div>
   )
 }
