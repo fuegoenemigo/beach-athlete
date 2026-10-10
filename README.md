@@ -26,6 +26,8 @@ npm.cmd test
 
 Die App speichert Training, Übungsbibliothek und Beach-Spieltage weiterhin sofort in `localStorage`. Backups lassen sich im Trainingsbereich als JSON exportieren und importieren. Nach Anmeldung mit einem persönlichen E-Mail/Passwort-Konto synchronisiert sie dieselben Rohdaten zusätzlich mit Firestore. Bei gleichzeitigen Änderungen auf zwei Geräten fragt sie, welche Version erhalten bleiben soll; vor der Entscheidung kann die lokale Version exportiert werden.
 
+Beim Start öffnet sich die Startseite. Sie zeigt einen anklickbaren Monatskalender sowie Platzhalter für Statistiken und die Spielerkarte. Diese Vorschauen enthalten bewusst noch keine berechneten Werte. Über die vier Reiter am unteren Bildschirmrand sind Startseite, Beachvolleyball, Hallenvolleyball und Training erreichbar.
+
 ## GitHub Pages und iPhone
 
 Die GitHub-Actions-Datei `.github/workflows/pages.yml` baut und veröffentlicht die App bei einem Push auf `main`. Das Repository ist [fuegoenemigo/beach-athlete](https://github.com/fuegoenemigo/beach-athlete), die veröffentlichte App ist unter [fuegoenemigo.github.io/beach-athlete](https://fuegoenemigo.github.io/beach-athlete/) erreichbar. Die Pages-Quelle ist **GitHub Actions**. Der Build verwendet den Pfad `/<Repositoryname>/`.

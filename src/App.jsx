@@ -5,6 +5,7 @@ import { installUpdate, isUpdateAvailable } from "./pwa.js";
 import { CloudSync } from "./cloudSync.js";
 import { isAthleteData } from "./syncPolicy.js";
 import CloudAccount from "./CloudAccount.jsx";
+import HomeView from "./HomeView.jsx";
 
 
 
@@ -165,7 +166,8 @@ function getCalendarDays(calendarMonth) {
 function App() {
   const [sessions, setSessions] = useState(loadSessions);
   const [volleyballDays, setVolleyballDays] = useState(loadVolleyballDays);
-  const [activeArea, setActiveArea] = useState("training");
+  const [activeArea, setActiveArea] = useState("home");
+  const [homeViewKey, setHomeViewKey] = useState(0);
   const [showVolleyballForm, setShowVolleyballForm] = useState(false);
   const [volleyballType, setVolleyballType] = useState("");
   const [selectedVolleyballDayId, setSelectedVolleyballDayId] = useState(null);
@@ -712,6 +714,12 @@ function App() {
     });
   }
 
+  function selectArea(area) {
+    if (area === "home") setHomeViewKey((key) => key + 1);
+    setActiveArea(area);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
   return (
     <main className="app">
       <header className="app-header">
@@ -723,30 +731,53 @@ function App() {
 
       </header>
 
-      <nav className="main-navigation">
+      <nav className="main-navigation" aria-label="Hauptnavigation">
+
+        <button
+          type="button"
+          className={activeArea === "home" ? "primary-button" : "secondary-button"}
+          aria-label="Startseite"
+          aria-pressed={activeArea === "home"}
+          onClick={() => selectArea("home")}
+        >
+          <span className="nav-icon" aria-hidden="true">🏠</span>
+          <span className="nav-label-long">Startseite</span>
+          <span className="nav-label-short">Start</span>
+        </button>
 
         <button
           type="button"
           className={activeArea === "beach" ? "primary-button" : "secondary-button"}
-          onClick={() => setActiveArea("beach")}
+          aria-label="Beachvolleyball"
+          aria-pressed={activeArea === "beach"}
+          onClick={() => selectArea("beach")}
         >
-          🏖️ Beachvolleyball
+          <span className="nav-icon" aria-hidden="true">🏖️</span>
+          <span className="nav-label-long">Beachvolleyball</span>
+          <span className="nav-label-short">Beach</span>
         </button>
 
         <button
           type="button"
           className={activeArea === "indoor" ? "primary-button" : "secondary-button"}
-          onClick={() => setActiveArea("indoor")}
+          aria-label="Hallenvolleyball"
+          aria-pressed={activeArea === "indoor"}
+          onClick={() => selectArea("indoor")}
         >
-          🏟️ Hallenvolleyball
+          <span className="nav-icon" aria-hidden="true">🏟️</span>
+          <span className="nav-label-long">Hallenvolleyball</span>
+          <span className="nav-label-short">Halle</span>
         </button>
 
         <button
           type="button"
           className={activeArea === "training" ? "primary-button" : "secondary-button"}
-          onClick={() => setActiveArea("training")}
+          aria-label="Training"
+          aria-pressed={activeArea === "training"}
+          onClick={() => selectArea("training")}
         >
-          Training
+          <span className="nav-icon" aria-hidden="true">💪</span>
+          <span>Training</span>
         </button>
 
       </nav>
@@ -775,6 +806,8 @@ function App() {
       )}
 
       {notice && <p className="notice-message" role="status">{notice}</p>}
+
+      {activeArea === "home" && <HomeView key={homeViewKey} />}
 
       {activeArea === "training" && (
         <>
