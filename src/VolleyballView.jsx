@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { isVolleyballDateTaken } from "./syncPolicy.js";
 import { appendTournamentGame, finishTournament } from "./tournament.js";
 import { appendRegularGame, finishRegularDay } from "./regularDay.js";
@@ -53,6 +53,9 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const [tournamentName, setTournamentName] = useState("");
   const [tournamentLocation, setTournamentLocation] = useState("");
   const [tournamentPlace, setTournamentPlace] = useState("");
+  const [showTournamentFieldErrors, setShowTournamentFieldErrors] = useState(false);
+  const tournamentNameRef = useRef(null);
+  const tournamentLocationRef = useRef(null);
   const [activeDayId, setActiveDayId] = useState(null);
   const [expandedDayId, setExpandedDayId] = useState(null);
   const [editingLegacySetId, setEditingLegacySetId] = useState(null);
@@ -86,6 +89,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     setTournamentName("");
     setTournamentLocation("");
     setTournamentPlace("");
+    setShowTournamentFieldErrors(false);
     setActiveDayId(null);
     resetGame();
     setNotice("");
@@ -103,6 +107,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     setTournamentName(day.tournamentName ?? "");
     setTournamentLocation(day.tournamentLocation ?? "");
     setTournamentPlace(String(day.tournamentPlace ?? ""));
+    setShowTournamentFieldErrors(false);
     setActiveDayId(day.id);
     resetGame();
     setShowForm(true);
@@ -115,8 +120,29 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`);
   }
 
+  function validateTournamentFields() {
+    if (gameType !== "tournament" || activeTournament) return true;
+    const missingName = !tournamentName.trim();
+    const missingLocation = !tournamentLocation.trim();
+    setShowTournamentFieldErrors(true);
+    if (missingName || missingLocation) {
+      setNotice(missingName && missingLocation
+        ? "Bitte gib Turniername und Austragungsort ein."
+        : `Bitte gib ${missingName ? "den Turniernamen" : "den Austragungsort"} ein.`);
+      (missingName ? tournamentNameRef : tournamentLocationRef).current?.focus();
+      return false;
+    }
+    if (!isRating(fitness)) {
+      setNotice("Bitte gib für die Tagesform einen Wert von 1 bis 10 ein.");
+      document.getElementById(`${sport}-day-fitness`)?.focus();
+      return false;
+    }
+    return true;
+  }
+
   function addSet() {
     if (gameSets.length >= maxSets || currentGameStatus.finished) return;
+    if (!validateTournamentFields()) return;
     if (beach && gameType === "testMatch" && !opponent.trim()) {
       setNotice("Bitte gib den Gegner für dieses Testspiel ein.");
       return;
@@ -138,6 +164,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   }
 
   function completeGame(isLastGame = false) {
+    if (!validateTournamentFields()) return;
     const endedEarly = !currentGameStatus.finished;
     if (!isRecordableGame(gameSets, sport, endedEarly)) {
       setNotice("Füge mindestens einen gültigen Satz hinzu, bevor du das Spiel speicherst.");
@@ -311,18 +338,37 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
 
           {gameType && <>
             {gameType === "tournament" && !activeTournament && <>
-              <label className="field-label" htmlFor={`${sport}-tournament-name`}>Turniername</label>
-              <input id={`${sport}-tournament-name`} className="field" value={tournamentName}
+              <label className="field-label" htmlFor={`${sport}-tournament-name`}>Turniername *</label>
+              <input id={`${sport}-tournament-name`} ref={tournamentNameRef} className="field"
+                value={tournamentName} required
+                aria-invalid={showTournamentFieldErrors && !tournamentName.trim()}
+                aria-describedby={showTournamentFieldErrors && !tournamentName.trim()
+                  ? `${sport}-tournament-name-error` : undefined}
                 onChange={(event) => setTournamentName(event.target.value)} placeholder="Name des Turniers" />
-              <label className="field-label" htmlFor={`${sport}-tournament-location`}>Austragungsort</label>
-              <input id={`${sport}-tournament-location`} className="field" value={tournamentLocation}
+              {showTournamentFieldErrors && !tournamentName.trim() &&
+                <p id={`${sport}-tournament-name-error`} className="field-error" role="alert">
+                  Bitte gib den Namen des Turniers ein.
+                </p>}
+              <label className="field-label" htmlFor={`${sport}-tournament-location`}>Austragungsort *</label>
+              <input id={`${sport}-tournament-location`} ref={tournamentLocationRef} className="field"
+                value={tournamentLocation} required
+                aria-invalid={showTournamentFieldErrors && !tournamentLocation.trim()}
+                aria-describedby={showTournamentFieldErrors && !tournamentLocation.trim()
+                  ? `${sport}-tournament-location-error` : undefined}
                 onChange={(event) => setTournamentLocation(event.target.value)} placeholder="Stadt oder Spielstätte" />
+              {showTournamentFieldErrors && !tournamentLocation.trim() &&
+                <p id={`${sport}-tournament-location-error`} className="field-error" role="alert">
+                  Bitte gib den Austragungsort ein.
+                </p>}
+              <p className="helper-text">* Pflichtfeld vor dem ersten Satz</p>
             </>}
             {gameType === "tournament" && activeTournament && <p>
               {activeTournament.tournamentName} · {activeTournament.tournamentLocation}
             </p>}
             {!activeDay && <RatingStepper id={`${sport}-day-fitness`}
               label="Wie fit warst du zu Beginn? (1–10)" value={fitness} onChange={setFitness} />}
+            {gameType === "tournament" && !activeDay && showTournamentFieldErrors && !isRating(fitness)
+              && <p className="field-error" role="alert">Bitte gib die Tagesform von 1 bis 10 ein.</p>}
 
             {activeDay?.games?.length > 0 &&
               <div className="volleyball-day-list">

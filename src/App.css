@@ -227,6 +227,17 @@ textarea:focus-visible {
   outline: none;
 }
 
+.field[aria-invalid="true"],
+.field[aria-invalid="true"]:focus {
+  border-color: #f27575;
+}
+
+.field-error {
+  margin: 7px 0 0;
+  color: #f5a7a7;
+  font-size: 0.82rem;
+}
+
 .field::placeholder {
   color: #68736a;
 }
