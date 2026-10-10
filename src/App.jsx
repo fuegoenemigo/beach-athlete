@@ -767,8 +767,8 @@ function App() {
 
       {updateAvailable && (
         <div className="update-notice" role="status">
-          <span>Neue Version verfügbar. Schließe offene Eingaben ab, bevor du aktualisierst.</span>
-          <button type="button" className="secondary-button" onClick={installUpdate}>
+          <span>Neue Version verfügbar. Speichere offene Eingaben, bevor du aktualisierst.</span>
+          <button type="button" className="secondary-button" onClick={installUpdate} aria-label="Neue App-Version installieren">
             Jetzt aktualisieren
           </button>
         </div>
