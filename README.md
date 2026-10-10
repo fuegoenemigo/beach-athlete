@@ -35,6 +35,8 @@ Auf dem iPhone die HTTPS-Adresse in Safari öffnen und über **Teilen → Zum Ho
 
 Vor einem Wechsel von der lokalen Entwicklungsadresse oder einem anderen Browser zur GitHub-Pages-Adresse ein JSON-Backup exportieren und dort importieren. Bis Firebase eingerichtet ist, findet **keine automatische Synchronisierung** statt. Das Installieren der App allein überträgt keine Daten zwischen Adressen oder Geräten.
 
-## Firebase: noch nicht eingerichtet
+## Firebase: Infrastruktur eingerichtet
 
-Es gibt noch kein Firebase-Projekt und keine Anmelde- oder Firestore-Anbindung. Die Firebase-SDK-Abhängigkeit, `.env.example`, `firebase.json` und `firestore.rules` sind vorbereitet. Die Regeln erlauben Lese- und Schreibzugriff nur dem angemeldeten Besitzer unter `users/<uid>/`. Nach der Anmeldung werden Projekt und Web-App angelegt, die Konfigurationswerte lokal und als GitHub-Variablen eingetragen, E-Mail/Passwort-Anmeldung und Cloud Firestore aktiviert, die Regeln veröffentlicht und erst dann Migration und Synchronisierung umgesetzt und geprüft.
+Firebase-Projekt: `beach-athlete-fuegoenemigo`; Web-App: `Beach Athlete Web`. Die kostenlose Firestore-Standarddatenbank wurde beim ersten Deployment in `nam5` (USA) angelegt. Die Firestore-Regeln unter `firestore.rules` und der E-Mail/Passwort-Anbieter aus `firebase.json` sind veröffentlicht. Die Web-Konfiguration liegt lokal in der ignorierten `.env.local` und als GitHub-Repository-Variablen für den Pages-Build vor.
+
+Die Regeln erlauben Lese- und Schreibzugriff nur dem angemeldeten Besitzer unter `users/<uid>/`. Die App verwendet Firebase aktuell noch nicht zur Anmeldung oder Synchronisierung: Training, Übungsbibliothek und Spieltage bleiben vorerst ausschließlich im lokalen Browserspeicher. Migration und Synchronisierung müssen implementiert und geprüft werden, bevor ein Gerätewechsel ohne JSON-Backup möglich ist.
