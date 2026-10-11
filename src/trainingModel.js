@@ -8,6 +8,12 @@ export const LEGACY_TRAINING_CATEGORIES = [
   'Core & Stabilität', 'Mobility', 'Sport',
 ]
 
+export const isOpenTraining = (session) => session?.status === 'ongoing'
+
+export function addTrainingIfNoOpen(sessions, session) {
+  return sessions.some(isOpenTraining) ? sessions : [...sessions, session]
+}
+
 export function canonicalCategory(category, subcategory = '') {
   if (['Sprungkraft & Explosivität', 'Schnelligkeit & Agilität'].includes(category))
     return 'Sprungkraft und Agilität'

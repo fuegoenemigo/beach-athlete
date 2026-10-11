@@ -4,7 +4,7 @@ import {
   createLoggedExercise, createTrainingSet, exerciseIdentity, hasLegacyValues,
   previousExercise, formatTrainingEntry, canonicalCategory,
   hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
-  finishTrainingExerciseEntries,
+  finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
 import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
@@ -35,6 +35,18 @@ test('a plan and separate measured sets stay valid for cloud sync', () => {
   assert.equal(exercise.entries[1].weightKg, '65')
   assert.equal(hasLegacyValues(exercise), false)
   assert.notEqual(dataHash(data), dataHash({ ...data, trainingPlans: [] }))
+})
+
+test('only one new training can remain open at a time without removing older data', () => {
+  const first = { id: 'first', status: 'ongoing', date: '2026-10-10', exercises: [] }
+  const second = { id: 'second', status: 'ongoing', date: '2026-10-11', exercises: [] }
+  const existing = [{ id: 'done', status: 'completed', exercises: [] }]
+  const withFirst = addTrainingIfNoOpen(existing, first)
+  assert.equal(withFirst.length, 2)
+  assert.equal(addTrainingIfNoOpen(withFirst, second), withFirst)
+  assert.equal(isOpenTraining(first), true)
+  assert.equal(isOpenTraining(existing[0]), false)
+  assert.equal(addTrainingIfNoOpen(existing, second).at(-1).id, 'second')
 })
 
 test('older sessions and backups remain readable without invented sets', () => {

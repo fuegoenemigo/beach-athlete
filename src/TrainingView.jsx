@@ -11,7 +11,7 @@ import {
   createLoggedExercise, createTrainingSet, hasLegacyValues,
   canonicalCategory,
   hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
-  finishTrainingExerciseEntries,
+  finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
 } from './trainingModel.js'
 import './TrainingView.css'
 
@@ -37,6 +37,36 @@ function ExercisePicker({ id, library, category, value, onChange }) {
   </select>
 }
 
+function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, onDelete }) {
+  const ongoing = isOpenTraining(session)
+  return <article className={`diary-panel training-session-card${ongoing ? ' training-session-open' : ''}`}>
+    <div className="volleyball-day-header">
+      <h3>{formatDate(session.date)}</h3>
+      <span>{session.exercises.length} Übungen</span>
+    </div>
+    <p className="training-session-category">{canonicalCategory(session.category, session.subcategory) || 'Training'}</p>
+    {planName && <p className="training-history-plan">Vorlage: {planName}</p>}
+    {ongoing && <>
+      <p className="training-open-hint">Diese Einheit ist noch nicht abgeschlossen.</p>
+      <button type="button" className="primary-button" onClick={onOpen}>Training fortsetzen</button>
+    </>}
+    <button type="button" className="secondary-button" aria-expanded={expanded} onClick={onToggle}>
+      {expanded ? 'Details schließen' : 'Details anzeigen'}
+    </button>
+    {expanded && <div className="training-session-details">
+      <TrainingHistoryDetails session={session} />
+      <div className="training-history-actions">
+        {!ongoing && <button type="button" className="secondary-button" onClick={onOpen}>
+          Training bearbeiten
+        </button>}
+        <button type="button" className="text-button" onClick={onDelete}>
+          {ongoing ? 'Offenes Training verwerfen' : 'Training löschen'}
+        </button>
+      </div>
+    </div>}
+  </article>
+}
+
 export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   setExerciseLibrary, trainingPlans, setTrainingPlans, setNotice, athleteProfile }) {
   const [selectedDate, setSelectedDate] = useState(today)
@@ -47,6 +77,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [planSearch, setPlanSearch] = useState('')
   const [activeSessionId, setActiveSessionId] = useState(null)
   const [expandedSessionId, setExpandedSessionId] = useState(null)
+  const [showPlans, setShowPlans] = useState(false)
+  const [showLibrary, setShowLibrary] = useState(false)
   const [flowStep, setFlowStep] = useState('exercise')
   const [flowMessage, setFlowMessage] = useState('')
   const [activeExerciseId, setActiveExerciseId] = useState(null)
@@ -79,6 +111,19 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const libraryGroups = groupsFor(visibleLibrary, libraryCategory).map(([group]) => group)
   const sortedSessions = [...sessions].sort((a, b) =>
     b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+  const openSessions = sortedSessions.filter(isOpenTraining)
+  const completedSessions = sortedSessions.filter((session) => !isOpenTraining(session))
+
+  function planNameFor(session) {
+    return session.planName || trainingPlans.find((plan) => plan.id === session.planId)?.name
+  }
+  function deleteSession(session) {
+    const label = isOpenTraining(session) ? 'Das offene Training' : `Training vom ${formatDate(session.date)}`
+    if (!window.confirm(`${label} wirklich löschen? Erfasste Werte gehen verloren.`)) return
+    setSessions((previous) => previous.filter((item) => item.id !== session.id))
+    setExpandedSessionId(null)
+    if (activeSessionId === session.id) closeTraining()
+  }
 
   function updateSession(changes) {
     setSessions((previous) => previous.map((session) => session.id === activeSessionId
@@ -101,6 +146,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     })
   }
   function openNewTraining(plan = null) {
+    if (openSessions.length) {
+      setNotice('Bitte setze zuerst dein offenes Training fort oder schließe es ab.'); return
+    }
     setPendingPlan(plan)
     setPlanSearch('')
     setCustomDate(false)
@@ -108,6 +156,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setNewSessionOpen(true)
   }
   function startSession(plan = null) {
+    if (openSessions.length) {
+      setNewSessionOpen(false)
+      setNotice('Es gibt bereits ein offenes Training. Bitte setze es zuerst fort.'); return
+    }
     const entryDate = customDate ? selectedDate : today()
     if (!entryDate) { setNotice('Bitte wähle ein Trainingsdatum.'); return }
     const exercises = plan ? exercisesFromPlan(plan) : []
@@ -119,7 +171,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       durationMinutes: '', intensity: '', notes: '', status: 'ongoing',
       exercises, createdAt: new Date().toISOString(),
     }
-    setSessions((previous) => [...previous, session])
+    setSessions((previous) => addTrainingIfNoOpen(previous, session))
     setNewSessionOpen(false)
     setPendingPlan(null)
     setActiveSessionId(session.id)
@@ -289,6 +341,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setNotice('Trainingseinheit abgeschlossen.')
   }
   function beginPlan(plan) {
+    setShowPlans(true)
     setPlanDraft(plan ? { ...plan,
       category: canonicalCategory(plan.category, plan.name),
       exercises: [...plan.exercises] }
@@ -419,10 +472,25 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       <p>Wähle deine Trainingsart und erfasse Übung für Übung deine tatsächlichen Werte.</p>
     </section>
 
+    {openSessions.length > 0 && <section className="diary-panel training-open-section">
+      <div className="section-heading"><div><p className="eyebrow">OFFENE EINHEIT</p>
+        <h2>{openSessions.length === 1 ? 'Training fortsetzen' : 'Offene Trainings fortsetzen'}</h2>
+      </div><span className="count-badge">{openSessions.length}</span></div>
+      <p className="helper-text">Schließe dein offenes Training ab oder verwirf es, bevor du eine neue Einheit startest.</p>
+      <div className="volleyball-day-list">{openSessions.map((session) => <TrainingSessionCard
+        key={session.id} session={session} planName={planNameFor(session)}
+        expanded={expandedSessionId === session.id}
+        onToggle={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
+        onOpen={() => openHistorySession(session)} onDelete={() => deleteSession(session)} />)}</div>
+    </section>}
+
     {!activeSession && <section className="diary-panel">
       <div className="section-heading"><div><p className="eyebrow">NEUE EINHEIT</p><h2>Training starten</h2></div></div>
-      <p className="helper-text">Erfasse eine freie Einheit oder suche beim Start nach einer passenden Vorlage.</p>
-      <button type="button" className="primary-button" onClick={() => openNewTraining()}>
+      <p className="helper-text">{openSessions.length
+        ? 'Eine neue Einheit ist verfügbar, sobald das offene Training abgeschlossen oder verworfen ist.'
+        : 'Erfasse eine freie Einheit oder suche beim Start nach einer passenden Vorlage.'}</p>
+      <button type="button" className="primary-button" disabled={openSessions.length > 0}
+        onClick={() => openNewTraining()}>
         ＋ Training hinzufügen
       </button>
     </section>}
@@ -473,7 +541,11 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         {customDate && <button type="button" className="text-button"
           onClick={() => setCustomDate(false)}>Wieder heute verwenden</button>}
       </details>
-      <button type="button" className="primary-button" onClick={() => startSession(pendingPlan)}>＋ Training starten</button>
+      {openSessions.length > 0 && <p className="training-open-hint" role="status">
+        Ein anderes Training ist noch offen. Schließe dieses Fenster und setze es oben fort.
+      </p>}
+      <button type="button" className="primary-button" disabled={openSessions.length > 0}
+        onClick={() => startSession(pendingPlan)}>＋ Training starten</button>
       {sessions.some((session) => session.date === (customDate ? selectedDate : today())) &&
         <p className="helper-text">An diesem Tag gibt es bereits Einheiten. Du kannst eine weitere beginnen oder unten eine öffnen.</p>}
       </section>
@@ -499,19 +571,25 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       onRecategorize={recategorizeSession} onClose={closeTraining}
       onCancel={cancelTraining} />
     </EntryWindow>}
-    {!activeSession && <details className="diary-panel training-plans">
-      <summary className="section-heading training-plans-summary">
-        <span><span className="eyebrow">WIEDERVERWENDBAR</span><strong>Trainingsvorlagen</strong></span>
-        <span className="training-plans-summary-action">Öffnen / schließen <span aria-hidden="true">⌄</span></span>
-      </summary>
+    {!activeSession && <section className="diary-panel training-plans">
+      <div className="section-heading">
+        <div><p className="eyebrow">WIEDERVERWENDBAR</p><h2>Trainingsvorlagen</h2></div>
+      </div>
+      <button type="button" className="secondary-button training-section-toggle"
+        aria-expanded={showPlans} onClick={() => setShowPlans((open) => !open)}>
+        {showPlans ? 'Vorlagen schließen' : 'Vorlagen anzeigen'}
+      </button>
+      {showPlans && <>
       {!planDraft && <>
         <p className="helper-text">Starte eine Vorlage oder erstelle deinen eigenen Trainingstag. Für den Einstieg sind Ganzkörper-Einheiten meist einfacher als ein Split.</p>
+        {openSessions.length > 0 && <p className="helper-text">Zum Starten einer Vorlage zuerst das offene Training abschließen.</p>}
         <h3 className="training-group-heading">Fitnessstudio · Einstieg</h3>
         {STANDARD_PLANS.map((plan) => <div className="training-plan-row" key={plan.id}>
           <div><strong>{plan.name}</strong>
             <span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span>
             <span className="training-plan-description">{plan.description}</span></div>
-          <button type="button" className="secondary-button" onClick={() => openNewTraining(plan)}>Starten</button>
+          <button type="button" className="secondary-button" disabled={openSessions.length > 0}
+            onClick={() => openNewTraining(plan)}>Starten</button>
           <button type="button" className="text-button" onClick={() => beginPlan({ ...plan,
             id: crypto.randomUUID(), name: `${plan.name} · Eigene Variante` })}>Kopie anpassen</button>
         </div>)}
@@ -520,7 +598,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           <div><strong>{plan.name}</strong>
             <span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span>
             <span className="training-plan-description">{plan.description}</span></div>
-          <button type="button" className="secondary-button" onClick={() => openNewTraining(plan)}>Starten</button>
+          <button type="button" className="secondary-button" disabled={openSessions.length > 0}
+            onClick={() => openNewTraining(plan)}>Starten</button>
           <button type="button" className="text-button" onClick={() => beginPlan({ ...plan,
             id: crypto.randomUUID(), name: `${plan.name} · Eigene Variante` })}>Kopie anpassen</button>
         </div>)}
@@ -529,14 +608,16 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           <div><strong>{plan.name}</strong>
             <span className="history-meta">{(plan.categories ?? [plan.category]).join(' + ')} · {plan.exercises.length} Übungen</span>
             <span className="training-plan-description">{plan.description}</span></div>
-          <button type="button" className="secondary-button" onClick={() => openNewTraining(plan)}>Starten</button>
+          <button type="button" className="secondary-button" disabled={openSessions.length > 0}
+            onClick={() => openNewTraining(plan)}>Starten</button>
           <button type="button" className="text-button" onClick={() => beginPlan({ ...plan,
             id: crypto.randomUUID(), name: `${plan.name} · Eigene Variante` })}>Kopie anpassen</button>
         </div>)}
         {trainingPlans.length > 0 && <h3 className="training-group-heading">Meine Vorlagen</h3>}
         {trainingPlans.map((plan) => <div className="training-plan-row" key={plan.id}>
           <div><strong>{plan.name}</strong><span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span></div>
-          <button type="button" className="secondary-button" onClick={() => openNewTraining(plan)}>Starten</button>
+          <button type="button" className="secondary-button" disabled={openSessions.length > 0}
+            onClick={() => openNewTraining(plan)}>Starten</button>
           <button type="button" className="text-button" onClick={() => beginPlan(plan)}>Bearbeiten</button>
           <button type="button" className="text-button" onClick={() => {
             if (!window.confirm(`Vorlage „${plan.name}“ löschen? Abgeschlossene Einheiten bleiben erhalten.`)) return
@@ -578,47 +659,28 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           <button type="button" className="secondary-button" onClick={() => setPlanDraft(null)}>Abbrechen</button>
         </div>
       </div>}
-    </details>}
+      </>}
+    </section>}
 
     <section className="diary-panel">
       <div className="section-heading"><div><p className="eyebrow">DEIN VERLAUF</p><h2>Trainingseinheiten</h2></div>
-        <span className="count-badge">{sessions.length}</span></div>
-      {!sortedSessions.length ? <p className="helper-text">Noch keine Trainingseinheiten gespeichert.</p>
-        : <div className="history-list">{sortedSessions.map((session) => {
-          const planName = session.planName || trainingPlans.find((plan) => plan.id === session.planId)?.name
-          const expanded = expandedSessionId === session.id
-          return <article className="history-item training-history-item" key={session.id}>
-            <div className="training-history-header">
-              <button type="button" className="history-main" aria-expanded={expanded}
-                onClick={() => setExpandedSessionId(expanded ? null : session.id)}>
-                <span className="history-date">{formatDate(session.date)}</span>
-                <strong>{canonicalCategory(session.category, session.subcategory) || 'Training'}</strong>
-                {planName && <span className="training-history-plan">Vorlage: {planName}</span>}
-                <span className="history-meta">{session.exercises.length} Übungen
-                  {session.status === 'ongoing' ? ' · In Bearbeitung' : ''}</span>
-              </button>
-              <span className="training-history-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
-            </div>
-            {expanded && <>
-              <TrainingHistoryDetails session={session} />
-              <div className="training-history-actions">
-                <button type="button" className="secondary-button" onClick={() => openHistorySession(session)}>
-                  {session.status === 'ongoing' ? 'Training fortsetzen' : 'Training bearbeiten'}
-                </button>
-                <button type="button" className="text-button" onClick={() => {
-                  if (!window.confirm(`Training vom ${formatDate(session.date)} wirklich löschen?`)) return
-                  setSessions((previous) => previous.filter((item) => item.id !== session.id))
-                  setExpandedSessionId(null)
-                  if (activeSessionId === session.id) setActiveSessionId(null)
-                }}>Training löschen</button>
-              </div>
-            </>}
-          </article>
-        })}</div>}
+        <span className="count-badge">{completedSessions.length}</span></div>
+      {!completedSessions.length ? <p className="helper-text">Noch keine abgeschlossenen Trainingseinheiten gespeichert.</p>
+        : <div className="volleyball-day-list">{completedSessions.map((session) =>
+          <TrainingSessionCard key={session.id} session={session} planName={planNameFor(session)}
+            expanded={expandedSessionId === session.id}
+            onToggle={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
+            onOpen={() => openHistorySession(session)} onDelete={() => deleteSession(session)} />)}</div>}
     </section>
 
-    <details className="diary-panel training-library">
-      <summary>Übungsbibliothek verwalten</summary>
+    <section className="diary-panel training-library">
+      <div className="section-heading"><div><p className="eyebrow">ÜBUNGEN</p>
+        <h2>Übungsbibliothek verwalten</h2></div></div>
+      <button type="button" className="secondary-button training-section-toggle"
+        aria-expanded={showLibrary} onClick={() => setShowLibrary((open) => !open)}>
+        {showLibrary ? 'Bibliothek schließen' : 'Bibliothek anzeigen'}
+      </button>
+      {showLibrary && <>
       <p className="helper-text">Jede Übung gehört zu einer Hauptkategorie und einer Muskelgruppe oder einem Schwerpunkt.</p>
       <label className="field-label" htmlFor="library-category">Hauptkategorie</label>
       <select id="library-category" className="field" value={libraryCategory}
@@ -690,6 +752,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
               </select>
             </label>)}
         </div>}
-    </details>
+      </>}
+    </section>
   </div>
 }
