@@ -163,6 +163,9 @@
 .home-performance-breakdown li small { color: #aab8ac; font-size: 0.7rem; }
 .home-performance-breakdown li strong { white-space: nowrap; }
 .home-day-entry { margin-top: 8px; }
+.home-activity-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; color: #c9e9d0; text-decoration: underline; text-underline-offset: 3px; }
+.home-activity-link:hover { color: #f3f5f3; }
+.home-activity-link:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
 .home-calendar-day.is-today {
   box-shadow: inset 0 0 0 1px #d8e2d7;

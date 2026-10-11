@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import GuidedTrainingPanel from './GuidedTrainingPanel.jsx'
 import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
@@ -41,7 +41,7 @@ function ExercisePicker({ id, library, category, value, onChange }) {
 
 function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, onDelete }) {
   const ongoing = isOpenTraining(session)
-  return <article className={`diary-panel training-session-card${ongoing ? ' training-session-open' : ''}`}>
+  return <article id={`training-session-${session.id}`} className={`diary-panel training-session-card${ongoing ? ' training-session-open' : ''}`}>
     <div className="volleyball-day-header">
       <h3>{formatDate(session.date)}</h3>
       <span>{session.exercises.length} Übungen</span>
@@ -70,7 +70,7 @@ function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, on
 }
 
 export default function TrainingView({ sessions, setSessions, exerciseLibrary,
-  setExerciseLibrary, trainingPlans, setTrainingPlans, setNotice, athleteProfile, onOpenArchive }) {
+  setExerciseLibrary, trainingPlans, setTrainingPlans, setNotice, athleteProfile, onOpenArchive, navigationTarget }) {
   const [selectedDate, setSelectedDate] = useState(today)
   const [customDate, setCustomDate] = useState(false)
   const [newCategory, setNewCategory] = useState('Krafttraining')
@@ -101,6 +101,18 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [libraryGroup, setLibraryGroup] = useState('Brust')
   const [renamingIndex, setRenamingIndex] = useState(null)
   const [renameValue, setRenameValue] = useState('')
+  useEffect(() => {
+    if (!navigationTarget) return
+    let scrollFrame
+    const frame = window.requestAnimationFrame(() => {
+      setShowHistory(true)
+      setExpandedSessionId(navigationTarget.id)
+      scrollFrame = window.requestAnimationFrame(() => {
+        document.getElementById(`training-session-${navigationTarget.id}`)?.scrollIntoView({ block: 'start' })
+      })
+    })
+    return () => { window.cancelAnimationFrame(frame); window.cancelAnimationFrame(scrollFrame) }
+  }, [navigationTarget])
   const activeSession = sessions.find((session) => session.id === activeSessionId)
   const managedLibrary = exerciseLibrary.map((item, sourceIndex) => ({
     ...enrichExercise({ ...item, category: canonicalCategory(item.category, item.name) }),

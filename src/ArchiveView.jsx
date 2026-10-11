@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ActivityDetails from './ActivityDetails.jsx'
 import { activityTitle, monthlyArchive } from './activityHistory.js'
 
@@ -12,11 +12,19 @@ const monthName = (key) => new Date(`${key}-01T12:00:00`).toLocaleDateString('de
   month: 'long', year: 'numeric',
 })
 
-export default function ArchiveView({ sessions, volleyballDays }) {
-  const [filter, setFilter] = useState('all')
-  const [openMonth, setOpenMonth] = useState(null)
-  const [openEntry, setOpenEntry] = useState(null)
+export default function ArchiveView({ sessions, volleyballDays, target = null }) {
+  const [filter, setFilter] = useState(target?.type ?? 'all')
+  const [openMonth, setOpenMonth] = useState(target?.date.slice(0, 7) ?? null)
+  const [openEntry, setOpenEntry] = useState(target?.id ?? null)
   const months = monthlyArchive(sessions, volleyballDays)
+
+  useEffect(() => {
+    if (!target) return
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(`archive-entry-${target.id}`)?.scrollIntoView({ block: 'center' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [target])
 
   return <div className="archive-view">
     <p className="eyebrow">DEIN VERLAUF</p>
@@ -37,7 +45,7 @@ export default function ArchiveView({ sessions, volleyballDays }) {
         </button>
         <p className="archive-counts">{month.counts.training} Training · {month.counts.beach} Beach · {month.counts.indoor} Halle</p>
         {openMonth === month.key && <div className="archive-entries">
-          {entries.map((entry) => <article className="diary-panel archive-entry" key={entry.id}>
+          {entries.map((entry) => <article className="diary-panel archive-entry" id={`archive-entry-${entry.id}`} key={entry.id}>
             <button type="button" className="archive-entry-toggle" aria-expanded={openEntry === entry.id}
               onClick={() => setOpenEntry(openEntry === entry.id ? null : entry.id)}>
               <span><small>{fullDate(entry.date)}</small><strong>{activityTitle(entry)}</strong></span>

@@ -25,6 +25,12 @@ export function isOpenVolleyballDay(day) {
     : day.dayStatus === 'ongoing'
 }
 
+export function activityDestination(entry, today = localDate()) {
+  const open = entry.type === 'training'
+    ? isOpenTraining(entry.item) : isOpenVolleyballDay(entry.item)
+  return open || isRecentDate(entry.date, today) ? entry.type : 'archive'
+}
+
 export function activityEntries(sessions, volleyballDays, completedOnly = false) {
   const training = sessions.filter((session) => !completedOnly || !isOpenTraining(session))
     .map((item) => ({ id: `training-${item.id}`, type: 'training', date: item.date, item }))

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import ActivityDetails from './ActivityDetails.jsx'
 import { activityEntries, activityTitle, localDate } from './activityHistory.js'
 import { calendarDayActivity } from './calendarActivities.js'
 import { trainingDayPerformances } from './calendarPerformance.js'
@@ -37,10 +36,9 @@ function SteelDumbbell() {
   </svg>
 }
 
-export default function HomeCalendar({ sessions, volleyballDays, expanded = false }) {
+export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity, expanded = false }) {
   const [month, setMonth] = useState(() => localDate().slice(0, 7))
   const [selectedDate, setSelectedDate] = useState(null)
-  const [openEntry, setOpenEntry] = useState(null)
   const entries = activityEntries(sessions, volleyballDays)
   const trainingPerformance = trainingDayPerformances(sessions)
   const byDate = new Map()
@@ -72,7 +70,7 @@ export default function HomeCalendar({ sessions, volleyballDays, expanded = fals
         return <button className={`home-calendar-day${dayEntries.length ? ' has-activity' : ''}${date === localDate() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`}
           type="button" key={date} aria-pressed={date === selectedDate}
           aria-label={`${formatDate(date)}${dayEntries.length ? `, ${dayEntries.length} ${dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}: ${activity?.label ?? 'Aktivität'}` : ''}${performanceLabels[performance?.status] ? `, ${performanceLabels[performance.status]}` : ''}`}
-          onClick={() => { setSelectedDate(date); setOpenEntry(null) }}>
+          onClick={() => setSelectedDate(date)}>
           <span className="home-calendar-number">{Number(date.slice(-2))}</span>
           <span className="home-calendar-activity" aria-hidden="true">
             {activity?.icon === 'barbell' ? <SteelDumbbell /> : activity?.emoji}
@@ -107,11 +105,10 @@ export default function HomeCalendar({ sessions, volleyballDays, expanded = fals
       </ul>}
       {!dayEntries.length && <p className="helper-text">Für diesen Tag ist noch nichts eingetragen.</p>}
       {dayEntries.map((entry) => <article className="diary-panel home-day-entry" key={entry.id}>
-        <button type="button" className="archive-entry-toggle" aria-expanded={openEntry === entry.id}
-          onClick={() => setOpenEntry(openEntry === entry.id ? null : entry.id)}>
-          <strong>{activityTitle(entry)}</strong><span aria-hidden="true">{openEntry === entry.id ? '⌃' : '⌄'}</span>
-        </button>
-        {openEntry === entry.id && <ActivityDetails entry={entry} />}
+        <a className="home-activity-link" href={`#${entry.type}`}
+          onClick={(event) => { event.preventDefault(); onOpenActivity(entry) }}>
+          <strong>{activityTitle(entry)}</strong><span aria-hidden="true">↗</span>
+        </a>
       </article>)}
     </div>}
   </section>

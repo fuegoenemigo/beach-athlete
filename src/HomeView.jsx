@@ -17,10 +17,12 @@ const FEATURES = {
 }
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile,
-  sessions, volleyballDays, initialView = null }) {
+  sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity }) {
   const [selectedFeature, setSelectedFeature] = useState(initialView)
+  const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
 
   function openFeature(feature) {
+    setFocusedArchiveTarget(null)
     setSelectedFeature(feature)
     window.scrollTo({ top: 0, behavior: 'auto' })
   }
@@ -32,7 +34,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           ← Zur Startseite
         </button>
         {selectedFeature === 'security' ? children
-          : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} />}
+          : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
       </section>
     )
     const feature = FEATURES[selectedFeature]
@@ -67,7 +69,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
       <button className="home-security-link" type="button" onClick={() => openFeature('security')}>
         <span aria-hidden="true">🔑</span> Daten &amp; Sicherheit
       </button>
-      <HomeCalendar sessions={sessions} volleyballDays={volleyballDays} />
+      <HomeCalendar sessions={sessions} volleyballDays={volleyballDays} onOpenActivity={onOpenActivity} />
 
       <button className="home-widget home-statistics" type="button"
         onClick={() => openFeature('statistics')} aria-label="Statistiken öffnen">

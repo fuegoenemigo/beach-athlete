@@ -9,6 +9,7 @@ import TrainingView from "./TrainingView.jsx";
 import HomeView from "./HomeView.jsx";
 import VolleyballView from "./VolleyballView.jsx";
 import { DEFAULT_EXERCISES } from "./volleyballTraining.js";
+import { activityDestination } from "./activityHistory.js";
 
 
 
@@ -86,6 +87,9 @@ function App() {
   const [activeArea, setActiveArea] = useState("home");
   const [homeViewKey, setHomeViewKey] = useState(0);
   const [homeInitialView, setHomeInitialView] = useState(null);
+  const [archiveTarget, setArchiveTarget] = useState(null);
+  const [activityTarget, setActivityTarget] = useState(null);
+  const activityNavigationId = useRef(0);
   const [exerciseLibrary, setExerciseLibrary] = useState(loadExerciseLibrary);
   const [trainingPlans, setTrainingPlans] = useState(loadTrainingPlans);
   const [athleteProfile, setAthleteProfile] = useState(loadAthleteProfile);
@@ -232,6 +236,7 @@ function App() {
 
   function selectArea(area) {
     if (area === "home") {
+      setArchiveTarget(null);
       setHomeInitialView(null);
       setHomeViewKey((key) => key + 1);
     }
@@ -241,9 +246,26 @@ function App() {
   }
 
   function openHomeView(view) {
+    setArchiveTarget(null);
     setHomeInitialView(view);
     setHomeViewKey((key) => key + 1);
     setActiveArea("home");
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function openActivity(entry) {
+    const destination = activityDestination(entry);
+    if (destination === "archive") {
+      setArchiveTarget({ id: entry.id, type: entry.type, date: entry.date });
+      setHomeInitialView("archive");
+      setHomeViewKey((key) => key + 1);
+      setActiveArea("home");
+    } else {
+      activityNavigationId.current += 1;
+      setActivityTarget({ type: entry.type, id: entry.item.id, navigationId: activityNavigationId.current });
+      setActiveArea(destination);
+    }
+    setNotice("");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
@@ -332,7 +354,8 @@ function App() {
 
       {activeArea === "home" && <HomeView key={homeViewKey}
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
-        sessions={sessions} volleyballDays={volleyballDays} initialView={homeInitialView}>
+        sessions={sessions} volleyballDays={volleyballDays} initialView={homeInitialView}
+        archiveTarget={archiveTarget} onOpenActivity={openActivity}>
         <DataSecurity cloudState={cloudState}
           onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}
           onRetry={() => cloudRef.current?.retry()}
@@ -345,18 +368,21 @@ function App() {
           exerciseLibrary={exerciseLibrary} setExerciseLibrary={setExerciseLibrary}
           trainingPlans={trainingPlans} setTrainingPlans={setTrainingPlans}
           athleteProfile={athleteProfile}
-          setNotice={setNotice} onOpenArchive={() => openHomeView("archive")} />
+          setNotice={setNotice} onOpenArchive={() => openHomeView("archive")}
+          navigationTarget={activityTarget?.type === "training" ? activityTarget : null} />
       </div>
 
       <div hidden={activeArea !== "beach"}>
         <VolleyballView sport="beach" volleyballDays={volleyballDays}
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
-          onOpenArchive={() => openHomeView("archive")} />
+          onOpenArchive={() => openHomeView("archive")}
+          navigationTarget={activityTarget?.type === "beach" ? activityTarget : null} />
       </div>
       <div hidden={activeArea !== "indoor"}>
         <VolleyballView sport="indoor" volleyballDays={volleyballDays}
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
-          onOpenArchive={() => openHomeView("archive")} />
+          onOpenArchive={() => openHomeView("archive")}
+          navigationTarget={activityTarget?.type === "indoor" ? activityTarget : null} />
       </div>
       <footer className="app-footer">
         BEACH ATHLETE <span>•</span> DEIN WEG, DEINE DATEN

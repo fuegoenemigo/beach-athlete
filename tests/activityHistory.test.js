@@ -1,12 +1,22 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isRecentDate, monthlyArchive, isOpenVolleyballDay } from '../src/activityHistory.js'
+import { activityDestination, isRecentDate, monthlyArchive, isOpenVolleyballDay } from '../src/activityHistory.js'
 
 test('the short history covers today and the four preceding calendar days across months', () => {
   assert.equal(isRecentDate('2026-09-27', '2026-10-01'), true)
   assert.equal(isRecentDate('2026-09-26', '2026-10-01'), false)
   assert.equal(isRecentDate('2026-10-01', '2026-10-01'), true)
   assert.equal(isRecentDate('2026-10-02', '2026-10-01'), false)
+})
+
+test('calendar links open recent and unfinished activity in its tab, older completed activity in the archive', () => {
+  const entry = (type, date, status) => ({ type, date, item: type === 'training'
+    ? { status } : { gameType: 'openPlay', dayStatus: status } })
+  assert.equal(activityDestination(entry('beach', '2026-09-27', 'completed'), '2026-10-01'), 'beach')
+  assert.equal(activityDestination(entry('indoor', '2026-09-26', 'completed'), '2026-10-01'), 'archive')
+  assert.equal(activityDestination(entry('training', '2026-09-26', 'ongoing'), '2026-10-01'), 'training')
+  assert.equal(activityDestination(entry('beach', '2026-09-26', 'ongoing'), '2026-10-01'), 'beach')
+  assert.equal(activityDestination(entry('training', '2026-09-26', 'completed'), '2026-10-01'), 'archive')
 })
 
 test('archive groups only completed entries by month and sport', () => {

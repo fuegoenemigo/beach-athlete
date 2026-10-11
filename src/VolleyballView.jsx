@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isVolleyballDateTaken } from "./syncPolicy.js";
 import { appendTournamentGame, finishTournament } from "./tournament.js";
 import { appendRegularGame, finishRegularDay } from "./regularDay.js";
@@ -36,7 +36,7 @@ function gameLabel(gameType) {
     matchDay: "🏐 Spieltag", tournament: "🏆 Turnier" })[gameType] ?? gameType;
 }
 
-export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice, onOpenArchive }) {
+export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice, onOpenArchive, navigationTarget }) {
   const beach = sport === "beach";
   const maxSets = beach ? 3 : 5;
   const label = beach ? "Beachvolleyball" : "Hallenvolleyball";
@@ -63,6 +63,18 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const [showSavedDays, setShowSavedDays] = useState(false);
   const [editingLegacySetId, setEditingLegacySetId] = useState(null);
   const [legacyOpponentEdit, setLegacyOpponentEdit] = useState("");
+  useEffect(() => {
+    if (!navigationTarget) return;
+    let scrollFrame;
+    const frame = window.requestAnimationFrame(() => {
+      setShowSavedDays(true);
+      setExpandedDayId(navigationTarget.id);
+      scrollFrame = window.requestAnimationFrame(() => {
+        document.getElementById(`volleyball-day-${sport}-${navigationTarget.id}`)?.scrollIntoView({ block: "start" });
+      });
+    });
+    return () => { window.cancelAnimationFrame(frame); window.cancelAnimationFrame(scrollFrame); };
+  }, [navigationTarget, sport]);
   const activeDay = volleyballDays.find((day) => day.id === activeDayId);
   const activeTournament = activeDay?.gameType === "tournament" ? activeDay : null;
   const savedDays = volleyballDays.filter((day) => day.type === sport
@@ -509,7 +521,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
             {showSavedDays ? "Spieltage einklappen" : "Aktuelle Spieltage anzeigen"}
           </button>
           {showSavedDays && <div className="volleyball-day-list">
-          {savedDays.map((day) => <div className="diary-panel" key={day.id}>
+          {savedDays.map((day) => <div className="diary-panel" id={`volleyball-day-${sport}-${day.id}`} key={day.id}>
             <div className="volleyball-day-header"><h3>{formatDate(day.date)}</h3>
               <span>{day.games?.length ?? day.sets.length} {day.games ? "Spiele" : "Sätze"}</span></div>
             <p>{gameLabel(day.gameType)} · {day.sets.length} Sätze</p>
