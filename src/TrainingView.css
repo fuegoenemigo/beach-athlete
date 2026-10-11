@@ -404,8 +404,7 @@
 }
 
 .training-timer > strong { color: var(--green); }
-.training-timer-rest { border-color: #6d86a6; background: #192637; }
-.training-timer-rest > strong { color: #a9cfff; }
+.training-timer .training-timer-goal { color: var(--green); font-weight: 700; }
 .training-timer-clock { font-variant-numeric: tabular-nums; font-size: clamp(2.5rem, 12vw, 4rem); font-weight: 800; line-height: 1; }
 .training-timer p { margin: 0; color: var(--muted); font-size: 0.82rem; }
 .training-timer-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }

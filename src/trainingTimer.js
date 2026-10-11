@@ -11,21 +11,11 @@ export function elapsedSeconds(clock, now) {
   return Math.max(0, (clock.elapsedMs + (clock.running ? now - clock.startedAt : 0)) / 1000)
 }
 
-export function intervalPosition(elapsed, count, work, rest) {
-  let remaining = Math.max(0, elapsed)
-  for (let index = 0; index < count; index += 1) {
-    if (remaining < work) return { phase: 'work', index, remaining: work - remaining,
-      completed: index, partial: remaining }
-    remaining -= work
-    if (index === count - 1) break
-    if (remaining < rest) return { phase: 'rest', index, remaining: rest - remaining,
-      completed: index + 1, partial: 0 }
-    remaining -= rest
-  }
-  return { phase: 'done', index: count - 1, remaining: 0, completed: count, partial: 0 }
+export function timerStorageKey(sessionId, exerciseId, setId) {
+  return `beach-athlete-timer:${sessionId}:${exerciseId}:${setId}`
 }
 
 export function formatTimer(seconds) {
-  const whole = Math.max(0, Math.ceil(seconds))
+  const whole = Math.max(0, Math.floor(seconds))
   return `${String(Math.floor(whole / 60)).padStart(2, '0')}:${String(whole % 60).padStart(2, '0')}`
 }

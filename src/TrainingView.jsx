@@ -16,12 +16,20 @@ import {
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
 } from './trainingModel.js'
+import { timerStorageKey } from './trainingTimer.js'
 import './TrainingView.css'
 
 const today = () => new Date().toLocaleDateString('sv-SE')
 const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', {
   weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
 })
+
+function timerIsActive(sessionId, exerciseId, setId) {
+  if (!setId) return false
+  try {
+    return Boolean(localStorage.getItem(timerStorageKey(sessionId, exerciseId, setId)))
+  } catch { return false }
+}
 
 function groupsFor(library, category) {
   const items = library.filter((item) => item.category === category)
@@ -303,6 +311,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     const entries = exercise.entries ?? []
     const draft = entries.find((entry) => entry.completed === false)
+    if (timerIsActive(activeSession.id, exercise.id, draft?.id)) {
+      setFlowMessage('Bitte stoppe zuerst die Zeitmessung für diesen Satz.'); return
+    }
     if (draft && !hasRequiredIntervalDuration(exercise, draft)) {
       setFlowMessage('Bitte gib die tatsächlich geschaffte Dauer dieses Intervalls ein.'); return
     }
@@ -314,38 +325,15 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     updateExercise(exercise.id, { entries: advanced })
     setFlowMessage('')
   }
-  function recordTimerDuration(exerciseId, seconds, expectedIndex) {
+  function recordTimerDuration(exerciseId, seconds, setId) {
     setSessions((previous) => previous.map((session) => {
       if (session.id !== activeSessionId) return session
       return { ...session, exercises: session.exercises.map((exercise) => {
         if (exercise.id !== exerciseId) return exercise
-        const type = exerciseMeasurement({ ...exercise, category: session.category })
         const entries = exercise.entries ?? []
-        if (entries.filter((entry) => isConfirmedSet(entry, type)).length !== expectedIndex) return exercise
-        const ready = entries.map((entry) =>
-          entry.completed === false ? { ...entry, durationValue: String(seconds),
-            durationUnit: 's' } : entry)
-        return { ...exercise, entries: type === 'duration'
-          ? confirmAndAdvanceSet(ready, type) ?? ready : ready }
-      }) }
-    }))
-    setFlowMessage('')
-  }
-  function recordTimerInterval(exerciseId, seconds, expectedIndex) {
-    setSessions((previous) => previous.map((session) => {
-      if (session.id !== activeSessionId) return session
-      return { ...session, exercises: session.exercises.map((exercise) => {
-        if (exercise.id !== exerciseId) return exercise
-        const type = exerciseMeasurement({ ...exercise, category: session.category })
-        const entries = exercise.entries ?? []
-        if (entries.filter((entry) => isConfirmedSet(entry, type)).length !== expectedIndex) return exercise
-        const draft = entries.find((entry) => entry.completed === false)
-        const ready = draft ? entries.map((entry) => entry.id === draft.id
-          ? { ...entry, durationValue: String(seconds), durationUnit: 's' } : entry)
-          : [...entries, { ...createTrainingSet(type), durationValue: String(seconds),
-            durationUnit: 's', completed: false }]
-        const advanced = confirmAndAdvanceSet(ready, type)
-        return advanced ? { ...exercise, entries: advanced } : exercise
+        if (!entries.some((entry) => entry.id === setId && entry.completed === false)) return exercise
+        return { ...exercise, entries: entries.map((entry) => entry.id === setId
+          ? { ...entry, durationValue: String(seconds), durationUnit: 's' } : entry) }
       }) }
     }))
     setFlowMessage('')
@@ -353,13 +341,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   function finishExercise() {
     const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
     if (!exercise) return
-    try {
-      const timer = JSON.parse(localStorage.getItem(
-        `beach-athlete-timer:${activeSession.id}:${exercise.id}`))
-      if (timer && !timer.finished) {
-        setFlowMessage('Bitte stoppe zuerst die laufende Zeitmessung.'); return
-      }
-    } catch { /* Zeitmessung ist ohne lokalen Speicher weiterhin nutzbar. */ }
+    const draft = (exercise.entries ?? []).find((entry) => entry.completed === false)
+    if (timerIsActive(activeSession.id, exercise.id, draft?.id)) {
+      setFlowMessage('Bitte stoppe zuerst die laufende Zeitmessung.'); return
+    }
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     const kept = finishTrainingExerciseEntries(exercise.entries ?? [], type)
     if (!kept) {
@@ -725,7 +710,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       onAddExercise={addExercise} onOpenExercise={openExercise} onApplyPlan={applyPlan}
       onCreateCustom={createCustomExercise} onUpdateSession={updateSession}
       onUpdateExercise={updateExercise} onRemoveExercise={removeExercise} onConfirmSet={confirmSet}
-      onTimerDuration={recordTimerDuration} onTimerInterval={recordTimerInterval}
+      onTimerDuration={recordTimerDuration}
       onFinishExercise={finishExercise} onSave={saveTraining}
       onRecategorize={recategorizeSession} onClose={closeTraining}
       onCancel={cancelTraining} />}

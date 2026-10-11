@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { elapsedSeconds, formatTimer, intervalPosition, prescribedSeconds } from './trainingTimer.js'
+import { useEffect, useState } from 'react'
+import { elapsedSeconds, formatTimer, prescribedSeconds, timerStorageKey } from './trainingTimer.js'
 
 function readClock(key) {
   try {
@@ -8,26 +8,33 @@ function readClock(key) {
   } catch { return null }
 }
 
-export default function TrainingTimer({ sessionId, exercise, confirmedCount, onDuration, onInterval }) {
-  const key = `beach-athlete-timer:${sessionId}:${exercise.id}`
+function storeClock(key, clock) {
+  try {
+    if (clock) localStorage.setItem(key, JSON.stringify(clock))
+    else localStorage.removeItem(key)
+  } catch { /* Die Zeitmessung funktioniert auch ohne lokalen Speicher. */ }
+}
+
+export default function TrainingTimer({ sessionId, exercise, entry, confirmedCount, onDuration }) {
+  const key = timerStorageKey(sessionId, exercise.id, entry.id)
   const [clock, setClock] = useState(() => readClock(key))
   const [now, setNow] = useState(() => Date.now())
-  const queued = useRef(Math.max(0, confirmedCount - (clock?.startCount ?? confirmedCount)))
   const target = prescribedSeconds(exercise)
-  const count = Number(exercise.intervalCount) || 0
   const rest = Number(exercise.intervalRestSeconds) || 0
-  const sequence = count > 1 && target > 0 && rest > 0
-  const elapsed = elapsedSeconds(clock, now)
-  const runs = Math.max(0, count - (clock?.startCount ?? confirmedCount))
-  const position = sequence ? intervalPosition(elapsed, runs, target, rest) : null
-  const completed = position?.completed
-  const phase = position?.phase
+  const previousSet = exercise.entries?.filter((item) => item.completed === true).at(-1)
+  const confirmedAt = Date.parse(previousSet?.confirmedAt ?? '')
+  const restElapsed = Number.isFinite(confirmedAt)
+    ? Math.max(0, (now - confirmedAt) / 1000) : 0
+  const savedSeconds = (Number(entry.durationValue) || 0) * (entry.durationUnit === 'min' ? 60 : 1)
+  const elapsed = clock ? elapsedSeconds(clock, now) : savedSeconds
+  const restRunning = Boolean(rest && confirmedCount && Number.isFinite(confirmedAt)
+    && restElapsed < rest)
 
   useEffect(() => {
-    if (!clock?.running) return undefined
+    if (!clock?.running && !restRunning) return undefined
     const id = window.setInterval(() => setNow(Date.now()), 200)
     return () => window.clearInterval(id)
-  }, [clock?.running])
+  }, [clock?.running, restRunning])
 
   useEffect(() => {
     if (!clock?.running || !navigator.wakeLock?.request) return undefined
@@ -53,90 +60,51 @@ export default function TrainingTimer({ sessionId, exercise, confirmedCount, onD
     }
   }, [clock?.running])
 
-  useEffect(() => {
-    try {
-      if (clock) localStorage.setItem(key, JSON.stringify(clock))
-      else localStorage.removeItem(key)
-    } catch { /* Timer funktioniert auch ohne lokalen Speicher. */ }
-  }, [clock, key])
-
-  useEffect(() => {
-    if (!clock?.running || !sequence || completed == null) return
-    if (completed <= queued.current) return
-    for (let index = queued.current; index < completed; index += 1) {
-      onInterval(target, clock.startCount + index)
-    }
-    queued.current = completed
-    setClock((current) => current ? { ...current, recorded: completed,
-      ...(phase === 'done' ? { running: false, finished: true,
-        elapsedMs: elapsedSeconds(current, Date.now()) * 1000 } : {}) } : current)
-  }, [clock?.running, clock?.startCount, onInterval, completed, phase, sequence, target])
-
   function start() {
-    const next = { startedAt: Date.now(), elapsedMs: 0, running: true,
-      startCount: confirmedCount, recorded: 0 }
-    queued.current = 0
+    const next = { startedAt: Date.now(), elapsedMs: 0, running: true }
     setNow(next.startedAt)
     setClock(next)
+    storeClock(key, next)
   }
 
   function pause() {
     const at = Date.now()
-    setClock((current) => ({ ...current, running: false,
-      elapsedMs: elapsedSeconds(current, at) * 1000 }))
+    const next = { ...clock, running: false, elapsedMs: elapsedSeconds(clock, at) * 1000 }
+    setClock(next)
     setNow(at)
+    storeClock(key, next)
   }
 
   function resume() {
-    const at = Date.now()
-    setClock((current) => ({ ...current, running: true, startedAt: at }))
-    setNow(at)
+    const next = { ...clock, running: true, startedAt: Date.now() }
+    setClock(next)
+    setNow(next.startedAt)
+    storeClock(key, next)
   }
 
   function stop() {
-    const seconds = elapsedSeconds(clock, Date.now())
-    if (sequence) {
-      const current = intervalPosition(seconds, runs, target, rest)
-      for (let index = queued.current; index < current.completed; index += 1) {
-        onInterval(target, clock.startCount + index)
-      }
-      if (current.phase === 'work' && current.partial >= 1) {
-        onInterval(Math.round(current.partial), clock.startCount + current.completed)
-      }
-      queued.current = 0
-    } else if (seconds >= 1) {
-      onDuration(Math.round(seconds), clock.startCount)
-    }
+    const seconds = Math.round(elapsedSeconds(clock, Date.now()))
+    if (seconds < 1) return
+    storeClock(key, null)
     setClock(null)
+    onDuration(seconds, entry.id)
   }
 
-  const remaining = sequence ? position.remaining : target ? target - elapsed : elapsed
-  const label = sequence
-    ? clock?.finished || position.phase === 'done' ? 'Alle Intervalle abgeschlossen'
-      : `${position.phase === 'work' ? 'Belastung' : 'Lockere Pause'} ${position.index + 1 + (clock?.startCount ?? confirmedCount)}/${count}`
-    : target ? `Ziel: ${formatTimer(target)}` : 'Stoppuhr'
-
-  return <div className={`training-timer${sequence ? ` training-timer-${phase}` : ''}`}
-    aria-label="Trainingszeit messen">
-    <strong aria-live="polite">{label}</strong>
-    <output className="training-timer-clock" aria-live="off">
-      {target && !sequence && remaining < 0 ? `+${formatTimer(-remaining)}` : formatTimer(remaining)}
-    </output>
-    {sequence && <p>{count} × {formatTimer(target)} Belastung · {formatTimer(rest)} lockere Pause.
-      Die Phasen wechseln automatisch; lass die App dafür geöffnet.</p>}
-    {!sequence && <p>{exercise.type === 'duration'
-      ? 'Beim Stoppen wird die gemessene Zeit als Satz gespeichert.'
-      : 'Beim Stoppen wird die Zeit übernommen. Ergänze danach bei Bedarf die Strecke.'}</p>}
+  return <div className="training-timer" aria-label="Trainingszeit messen">
+    <strong>{target ? `Ziel für diesen Satz: ${formatTimer(target)}` : 'Stoppuhr für diesen Satz'}</strong>
+    <output className="training-timer-clock" aria-live="off">{formatTimer(elapsed)}</output>
+    {target > 0 && elapsed >= target && <p className="training-timer-goal">Ziel erreicht ✓</p>}
+    {rest > 0 && confirmedCount > 0 && Number.isFinite(confirmedAt) && <p>
+      Pause vor Satz {confirmedCount + 1}: {formatTimer(Math.min(restElapsed, rest))} / {formatTimer(rest)}
+    </p>}
+    <p>„Stoppen &amp; übernehmen“ füllt die Dauer aus. Danach bestätigst du den Satz selbst.</p>
     <div className="training-timer-actions">
-      {!clock && (!sequence || confirmedCount < count) && <button type="button" className="primary-button"
-        onClick={start}>▶ Zeit starten</button>}
+      {!clock && <button type="button" className="primary-button" onClick={start}>▶ Zeit starten</button>}
       {clock?.running && <button type="button" className="secondary-button" onClick={pause}>Pause</button>}
-      {clock && !clock.running && !clock.finished && <button type="button" className="primary-button"
+      {clock && !clock.running && <button type="button" className="primary-button"
         onClick={resume}>▶ Fortsetzen</button>}
-      {clock && !clock.finished && <button type="button" className="secondary-button"
+      {clock && <button type="button" className="secondary-button"
         onClick={stop}>■ Stoppen &amp; übernehmen</button>}
-      {clock?.finished && <button type="button" className="secondary-button"
-        onClick={() => setClock(null)}>Fertig</button>}
     </div>
   </div>
 }

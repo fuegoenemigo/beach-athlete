@@ -75,7 +75,7 @@ export default function GuidedTrainingPanel({
   customName, setCustomName, customType, setCustomType, customGroup, setCustomGroup,
   onAddExercise, onOpenExercise, onApplyPlan, onCreateCustom, onUpdateSession,
   onUpdateExercise, onRemoveExercise, onConfirmSet, onFinishExercise,
-  onTimerDuration, onTimerInterval,
+  onTimerDuration,
   onSave, onClose, onRecategorize, onCancel,
 }) {
   const exercise = session.exercises.find((item) => item.id === activeExerciseId)
@@ -238,10 +238,9 @@ export default function GuidedTrainingPanel({
         <h3>Werte eintragen</h3>
         <PreviousExerciseReference number={confirmed.length + 1} value={referenceFor(confirmed.length)} />
         {['duration', 'distance', 'carry'].includes(type) && <TrainingTimer
-          key={exercise.id} sessionId={session.id} exercise={exercise}
+          key={draft.id} sessionId={session.id} exercise={exercise} entry={draft}
           confirmedCount={confirmed.length}
-          onDuration={(seconds, index) => onTimerDuration(exercise.id, seconds, index)}
-          onInterval={(seconds, index) => onTimerInterval(exercise.id, seconds, index)} />}
+          onDuration={(seconds, setId) => onTimerDuration(exercise.id, seconds, setId)} />}
         <SetFields entry={draft} type={type} exercise={exercise} athleteProfile={athleteProfile}
           onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
             item.id === draft.id ? { ...item, ...changes } : item) })} />
