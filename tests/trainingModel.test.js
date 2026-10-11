@@ -105,6 +105,17 @@ test('previous performance compares the same exercise, not the whole strength ca
   assert.equal(formatTrainingEntry(previous.item.entries[0], 'strength'), '8 Wdh. · 60 kg')
 })
 
+test('the last saved exercise is used as reference, including older aggregate entries', () => {
+  const id = exerciseIdentity(library[0])
+  const earlier = { id: 'old', date: '2026-09-01', category: 'Krafttraining',
+    exercises: [{ id: 'old-set', libraryId: id, name: 'Bankdrücken', type: 'strength',
+      entries: [{ ...createTrainingSet(), reps: '6', weightKg: '50' }] }] }
+  const latest = { id: 'latest', date: '2026-10-01', category: 'Krafttraining',
+    exercises: [{ id: 'legacy', libraryId: id, name: 'Bankdrücken', reps: '8', weight: '60' }] }
+  const current = { id: 'now', date: '2026-10-11', category: 'Krafttraining', exercises: [] }
+  assert.equal(previousExercise([earlier, latest, current], current, earlier.exercises[0]).item.id, 'legacy')
+})
+
 test('old training categories resolve to the requested new categories without guessing other sports', () => {
   assert.equal(canonicalCategory('Sprungkraft & Explosivität'), 'Sprungkraft und Agilität')
   assert.equal(canonicalCategory('Schnelligkeit & Agilität'), 'Sprungkraft und Agilität')

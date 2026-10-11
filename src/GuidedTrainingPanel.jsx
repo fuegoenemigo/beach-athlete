@@ -58,6 +58,16 @@ function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
   </>
 }
 
+function PreviousExerciseReference({ date, values }) {
+  if (!values?.length) return null
+  return <aside className="training-reference" aria-label="Werte der letzten Ausführung">
+    <strong>Letzte Ausführung · {formatDate(date)}</strong>
+    <ol>{values.map((value, index) => <li key={index}>
+      {values.length > 1 ? `Satz ${index + 1}: ` : ''}{value}
+    </li>)}</ol>
+  </aside>
+}
+
 export default function GuidedTrainingPanel({
   session, sessions, library, plans, athleteProfile, exerciseCategory, setExerciseCategory,
   step, setStep, activeExerciseId, group, setGroup,
@@ -77,6 +87,12 @@ export default function GuidedTrainingPanel({
     exerciseMeasurement({ ...previous.item, category: session.category })))
     .map((entry) => formatTrainingEntry(entry,
       exerciseMeasurement({ ...previous.item, category: session.category }), previous.item)).filter(Boolean)
+  const previousLegacy = previous && !previousSets?.length && hasLegacyValues(previous.item)
+    ? Object.entries(legacyLabels)
+      .filter(([field]) => previous.item[field] !== '' && previous.item[field] != null)
+      .map(([field, label]) => `${label}: ${previous.item[field]}`).join(' · ')
+    : ''
+  const previousValues = previousSets?.length ? previousSets : previousLegacy ? [previousLegacy] : []
   const available = library.filter((item) => item.category === exerciseCategory)
   const groups = [...new Set(available.map((item) => item.muscleGroup || 'Allgemein'))]
     .sort((a, b) => a.localeCompare(b, 'de-DE'))
@@ -192,9 +208,6 @@ export default function GuidedTrainingPanel({
       <p className="history-meta">{exercise.category === 'Krafttraining'
         ? exercise.muscleGroup || 'Ohne Muskelgruppe' : exercise.category || session.category}</p>
       {exercise.target && <p className="training-target">Vorschlag: {exercise.target}</p>}
-      {previousSets?.length > 0 && <p className="training-previous">
-        Zuletzt am {formatDate(previous.session.date)}: {previousSets.join(' · ')}
-      </p>}
       {hasLegacyValues(exercise) && <div className="training-legacy">
         <strong>Früherer Sammeleintrag</strong>
         <p className="helper-text">Die alten Werte bleiben erhalten. Damals wurden keine einzelnen Sätze erfasst.</p>
@@ -212,6 +225,8 @@ export default function GuidedTrainingPanel({
             <span>✓ Satz {index + 1}: {formatTrainingEntry(entry, type, exercise)}</span>
             <span>{editingSetId === entry.id ? 'Schließen' : 'Bearbeiten'}</span>
           </button>
+          {editingSetId === entry.id && <PreviousExerciseReference date={previous?.session.date}
+            values={previousValues} />}
           {editingSetId === entry.id && <SetFields entry={entry} type={type}
             exercise={exercise} athleteProfile={athleteProfile}
             onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
@@ -224,6 +239,7 @@ export default function GuidedTrainingPanel({
       {draft && <div className="training-current-set">
         <p className="eyebrow">SATZ {confirmed.length + 1}</p>
         <h3>Werte eintragen</h3>
+        <PreviousExerciseReference date={previous?.session.date} values={previousValues} />
         <SetFields entry={draft} type={type} exercise={exercise} athleteProfile={athleteProfile}
           onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
             item.id === draft.id ? { ...item, ...changes } : item) })} />

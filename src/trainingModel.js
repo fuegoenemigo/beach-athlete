@@ -168,11 +168,12 @@ export function previousExercise(sessions, currentSession, exercise) {
         && (session.createdAt ?? '') < (currentSession.createdAt ?? ''))))
     .sort((a, b) => b.date.localeCompare(a.date)
       || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
-    .flatMap((session) => session.exercises.map((item) => ({ session, item })))
-    .find(({ session, item }) => Array.isArray(item.entries)
-      && item.entries.some((entry) => isConfirmedSet(entry, exerciseMeasurement({
-        ...item, category: currentSession.category,
-      })))
+    .flatMap((session) => [...session.exercises].reverse().map((item) => ({ session, item })))
+    .find(({ session, item }) => (hasLegacyValues(item)
+      || (Array.isArray(item.entries)
+        && item.entries.some((entry) => isConfirmedSet(entry, exerciseMeasurement({
+          ...item, category: currentSession.category,
+        })))))
       && canonicalCategory(item.category ?? session.category, session.subcategory)
         === canonicalCategory(exercise.category ?? currentSession.category, currentSession.subcategory)
       && (item.libraryId && exercise.libraryId
