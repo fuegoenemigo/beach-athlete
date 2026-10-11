@@ -1,13 +1,9 @@
 import { useState } from 'react'
+import HomeCalendar from './HomeCalendar.jsx'
+import ArchiveView from './ArchiveView.jsx'
 import './HomeView.css'
 
-const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const FEATURES = {
-  calendar: {
-    icon: '📅',
-    title: 'Sportkalender',
-    text: 'Hier entsteht die gemeinsame Übersicht für Training, Beachvolleyball und Hallenvolleyball. Bis dahin bleiben deine Einträge in ihren bisherigen Bereichen verfügbar.',
-  },
   statistics: {
     icon: '📊',
     title: 'Statistiken',
@@ -15,26 +11,14 @@ const FEATURES = {
   },
   card: {
     icon: '🏅',
-    title: 'Spielerkarte',
-    text: 'Deine persönliche Athletenkarte bekommt hier ihren Platz. Attribute und Ratingformeln legen wir gemeinsam fest, bevor echte Werte erscheinen.',
+    title: 'Spielerkarte & Profil',
+    text: 'Attribute und Ratingformeln für deine Athletenkarte legen wir gemeinsam fest. Dein Körpergewicht kannst du hier bereits hinterlegen.',
   },
 }
 
-function getMonthCells(date) {
-  const year = date.getFullYear()
-  const month = date.getMonth()
-  const offset = (new Date(year, month, 1).getDay() + 6) % 7
-  const dayCount = new Date(year, month + 1, 0).getDate()
-  return [
-    ...Array(offset).fill(null),
-    ...Array.from({ length: dayCount }, (_, index) => index + 1),
-  ]
-}
-
-export default function HomeView({ children, athleteProfile, setAthleteProfile }) {
-  const [selectedFeature, setSelectedFeature] = useState(null)
-  const currentDate = new Date()
-  const monthLabel = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(currentDate)
+export default function HomeView({ children, athleteProfile, setAthleteProfile,
+  sessions, volleyballDays, initialView = null }) {
+  const [selectedFeature, setSelectedFeature] = useState(initialView)
 
   function openFeature(feature) {
     setSelectedFeature(feature)
@@ -42,6 +26,15 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile }
   }
 
   if (selectedFeature) {
+    if (selectedFeature === 'security' || selectedFeature === 'archive') return (
+      <section className="home-detail home-functional-detail">
+        <button className="home-back" type="button" onClick={() => setSelectedFeature(null)}>
+          ← Zur Startseite
+        </button>
+        {selectedFeature === 'security' ? children
+          : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} />}
+      </section>
+    )
     const feature = FEATURES[selectedFeature]
     return (
       <section className="home-detail" aria-labelledby="home-detail-title">
@@ -49,36 +42,32 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile }
           ← Zur Startseite
         </button>
         <div className="home-detail-icon" aria-hidden="true">{feature.icon}</div>
-        <p className="eyebrow">BALD IN BEACH ATHLETE</p>
+        <p className="eyebrow">{selectedFeature === 'card' ? 'DEIN PROFIL' : 'BALD IN BEACH ATHLETE'}</p>
         <h2 id="home-detail-title">{feature.title}</h2>
         <p>{feature.text}</p>
+        {selectedFeature === 'card' && <div className="home-profile-card">
+          <h3>Körpergewicht</h3>
+          <p>Für Übungen mit Eigengewicht zeigen wir diesen Wert zusätzlich zum verwendeten Gewicht an. Weitere Profildaten folgen später.</p>
+          <label className="field-label" htmlFor="profile-bodyweight">Körpergewicht (kg)</label>
+          <input id="profile-bodyweight" className="field" type="number" inputMode="decimal"
+            min="1" step="0.1" placeholder="Noch nicht hinterlegt"
+            value={athleteProfile.bodyweightKg ?? ''}
+            onChange={(event) => {
+              const value = event.target.value
+              if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0))
+                setAthleteProfile((profile) => ({ ...profile, bodyweightKg: value }))
+            }} />
+        </div>}
       </section>
     )
   }
 
   return (
     <div className="home-dashboard" aria-label="Startseite">
-      <button className="home-widget home-calendar" type="button"
-        onClick={() => openFeature('calendar')} aria-label="Sportkalender öffnen">
-        <span className="home-widget-header">
-          <span>
-            <span className="home-widget-kicker">DEIN MONAT</span>
-            <span className="home-widget-title">Sportkalender</span>
-          </span>
-          <span className="home-widget-arrow" aria-hidden="true">↗</span>
-        </span>
-        <span className="home-month-label">{monthLabel}</span>
-        <span className="home-calendar-grid" aria-hidden="true">
-          {WEEKDAYS.map((day) => <span className="home-weekday" key={day}>{day}</span>)}
-          {getMonthCells(currentDate).map((day, index) => (
-            <span className={`home-calendar-day ${day === currentDate.getDate() ? 'is-today' : ''}`}
-              key={`${day ?? 'empty'}-${index}`}>
-              {day}
-            </span>
-          ))}
-        </span>
-        <span className="home-widget-note">Deine Aktivitäten erscheinen bald hier.</span>
+      <button className="home-security-link" type="button" onClick={() => openFeature('security')}>
+        <span aria-hidden="true">🔑</span> Daten &amp; Sicherheit
       </button>
+      <HomeCalendar sessions={sessions} volleyballDays={volleyballDays} />
 
       <button className="home-widget home-statistics" type="button"
         onClick={() => openFeature('statistics')} aria-label="Statistiken öffnen">
@@ -118,21 +107,13 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile }
         </span>
         <span className="home-widget-note">Attribute und Bewertung gestalten wir gemeinsam.</span>
       </button>
-      <section className="home-profile-card" aria-labelledby="home-profile-title">
-        <p className="eyebrow">DEIN PROFIL</p>
-        <h2 id="home-profile-title">Körpergewicht</h2>
-        <p>Für Übungen mit Eigengewicht zeigen wir diesen Wert zusätzlich zum verwendeten Gewicht an. Weitere Profildaten folgen später.</p>
-        <label className="field-label" htmlFor="profile-bodyweight">Körpergewicht (kg)</label>
-        <input id="profile-bodyweight" className="field" type="number" inputMode="decimal"
-          min="1" step="0.1" placeholder="Noch nicht hinterlegt"
-          value={athleteProfile.bodyweightKg ?? ''}
-          onChange={(event) => {
-            const value = event.target.value
-            if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0))
-              setAthleteProfile((profile) => ({ ...profile, bodyweightKg: value }))
-          }} />
-      </section>
-      {children}
+      <button className="home-widget home-archive" type="button" onClick={() => openFeature('archive')}>
+        <span className="home-widget-header"><span>
+          <span className="home-widget-kicker">ALLE ABGESCHLOSSENEN EINTRÄGE</span>
+          <span className="home-widget-title">Archiv</span>
+        </span><span className="home-widget-arrow" aria-hidden="true">↗</span></span>
+        <span className="home-widget-note">Spieltage und Trainingseinheiten nach Monaten ansehen.</span>
+      </button>
     </div>
   )
 }

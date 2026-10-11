@@ -3,6 +3,7 @@ import GuidedTrainingPanel from './GuidedTrainingPanel.jsx'
 import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
+import { isRecentDate } from './activityHistory.js'
 import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
   enrichExercise, searchTrainingPlans } from './volleyballTraining.js'
 import {
@@ -68,7 +69,7 @@ function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, on
 }
 
 export default function TrainingView({ sessions, setSessions, exerciseLibrary,
-  setExerciseLibrary, trainingPlans, setTrainingPlans, setNotice, athleteProfile }) {
+  setExerciseLibrary, trainingPlans, setTrainingPlans, setNotice, athleteProfile, onOpenArchive }) {
   const [selectedDate, setSelectedDate] = useState(today)
   const [customDate, setCustomDate] = useState(false)
   const [newCategory, setNewCategory] = useState('Krafttraining')
@@ -113,7 +114,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const sortedSessions = [...sessions].sort((a, b) =>
     b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
   const openSessions = sortedSessions.filter(isOpenTraining)
-  const completedSessions = sortedSessions.filter((session) => !isOpenTraining(session))
+  const completedSessions = sortedSessions.filter((session) => !isOpenTraining(session)
+    && isRecentDate(session.date))
 
   function planNameFor(session) {
     return session.planName || trainingPlans.find((plan) => plan.id === session.planId)?.name
@@ -666,11 +668,12 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     <section className="diary-panel">
       <div className="section-heading"><div><p className="eyebrow">DEIN VERLAUF</p><h2>Trainingseinheiten</h2></div>
         <span className="count-badge">{completedSessions.length}</span></div>
-      {!completedSessions.length ? <p className="helper-text">Noch keine abgeschlossenen Trainingseinheiten gespeichert.</p>
+      <p className="helper-text">Abgeschlossene Einheiten der letzten fünf Tage. Ältere Einträge findest du im Archiv.</p>
+      {!completedSessions.length ? <p className="helper-text">Hier sind aktuell keine abgeschlossenen Trainingseinheiten.</p>
         : <>
           <button type="button" className="secondary-button training-section-toggle"
             aria-expanded={showHistory} onClick={() => setShowHistory((open) => !open)}>
-            {showHistory ? 'Trainingseinheiten einklappen' : 'Alle Trainingseinheiten anzeigen'}
+            {showHistory ? 'Trainingseinheiten einklappen' : 'Aktuelle Trainingseinheiten anzeigen'}
           </button>
           {showHistory && <div className="volleyball-day-list training-history-list">
             {completedSessions.map((session) => <TrainingSessionCard key={session.id}
@@ -680,6 +683,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
               onOpen={() => openHistorySession(session)} onDelete={() => deleteSession(session)} />)}
           </div>}
         </>}
+      <button type="button" className="secondary-button" onClick={onOpenArchive}>Zum Archiv</button>
     </section>
 
     <section className="diary-panel training-library">

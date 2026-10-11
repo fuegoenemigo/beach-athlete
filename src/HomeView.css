@@ -34,7 +34,7 @@
   gap: 12px;
 }
 
-.home-widget-header > span:first-child {
+.home-widget-header > :first-child {
   display: grid;
   gap: 5px;
 }
@@ -76,6 +76,26 @@
   min-height: 33svh;
 }
 
+.home-security-link {
+  justify-self: start;
+  min-height: 36px;
+  padding: 5px 10px;
+  border: 1px solid #344638;
+  border-radius: 10px;
+  color: #dce8dc;
+  background: #172019;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.home-security-link:focus-visible, .home-month-navigation button:focus-visible,
+.home-calendar-day:focus-visible, .archive-entry-toggle:focus-visible,
+.archive-month-toggle:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+.home-month-navigation { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 16px 0 9px; }
+.home-month-navigation strong { color: #dce8dc; font-size: 0.9rem; text-transform: capitalize; }
+.home-month-navigation button { width: 36px; height: 36px; border: 1px solid #526c52; border-radius: 9px; color: var(--green); background: #111a13; font-size: 1.4rem; }
+
 .home-month-label {
   display: block;
   margin: 16px 0 9px;
@@ -107,7 +127,23 @@
   border-radius: 8px;
   color: #d7e1d8;
   font-size: 0.78rem;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
 }
+
+.home-calendar-day.is-selected { border-color: var(--green); }
+.home-calendar-day.is-today .home-calendar-marker { box-shadow: 0 0 0 1px #172415; }
+.home-calendar-markers { display: flex; gap: 2px; min-height: 5px; }
+.home-calendar-marker { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #a9b9ac; }
+.home-calendar-marker.beach { background: #e6c76e; }
+.home-calendar-marker.indoor { background: #7babe7; }
+.home-calendar-marker.training { background: #8ccd79; }
+.home-calendar-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; color: #b9c4bb; font-size: 0.72rem; }
+.home-calendar-legend span { display: flex; align-items: center; gap: 4px; }
+.home-day-details { margin-top: 16px; padding-top: 15px; border-top: 1px solid #344638; }
+.home-day-details h3 { margin: 0 0 12px; font-size: 1rem; text-transform: capitalize; }
+.home-day-entry { margin-top: 8px; }
 
 .home-calendar-day.is-today {
   color: #172415;
@@ -280,6 +316,7 @@
 }
 
 .home-profile-card {
+  margin-top: 20px;
   padding: 22px;
   border: 1px solid #344638;
   border-radius: 18px;
@@ -287,4 +324,21 @@
 }
 
 .home-profile-card h2 { margin: 0 0 8px; font-size: 1.25rem; }
+.home-profile-card h3 { margin: 0 0 8px; font-size: 1.25rem; }
 .home-profile-card p:not(.eyebrow) { color: var(--muted); line-height: 1.5; }
+
+.home-functional-detail { padding: 18px; }
+.home-functional-detail .home-back { margin-bottom: 12px; }
+.archive-view h2 { margin: 0; font-size: 1.7rem; }
+.archive-filters { display: flex; flex-wrap: wrap; gap: 7px; margin: 18px 0; }
+.archive-filters button { flex: 1 0 auto; padding: 8px 10px; font-size: 0.82rem; }
+.archive-month { margin: 10px 0; }
+.archive-month-toggle, .archive-entry-toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; padding: 0; border: 0; color: #f3f5f3; background: transparent; text-align: left; }
+.archive-month-toggle strong { font-size: 1.15rem; text-transform: capitalize; }
+.archive-counts { margin: 4px 0 0; color: #b9c4bb; font-size: 0.84rem; }
+.archive-entries { display: grid; gap: 8px; margin-top: 14px; }
+.archive-entry { margin: 0; background: #111a13; }
+.archive-entry-toggle > span:first-child { display: grid; gap: 3px; }
+.archive-entry-toggle small { color: #b9c4bb; }
+.archive-entry-toggle strong { font-size: 0.95rem; }
+.archive-entry .volleyball-day-details, .home-day-entry .volleyball-day-details { margin-top: 12px; }

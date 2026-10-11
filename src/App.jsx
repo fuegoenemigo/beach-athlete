@@ -85,6 +85,7 @@ function App() {
   const [volleyballDays, setVolleyballDays] = useState(loadVolleyballDays);
   const [activeArea, setActiveArea] = useState("home");
   const [homeViewKey, setHomeViewKey] = useState(0);
+  const [homeInitialView, setHomeInitialView] = useState(null);
   const [exerciseLibrary, setExerciseLibrary] = useState(loadExerciseLibrary);
   const [trainingPlans, setTrainingPlans] = useState(loadTrainingPlans);
   const [athleteProfile, setAthleteProfile] = useState(loadAthleteProfile);
@@ -230,9 +231,19 @@ function App() {
   }
 
   function selectArea(area) {
-    if (area === "home") setHomeViewKey((key) => key + 1);
+    if (area === "home") {
+      setHomeInitialView(null);
+      setHomeViewKey((key) => key + 1);
+    }
     setNotice("");
     setActiveArea(area);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function openHomeView(view) {
+    setHomeInitialView(view);
+    setHomeViewKey((key) => key + 1);
+    setActiveArea("home");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
@@ -297,11 +308,7 @@ function App() {
       </nav>
 
       <button type="button" className="sync-status"
-        onClick={() => {
-          setActiveArea("home");
-          setHomeViewKey((key) => key + 1);
-          window.setTimeout(() => document.getElementById("data-security")?.scrollIntoView({ behavior: "smooth" }), 0);
-        }}
+        onClick={() => openHomeView("security")}
         aria-label="Synchronisierungsstatus anzeigen">
         {cloudState.status === "ready" ? "☁ Cloud aktuell" :
           cloudState.status === "pending" || cloudState.status === "saving" ? "☁ Synchronisierung läuft" :
@@ -324,7 +331,8 @@ function App() {
       {notice && <p className="notice-message transient-notice" role="status">{notice}</p>}
 
       {activeArea === "home" && <HomeView key={homeViewKey}
-        athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}>
+        athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
+        sessions={sessions} volleyballDays={volleyballDays} initialView={homeInitialView}>
         <DataSecurity cloudState={cloudState}
           onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}
           onRetry={() => cloudRef.current?.retry()}
@@ -337,16 +345,18 @@ function App() {
           exerciseLibrary={exerciseLibrary} setExerciseLibrary={setExerciseLibrary}
           trainingPlans={trainingPlans} setTrainingPlans={setTrainingPlans}
           athleteProfile={athleteProfile}
-          setNotice={setNotice} />
+          setNotice={setNotice} onOpenArchive={() => openHomeView("archive")} />
       </div>
 
       <div hidden={activeArea !== "beach"}>
         <VolleyballView sport="beach" volleyballDays={volleyballDays}
-          setVolleyballDays={setVolleyballDays} setNotice={setNotice} />
+          setVolleyballDays={setVolleyballDays} setNotice={setNotice}
+          onOpenArchive={() => openHomeView("archive")} />
       </div>
       <div hidden={activeArea !== "indoor"}>
         <VolleyballView sport="indoor" volleyballDays={volleyballDays}
-          setVolleyballDays={setVolleyballDays} setNotice={setNotice} />
+          setVolleyballDays={setVolleyballDays} setNotice={setNotice}
+          onOpenArchive={() => openHomeView("archive")} />
       </div>
       <footer className="app-footer">
         BEACH ATHLETE <span>•</span> DEIN WEG, DEINE DATEN

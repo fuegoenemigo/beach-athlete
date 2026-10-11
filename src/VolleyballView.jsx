@@ -7,6 +7,7 @@ import { beachSetOpponent } from "./beachOpponents.js";
 import { RatingStepper, SetResultHeading, StrengthStepper } from "./VolleyballInputs.jsx";
 import { isRating, strengthLabels, strengthOptions } from "./volleyballValues.js";
 import EntryWindow from "./EntryWindow.jsx";
+import { isOpenVolleyballDay, isRecentDate } from "./activityHistory.js";
 
 const today = () => new Date().toLocaleDateString("sv-SE");
 const freshSet = () => ({ fitness: "5", opponentStrength: "equal", intensity: "5", technique: "5", won: "true" });
@@ -35,7 +36,7 @@ function gameLabel(gameType) {
     matchDay: "🏐 Spieltag", tournament: "🏆 Turnier" })[gameType] ?? gameType;
 }
 
-export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice }) {
+export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice, onOpenArchive }) {
   const beach = sport === "beach";
   const maxSets = beach ? 3 : 5;
   const label = beach ? "Beachvolleyball" : "Hallenvolleyball";
@@ -64,7 +65,8 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const [legacyOpponentEdit, setLegacyOpponentEdit] = useState("");
   const activeDay = volleyballDays.find((day) => day.id === activeDayId);
   const activeTournament = activeDay?.gameType === "tournament" ? activeDay : null;
-  const savedDays = volleyballDays.filter((day) => day.type === sport)
+  const savedDays = volleyballDays.filter((day) => day.type === sport
+    && (isOpenVolleyballDay(day) || isRecentDate(day.date)))
     .sort((a, b) => b.date.localeCompare(a.date));
   const takenDates = volleyballDays.filter((day) => day.type === "beach" || day.type === "indoor")
     .map((day) => day.date);
@@ -499,11 +501,12 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     <section className="diary-panel volleyball-history-section">
       <div className="section-heading"><div><p className="eyebrow">DEIN VERLAUF</p>
         <h2>Meine Spieltage</h2></div><span className="count-badge">{savedDays.length}</span></div>
-      {savedDays.length === 0 ? <p className="helper-text">Noch keine {label}-Spieltage gespeichert.</p>
+      <p className="helper-text">Offene Spieltage und Einträge der letzten fünf Tage. Ältere Einträge findest du im Archiv.</p>
+      {savedDays.length === 0 ? <p className="helper-text">Hier sind aktuell keine {label}-Spieltage.</p>
         : <>
           <button type="button" className="secondary-button volleyball-list-toggle"
             aria-expanded={showSavedDays} onClick={() => setShowSavedDays((open) => !open)}>
-            {showSavedDays ? "Spieltage einklappen" : "Alle Spieltage anzeigen"}
+            {showSavedDays ? "Spieltage einklappen" : "Aktuelle Spieltage anzeigen"}
           </button>
           {showSavedDays && <div className="volleyball-day-list">
           {savedDays.map((day) => <div className="diary-panel" key={day.id}>
@@ -582,6 +585,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
           </div>)}
           </div>}
         </>}
+      <button type="button" className="secondary-button" onClick={onOpenArchive}>Zum Archiv</button>
     </section>
     </div>
   );
