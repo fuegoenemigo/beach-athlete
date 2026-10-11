@@ -194,7 +194,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       const exercise = createLoggedExercise({ ...item, target: reference.target ?? item.target })
       return index === 0 ? { ...exercise,
         entries: [{ ...createTrainingSet(exercise.type,
-          exercise.intervalWorkMinutes ? 'min' : 's'), completed: false }] } : exercise
+          exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
+          completed: false }] } : exercise
     })
   }
   function openNewTraining(plan = null) {
@@ -257,7 +258,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   function addExercise(item) {
     const exercise = createLoggedExercise(item)
     exercise.entries = [{ ...createTrainingSet(exercise.type,
-      exercise.intervalWorkMinutes ? 'min' : 's'), completed: false }]
+      exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
+      completed: false }]
     updateSession({ exercises: [...activeSession.exercises, exercise] })
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
@@ -269,7 +271,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     if (!(exercise.entries ?? []).some((entry) => entry.completed === false)) {
       updateExercise(exercise.id, { entries: [...(exercise.entries ?? []),
-        { ...createTrainingSet(type, exercise.intervalWorkMinutes ? 'min' : 's'),
+        { ...createTrainingSet(type,
+          exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
           completed: false }] })
     }
     setActiveExerciseId(exercise.id)
@@ -593,6 +596,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         <p className="training-plan-description">{pendingPlan.description}</p>
         {pendingPlan.evidence && <a className="training-plan-evidence" href={pendingPlan.evidence.url}
           target="_blank" rel="noopener noreferrer">Trainingsgrundlage: {pendingPlan.evidence.label} ↗</a>}
+        {pendingPlan.weeklyEvidence && <a className="training-plan-evidence" href={pendingPlan.weeklyEvidence.url}
+          target="_blank" rel="noopener noreferrer">Wochenrhythmus: {pendingPlan.weeklyEvidence.label} ↗</a>}
         <p className="history-meta">{(pendingPlan.categories ?? [pendingPlan.category]).join(' + ')}
           {' · '}{pendingPlan.exercises.length} Übungen</p>
         <h3 className="training-preview-heading">Übungen in diesem Plan</h3>

@@ -43,7 +43,8 @@ function bestMetric(exercise) {
 
 function completedExercises(session) {
   return (session.exercises ?? []).filter((exercise) =>
-    exercise.libraryId && ((exercise.entries ?? []).some((entry) =>
+    exercise.libraryId && exercise.performanceRole !== 'support'
+    && ((exercise.entries ?? []).some((entry) =>
       isConfirmedSet(entry, exerciseMeasurement(exercise))) || hasLegacyValues(exercise)))
 }
 

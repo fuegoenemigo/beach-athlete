@@ -102,6 +102,12 @@ const INSTRUCTIONS = {
   'gym:deep-squat-hold': 'Mit den Füßen etwa schulterbreit in eine tiefe Kniebeuge gehen und die Position mit aufrechtem Oberkörper halten; bei Bedarf an einer Stange festhalten.',
 
   'gym:treadmill': 'Auf dem Laufband mit angenehmem Tempo gehen oder laufen; Zeit und Strecke am Display ablesen.',
+  'gym:treadmill-warmup': 'Auf dem Laufband locker gehen oder traben und das Tempo allmählich erhöhen. Trage die tatsächlich absolvierte Aufwärmdauer ein.',
+  'gym:treadmill-cooldown': 'Nach dem Hauptteil auf dem Laufband sehr locker gehen oder traben und das Tempo allmählich senken. Trage die tatsächliche Dauer ein.',
+  'gym:bike-warmup': 'Auf dem Fahrradergometer oder Fahrrad mit leichtem Widerstand locker einrollen und die Trittfrequenz allmählich erhöhen. Tatsächliche Dauer erfassen.',
+  'gym:bike-cooldown': 'Nach dem Hauptteil mit leichtem Widerstand locker weiterfahren und das Tempo allmählich senken. Tatsächliche Dauer erfassen.',
+  'gym:walking-warmup': 'Vor dem Hauptteil locker gehen und das Tempo nach und nach etwas erhöhen. Trage die tatsächlich absolvierte Aufwärmdauer ein.',
+  'gym:walking-cooldown': 'Nach dem Hauptteil einige Minuten locker gehen und das Tempo allmählich senken. Trage die tatsächliche Dauer ein.',
   'gym:elliptical': 'Auf dem Crosstrainer Füße auf den Pedalen lassen und Arme und Beine gleichmäßig bewegen; Zeit und Strecke erfassen.',
   'gym:rowing-erg': 'Am Ruderergometer erst mit den Beinen abdrücken, dann den Griff zum Körper ziehen; auf dem Rückweg Arme, Rumpf, Beine folgen lassen.',
   'gym:ski-erg': 'Am SkiErg beide Griffe von oben nach unten ziehen, Hüfte dabei leicht beugen und kontrolliert wieder aufrichten.',

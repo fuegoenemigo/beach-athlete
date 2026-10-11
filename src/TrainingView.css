@@ -446,7 +446,7 @@
 .training-reference strong { display: block; color: #c0c9c2; font-size: 0.8rem; }
 .training-reference span { display: block; margin-top: 5px; }
 
-.training-plan-evidence { display: inline-block; margin: 7px 0; color: #8fc8ad; font-size: 0.82rem; }
+.training-plan-evidence { display: block; margin: 7px 0; color: #8fc8ad; font-size: 0.82rem; }
 
 .training-activity-fields {
   margin-top: 15px;

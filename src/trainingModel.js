@@ -84,6 +84,8 @@ export function createLoggedExercise(item) {
     ...(item.muscleGroup ? { muscleGroup: item.muscleGroup } : {}),
     ...(item.loadMode ? { loadMode: item.loadMode } : {}),
     ...(item.intervalWorkMinutes ? { intervalWorkMinutes: item.intervalWorkMinutes } : {}),
+    ...(item.performanceRole ? { performanceRole: item.performanceRole } : {}),
+    ...(item.defaultDurationUnit ? { defaultDurationUnit: item.defaultDurationUnit } : {}),
     ...(item.target ? { target: item.target } : {}),
     entries: [], notes: '',
   }

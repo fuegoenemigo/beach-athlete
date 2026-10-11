@@ -74,6 +74,19 @@ test('an exercise without a comparable performance metric is counted but not sco
   assert.equal(scores.get('2026-10-11').comparisons.length, 1)
 })
 
+test('longer warm-ups and cooldowns do not change the calendar performance', () => {
+  const support = (duration) => ({ libraryId: 'gym:treadmill-warmup',
+    name: 'Laufband · Aufwärmen', category: 'Ausdauer', type: 'duration',
+    performanceRole: 'support', entries: [{ completed: true,
+      durationValue: String(duration), durationUnit: 'min' }] })
+  const scores = trainingDayPerformances([
+    session('old', '2026-10-10', [support(10), strength('bench', 50)]),
+    session('new', '2026-10-11', [support(15), strength('bench', 50)]),
+  ])
+  assert.equal(scores.get('2026-10-11').total, 1)
+  assert.equal(scores.get('2026-10-11').status, 'unchanged')
+})
+
 test('two sessions on the same day use the last logged value and compare with an earlier day', () => {
   const morning = session('morning', '2026-10-11', [strength('bench', 52)])
   const evening = session('evening', '2026-10-11', [strength('bench', 55)])

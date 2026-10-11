@@ -75,13 +75,19 @@ const GYM_EXERCISES = [
   gym('shoulder-mobility', 'Schulter-Mobilisation', 'Core und Mobility', 'duration', 'Mobility'),
   gym('deep-squat-hold', 'Tiefe Kniebeugen-Halteposition', 'Core und Mobility', 'duration', 'Mobility'),
   // Grundlagenausdauer und Intervalle.
-  gym('treadmill', 'Laufband', 'Ausdauer', 'distance', 'Grundlage'),
+  gym('treadmill', 'Laufband', 'Ausdauer', 'distance', 'Grundlage', { defaultDurationUnit: 'min' }),
+  gym('treadmill-warmup', 'Laufband · Aufwärmen', 'Ausdauer', 'duration', 'Vorbereitung', { performanceRole: 'support', defaultDurationUnit: 'min' }),
+  gym('treadmill-cooldown', 'Laufband · Auslaufen', 'Ausdauer', 'duration', 'Abschluss', { performanceRole: 'support', defaultDurationUnit: 'min' }),
+  gym('bike-warmup', 'Fahrrad · Einrollen', 'Ausdauer', 'duration', 'Vorbereitung', { performanceRole: 'support', defaultDurationUnit: 'min' }),
+  gym('bike-cooldown', 'Fahrrad · Ausrollen', 'Ausdauer', 'duration', 'Abschluss', { performanceRole: 'support', defaultDurationUnit: 'min' }),
+  gym('walking-warmup', 'Gehen · Aufwärmen', 'Ausdauer', 'duration', 'Vorbereitung', { performanceRole: 'support', defaultDurationUnit: 'min' }),
+  gym('walking-cooldown', 'Gehen · Auslaufen', 'Ausdauer', 'duration', 'Abschluss', { performanceRole: 'support', defaultDurationUnit: 'min' }),
   gym('elliptical', 'Crosstrainer', 'Ausdauer', 'distance', 'Grundlage'),
   gym('rowing-erg', 'Ruderergometer', 'Ausdauer', 'distance', 'Gerät'),
   gym('ski-erg', 'SkiErg', 'Ausdauer', 'distance', 'Gerät'),
   gym('stair-stepper', 'Treppensteiger', 'Ausdauer', 'duration', 'Gerät'),
   gym('swimming', 'Schwimmen', 'Ausdauer', 'distance', 'Grundlage'),
-  gym('walking', 'Zügiges Gehen', 'Ausdauer', 'distance', 'Grundlage'),
+  gym('walking', 'Zügiges Gehen', 'Ausdauer', 'distance', 'Grundlage', { defaultDurationUnit: 'min' }),
   gym('jump-rope', 'Seilspringen', 'Ausdauer', 'duration', 'Intervalle'),
   gym('run-intervals', 'Laufintervalle', 'Ausdauer', 'distance', 'Intervalle'),
   gym('bike-intervals', 'Fahrrad-Intervalle', 'Ausdauer', 'distance', 'Intervalle'),
@@ -135,7 +141,7 @@ export const DEFAULT_EXERCISES = [
   exercise('mobility', 'Mobilitätsroutine', 'Core und Mobility', 'duration', { muscleGroup: 'Ganzkörper' }),
   exercise('beach', 'Beachvolleyball-Training', 'Beach-Training', 'duration'),
   exercise('indoor', 'Hallenvolleyball-Training', 'Hallentraining', 'duration'),
-  exercise('bike', 'Radfahren', 'Ausdauer', 'distance', { muscleGroup: 'Ausdauer' }),
+  exercise('bike', 'Radfahren', 'Ausdauer', 'distance', { muscleGroup: 'Ausdauer', defaultDurationUnit: 'min' }),
   exercise('repeat-sprint', 'Wiederholter 30-m-Sprint', 'Ausdauer', 'distance', { muscleGroup: 'Intervalle' }),
   exercise('aerobic-run', 'Lockerer Dauerlauf', 'Ausdauer', 'distance', { muscleGroup: 'Grundlage' }),
   ...GYM_EXERCISES,
@@ -146,7 +152,9 @@ const ref = (id, target) => {
   const item = byId.get(id.includes(':') ? id : `volleyball:${id}`)
   return { libraryId: item.id, name: item.name, category: item.category,
     type: item.type, muscleGroup: item.muscleGroup, loadMode: item.loadMode,
-    intervalWorkMinutes: item.intervalWorkMinutes, target }
+    intervalWorkMinutes: item.intervalWorkMinutes,
+    performanceRole: item.performanceRole, defaultDurationUnit: item.defaultDurationUnit,
+    target }
 }
 
 export const STANDARD_PLANS = [
@@ -253,8 +261,12 @@ export const FOCUS_PLANS = [
   {
     id: 'gym:plan-endurance-base', name: 'Ausdauer aufbauen · Zügiges Gehen',
     category: 'Ausdauer',
-    description: 'Ein einfacher Einstieg mit Gehen. Beginne locker und steigere die Dauer allmählich.',
-    exercises: [ref('gym:walking', '20–30 Min. lockeres bis zügiges Tempo')],
+    evidence: { label: 'WHO · Empfehlungen zur Ausdaueraktivität',
+      url: 'https://www.who.int/europe/news-room/fact-sheets/item/physical-activity' },
+    description: 'Vollständiger Einstiegstag: 5 Min. locker gehen, 20–30 Min. zügig und gesprächsfähig gehen, 5 Min. locker auslaufen. Als Ausgangspunkt 2× pro Woche; Dauer erst steigern, wenn die Einheit gut vertragen wird.',
+    exercises: [ref('gym:walking-warmup', '5 Min. locker gehen; tatsächliche Dauer erfassen'),
+      ref('gym:walking', '20–30 Min. zügig gehen; tatsächliche Dauer und Distanz erfassen'),
+      ref('gym:walking-cooldown', '5 Min. locker gehen; tatsächliche Dauer erfassen')],
   },
   {
     id: 'gym:plan-jump-basics', name: 'Sprungkraft aufbauen · Explosive Kniebeugen',
@@ -293,6 +305,10 @@ const aerobicSource = {
   label: 'WHO · Empfehlungen zur Ausdaueraktivität',
   url: 'https://www.who.int/europe/news-room/fact-sheets/item/physical-activity',
 }
+const enduranceMixSource = {
+  label: 'Meta-Analyse an Ausdauersportlern · Trainingsintensitäten',
+  url: 'https://pubmed.ncbi.nlm.nih.gov/38717713/',
+}
 const jumpSource = {
   label: 'Meta-Analyse · Sprungtraining im Volleyball',
   url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7429440/',
@@ -302,13 +318,22 @@ const agilitySource = {
   url: 'https://pubmed.ncbi.nlm.nih.gov/28149427/',
 }
 
-const intervalPlan = (id, name, exerciseId, count, workMinutes, restMinutes, level) => ({
-  id: `gym:plan-${id}`, name, category: 'Ausdauer',
-  description: `10 Min. locker aufwärmen, dann ${count} × ${workMinutes} Min. zügig bis anstrengend mit ${restMinutes} Min. sehr lockerer aktiver Pause zwischen den Belastungen; 5 Min. auslaufen. ${level} Als Zusatz zum Volleyball zunächst höchstens 1× pro Woche. Trage je Belastungsabschnitt die tatsächlich geschaffte Zeit und optional die Strecke ein.${workMinutes < 4 ? ' Diese Stufe ist eine vorsichtige Progression, kein exakt geprüftes Studienprotokoll.' : ''}`,
-  evidence: workMinutes < 4 ? intervalSource
-    : exerciseId.startsWith('gym:bike-') ? cyclingFourByFourSource : fourByFourSource,
-  exercises: [ref(exerciseId, `${count} Sätze = ${count} Belastungsabschnitte à ${workMinutes} Min.; je Satz tatsächliche Dauer und optional Distanz eintragen. ${restMinutes} Min. locker zwischen den Sätzen.`)],
-})
+const intervalPlan = (id, name, exerciseId, count, workMinutes, restMinutes, level) => {
+  const bike = exerciseId.startsWith('gym:bike-')
+  const warmup = bike ? 'gym:bike-warmup' : 'gym:treadmill-warmup'
+  const cooldown = bike ? 'gym:bike-cooldown' : 'gym:treadmill-cooldown'
+  const totalMinutes = 15 + count * workMinutes + (count - 1) * restMinutes
+  return {
+    id: `gym:plan-${id}`, name, category: 'Ausdauer',
+    description: `Vollständiger Trainingstag von etwa ${totalMinutes} Min.: 10 Min. locker aufwärmen, ${count} × ${workMinutes} Min. Belastung mit ${restMinutes} Min. sehr lockerer aktiver Pause dazwischen, anschließend 5 Min. auslaufen. ${level} Als Orientierung über 6–8 Wochen: 1 Intervalltag und 1–2 lockere Ausdauertage pro Woche, angepasst an Beach-/Hallentraining und Erholung. Jede Phase und jeden Belastungsabschnitt mit tatsächlich geschaffter Dauer erfassen.${workMinutes < 4 ? ' Diese Stufe ist eine vorsichtige Progression, kein exakt geprüftes Studienprotokoll.' : ''}`,
+    evidence: workMinutes < 4 ? intervalSource
+      : bike ? cyclingFourByFourSource : fourByFourSource,
+    weeklyEvidence: enduranceMixSource,
+    exercises: [ref(warmup, '10 Min. locker; tatsächliche Dauer erfassen'),
+      ref(exerciseId, `${count} Sätze = ${count} Belastungsabschnitte à ${workMinutes} Min.; je Satz tatsächliche Dauer und optional Distanz eintragen. ${restMinutes} Min. locker zwischen den Sätzen.`),
+      ref(cooldown, '5 Min. locker; tatsächliche Dauer erfassen')],
+  }
+}
 
 export const ADDITIONAL_PLANS = [
   intervalPlan('treadmill-interval-beginner', 'Laufband-Intervalle · Einstieg',
@@ -325,15 +350,19 @@ export const ADDITIONAL_PLANS = [
     'gym:bike-interval-4m', 4, 4, 3, 'Orientierung: etwa 85–95 % der maximalen Herzfrequenz; nicht maximal sprinten.'),
   {
     id: 'gym:plan-treadmill-base', name: 'Ausdauer-Grundlage · Laufband',
-    category: 'Ausdauer', evidence: aerobicSource,
-    description: '5 Min. locker beginnen, 20–30 Min. in einem Tempo laufen oder gehen, bei dem Sprechen möglich bleibt, 5 Min. locker auslaufen. Dauer und Strecke dokumentieren.',
-    exercises: [ref('gym:treadmill', '1 Satz: tatsächliche Dauer und Strecke des gleichmäßigen Abschnitts')],
+    category: 'Ausdauer', evidence: aerobicSource, weeklyEvidence: enduranceMixSource,
+    description: 'Vollständiger lockerer Ausdauertag von etwa 35–45 Min.: 10 Min. locker beginnen, 20–30 Min. gesprächsfähig laufen oder gehen, 5 Min. locker auslaufen. 1–2× pro Woche als Ergänzung zu einem Intervalltag; Umfang über 6–8 Wochen allmählich anpassen.',
+    exercises: [ref('gym:treadmill-warmup', '10 Min. locker; tatsächliche Dauer erfassen'),
+      ref('gym:treadmill', '20–30 Min. gleichmäßig; tatsächliche Dauer und Strecke erfassen'),
+      ref('gym:treadmill-cooldown', '5 Min. locker; tatsächliche Dauer erfassen')],
   },
   {
     id: 'gym:plan-bike-base', name: 'Ausdauer-Grundlage · Fahrrad',
-    category: 'Ausdauer', evidence: aerobicSource,
-    description: '5 Min. locker einrollen, 25–40 Min. gleichmäßig und gesprächsfähig fahren, 5 Min. locker ausrollen. Dauer und Strecke dokumentieren; am Ergometer für Vergleiche dasselbe Gerät nutzen.',
-    exercises: [ref('bike', '1 Satz: tatsächliche Dauer und optional Distanz des gleichmäßigen Abschnitts')],
+    category: 'Ausdauer', evidence: aerobicSource, weeklyEvidence: enduranceMixSource,
+    description: 'Vollständiger lockerer Ausdauertag von etwa 40–55 Min.: 10 Min. locker einrollen, 25–40 Min. gleichmäßig und gesprächsfähig fahren, 5 Min. locker ausrollen. 1–2× pro Woche als Ergänzung zu einem Intervalltag; für Distanzvergleiche dasselbe Ergometer nutzen.',
+    exercises: [ref('gym:bike-warmup', '10 Min. locker; tatsächliche Dauer erfassen'),
+      ref('bike', '25–40 Min. gleichmäßig; tatsächliche Dauer und optional Distanz erfassen'),
+      ref('gym:bike-cooldown', '5 Min. locker; tatsächliche Dauer erfassen')],
   },
   {
     id: 'gym:plan-core-beginner', name: 'Core · Stabiler Einstieg',
@@ -414,9 +443,10 @@ export const VOLLEYBALL_PLANS = [
   },
   {
     id: 'volleyball:plan-endurance', name: 'Volleyball-Ausdauer · Wiederholte Sprints',
-    category: 'Ausdauer', description: 'Einstieg: 2 Serien à 6 × 30 m, etwa 20 s Pause zwischen Läufen und 5 Min. zwischen Serien. Bei Bedarf reduzieren.',
-    exercises: [ref('gym:walking', '10 Min. zügig gehen zum Aufwärmen'),
-      ref('repeat-sprint', 'Pro Satz ein 30-m-Sprint: Distanz und Laufzeit erfassen')],
+    category: 'Ausdauer', description: 'Vollständiger Sprinttag: 10 Min. locker aufwärmen, 2 Serien à 6 × 30 m mit etwa 20 s Pause zwischen Läufen und 5 Min. zwischen Serien, danach 5–10 Min. auslaufen. Bei Bedarf weniger Läufe; nicht direkt nach einem intensiven Volleyballtag.',
+    exercises: [ref('gym:walking-warmup', '10 Min. locker bis zügig gehen; tatsächliche Dauer erfassen'),
+      ref('repeat-sprint', 'Pro Satz ein 30-m-Sprint: Distanz und Laufzeit erfassen'),
+      ref('gym:walking-cooldown', '5–10 Min. locker gehen; tatsächliche Dauer erfassen')],
   },
   {
     id: 'volleyball:plan-core', name: 'Volleyball-Core · Rumpf & Schulter',

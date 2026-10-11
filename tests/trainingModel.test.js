@@ -245,10 +245,19 @@ test('additional plans cover non-strength categories and record interval work pe
   assert.ok(ADDITIONAL_PLANS.every((plan) => plan.evidence?.url.startsWith('https://')))
   const intervals = ADDITIONAL_PLANS.filter((plan) => /interval-(beginner|intermediate|advanced)/.test(plan.id))
   assert.equal(intervals.length, 6)
-  assert.equal(new Set(intervals.map((plan) => plan.exercises[0].libraryId)).size, 6)
+  assert.equal(new Set(intervals.map((plan) => plan.exercises[1].libraryId)).size, 6)
   for (const plan of intervals) {
-    const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    assert.equal(plan.exercises.length, 3)
+    assert.match(plan.description, /6–8 Wochen/)
+    assert.equal(plan.weeklyEvidence.url, 'https://pubmed.ncbi.nlm.nih.gov/38717713/')
+    assert.equal(DEFAULT_EXERCISES.find((item) =>
+      item.id === plan.exercises[0].libraryId).performanceRole, 'support')
+    const warmup = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
       item.id === plan.exercises[0].libraryId))
+    assert.equal(warmup.performanceRole, 'support')
+    assert.equal(warmup.defaultDurationUnit, 'min')
+    const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+      item.id === plan.exercises[1].libraryId))
     assert.equal(exercise.type, 'distance')
     assert.ok(exercise.intervalWorkMinutes > 0)
     const set = { ...createTrainingSet('distance'), durationValue: '50', distanceValue: '200' }
@@ -263,6 +272,10 @@ test('additional plans cover non-strength categories and record interval work pe
     assert.equal(isAthleteData({ ...base(), sessions: [{ id: 'interval',
       date: '2026-10-11', category: 'Ausdauer', exercises: [{ ...exercise,
         entries: [{ ...set, completed: true }] }] }] }), true)
+  }
+  for (const plan of [...FOCUS_PLANS, ...ADDITIONAL_PLANS, ...VOLLEYBALL_PLANS]
+    .filter((item) => item.category === 'Ausdauer')) {
+    assert.ok(plan.exercises.length >= 3, plan.id)
   }
 })
 
