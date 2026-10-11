@@ -1,7 +1,23 @@
 export const TRAINING_CATEGORIES = [
-  'Krafttraining', 'Sprungkraft & Explosivität', 'Schnelligkeit & Agilität',
-  'Ausdauer', 'Core & Stabilität', 'Mobility', 'Sport', 'Regeneration',
+  'Krafttraining', 'Sprungkraft und Agilität', 'Ausdauer', 'Core und Mobility',
+  'Beach-Training', 'Hallentraining', 'Regeneration',
 ]
+
+export const LEGACY_TRAINING_CATEGORIES = [
+  'Sprungkraft & Explosivität', 'Schnelligkeit & Agilität',
+  'Core & Stabilität', 'Mobility', 'Sport',
+]
+
+export function canonicalCategory(category, subcategory = '') {
+  if (['Sprungkraft & Explosivität', 'Schnelligkeit & Agilität'].includes(category))
+    return 'Sprungkraft und Agilität'
+  if (['Core & Stabilität', 'Mobility'].includes(category)) return 'Core und Mobility'
+  if (category === 'Sport') {
+    if (['Beachvolleyball', 'Beach-Training'].includes(subcategory)) return 'Beach-Training'
+    if (['Hallenvolleyball', 'Hallentraining'].includes(subcategory)) return 'Hallentraining'
+  }
+  return category
+}
 
 export const MUSCLE_GROUPS = [
   'Brust', 'Rücken', 'Schultern', 'Beine', 'Bizeps', 'Trizeps', 'Core', 'Ganzkörper',
@@ -21,9 +37,9 @@ export const MEASUREMENT_TYPES = [
 
 export function defaultMeasurement(category) {
   return {
-    Krafttraining: 'strength', 'Sprungkraft & Explosivität': 'jump',
-    'Schnelligkeit & Agilität': 'distance', Ausdauer: 'distance',
-    'Core & Stabilität': 'duration', Mobility: 'duration', Sport: 'duration',
+    Krafttraining: 'strength', 'Sprungkraft und Agilität': 'jump',
+    Ausdauer: 'distance', 'Core und Mobility': 'duration',
+    'Beach-Training': 'duration', Hallentraining: 'duration',
     Regeneration: 'duration',
   }[category] ?? 'duration'
 }
@@ -57,6 +73,34 @@ export function createTrainingSet(type = 'strength') {
   return { ...base, durationValue: '', durationUnit: 's' }
 }
 
+export function hasMeasuredValue(entry, type) {
+  const positive = (value) => value !== '' && value != null
+    && Number.isFinite(Number(value)) && Number(value) > 0
+  if (type === 'strength' || type === 'reps') return positive(entry.reps)
+  if (type === 'jump') return positive(entry.reps) || positive(entry.heightCm)
+  if (type === 'distance') return positive(entry.distanceValue) || positive(entry.durationValue)
+  return positive(entry.durationValue)
+}
+
+export function isConfirmedSet(entry, type) {
+  return entry.completed === true
+    || (entry.completed === undefined && hasMeasuredValue(entry, type))
+}
+
+export function confirmAndAdvanceSet(entries, type) {
+  const draft = entries.find((entry) => entry.completed === false)
+  if (!draft || !hasMeasuredValue(draft, type)) return null
+  return [...entries.map((entry) => entry.id === draft.id
+    ? { ...entry, completed: true, confirmedAt: new Date().toISOString() } : entry),
+  { ...createTrainingSet(type), completed: false }]
+}
+
+export function finishTrainingExerciseEntries(entries, type) {
+  if (entries.some((entry) => entry.completed === false && hasMeasuredValue(entry, type)))
+    return null
+  return entries.filter((entry) => isConfirmedSet(entry, type))
+}
+
 export function hasLegacyValues(exercise) {
   return ['sets', 'reps', 'weight', 'duration', 'distance', 'result']
       .some((field) => exercise[field] !== '' && exercise[field] != null)
@@ -64,7 +108,7 @@ export function hasLegacyValues(exercise) {
 
 export function isTrainingPlan(plan) {
   return plan && typeof plan.id === 'string' && typeof plan.name === 'string'
-    && plan.name.trim() && TRAINING_CATEGORIES.includes(plan.category)
+    && plan.name.trim() && [...TRAINING_CATEGORIES, ...LEGACY_TRAINING_CATEGORIES].includes(plan.category)
     && Array.isArray(plan.exercises)
     && plan.exercises.every((item) => item && typeof item.libraryId === 'string'
       && typeof item.name === 'string')
@@ -86,14 +130,18 @@ export function isLoggedTrainingExercise(exercise) {
 
 export function previousExercise(sessions, currentSession, exercise) {
   return sessions.filter((session) => session.id !== currentSession.id
-    && session.category === currentSession.category
+    && canonicalCategory(session.category, session.subcategory)
+      === canonicalCategory(currentSession.category, currentSession.subcategory)
     && (session.date < currentSession.date
       || (session.date === currentSession.date
         && (session.createdAt ?? '') < (currentSession.createdAt ?? ''))))
     .sort((a, b) => b.date.localeCompare(a.date)
       || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
     .flatMap((session) => session.exercises.map((item) => ({ session, item })))
-    .find(({ item }) => Array.isArray(item.entries) && item.entries.length
+    .find(({ item }) => Array.isArray(item.entries)
+      && item.entries.some((entry) => isConfirmedSet(entry, exerciseMeasurement({
+        ...item, category: currentSession.category,
+      })))
       && (item.libraryId && exercise.libraryId
         ? item.libraryId === exercise.libraryId
         : item.name === exercise.name)) ?? null

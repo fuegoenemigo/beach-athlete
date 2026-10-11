@@ -2,7 +2,9 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   createLoggedExercise, createTrainingSet, exerciseIdentity, hasLegacyValues,
-  previousExercise, formatTrainingEntry,
+  previousExercise, formatTrainingEntry, canonicalCategory,
+  hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
+  finishTrainingExerciseEntries,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
 
@@ -65,4 +67,37 @@ test('previous performance compares the same exercise, not the whole strength ca
   const previous = previousExercise([first, other, current], current, first.exercises[0])
   assert.equal(previous.session.id, 'one')
   assert.equal(formatTrainingEntry(previous.item.entries[0], 'strength'), '8 Wdh. · 60 kg')
+})
+
+test('old training categories resolve to the requested new categories without guessing other sports', () => {
+  assert.equal(canonicalCategory('Sprungkraft & Explosivität'), 'Sprungkraft und Agilität')
+  assert.equal(canonicalCategory('Schnelligkeit & Agilität'), 'Sprungkraft und Agilität')
+  assert.equal(canonicalCategory('Core & Stabilität'), 'Core und Mobility')
+  assert.equal(canonicalCategory('Mobility'), 'Core und Mobility')
+  assert.equal(canonicalCategory('Sport', 'Beachvolleyball'), 'Beach-Training')
+  assert.equal(canonicalCategory('Sport', 'Hallenvolleyball'), 'Hallentraining')
+  assert.equal(canonicalCategory('Sport', 'Laufen'), 'Sport')
+  assert.equal(canonicalCategory('Sport', 'Sonstiger Sport'), 'Sport')
+})
+
+test('a drafted set only counts after confirmation and an empty draft never counts', () => {
+  const draft = { ...createTrainingSet('strength'), reps: '8', weightKg: '60', completed: false }
+  assert.equal(hasMeasuredValue(draft, 'strength'), true)
+  assert.equal(isConfirmedSet(draft, 'strength'), false)
+  assert.equal(isConfirmedSet({ ...draft, completed: true }, 'strength'), true)
+  assert.equal(isConfirmedSet({ ...createTrainingSet('strength'), completed: false }, 'strength'), false)
+  assert.equal(isConfirmedSet({ ...createTrainingSet('strength'), reps: '8' }, 'strength'), true)
+})
+
+test('confirming a set opens the next and ending an exercise drops only the empty draft', () => {
+  const first = { ...createTrainingSet('strength'), reps: '8', weightKg: '60', completed: false }
+  const advanced = confirmAndAdvanceSet([first], 'strength')
+  assert.equal(advanced.length, 2)
+  assert.equal(advanced[0].completed, true)
+  assert.equal(advanced[1].completed, false)
+  assert.equal(finishTrainingExerciseEntries(advanced, 'strength').length, 1)
+  assert.equal(confirmAndAdvanceSet(advanced, 'strength'), null)
+  assert.equal(finishTrainingExerciseEntries([
+    advanced[0], { ...advanced[1], reps: '6' },
+  ], 'strength'), null)
 })

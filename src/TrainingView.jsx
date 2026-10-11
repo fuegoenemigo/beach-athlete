@@ -1,18 +1,16 @@
 import { useState } from 'react'
-import { RatingStepper } from './VolleyballInputs.jsx'
+import GuidedTrainingPanel from './GuidedTrainingPanel.jsx'
 import {
-  TRAINING_CATEGORIES, MUSCLE_GROUPS, SPORTS, MEASUREMENT_TYPES,
+  TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   defaultMeasurement, exerciseIdentity, exerciseMeasurement,
   createLoggedExercise, createTrainingSet, hasLegacyValues,
-  previousExercise, formatTrainingEntry,
+  canonicalCategory,
+  hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
+  finishTrainingExerciseEntries,
 } from './trainingModel.js'
 import './TrainingView.css'
 
 const today = () => new Date().toLocaleDateString('sv-SE')
-const legacyLabels = {
-  sets: 'Sätze', reps: 'Wiederholungen', weight: 'Gewicht (kg)',
-  duration: 'Dauer (Min.)', distance: 'Distanz', result: 'Messwert',
-}
 const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', {
   weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric',
 })
@@ -35,53 +33,17 @@ function ExercisePicker({ id, library, category, value, onChange }) {
   </select>
 }
 
-function NumberField({ label, value, onChange, step = 'any' }) {
-  return <label className="training-field">{label}
-    <input className="field" type="number" min="0" step={step} inputMode="decimal"
-      value={value ?? ''} onChange={(event) => {
-        const next = event.target.value
-        if (next === '' || (Number.isFinite(Number(next)) && Number(next) >= 0)) onChange(next)
-      }} />
-  </label>
-}
-
-function SetEditor({ entry, type, index, onChange, onRemove }) {
-  const number = (label, field, step) => <NumberField label={label} value={entry[field]}
-    step={step} onChange={(value) => onChange({ [field]: value })} />
-  const timed = type === 'duration' || type === 'distance'
-  return <div className="training-set">
-    <div className="training-set-heading"><strong>Satz {index + 1}</strong>
-      <button type="button" className="text-button" onClick={onRemove}>Entfernen</button></div>
-    <div className="training-activity-fields">
-      {['strength', 'reps', 'jump'].includes(type) && number('Wiederholungen', 'reps', '1')}
-      {type === 'strength' && number('Gewicht (kg)', 'weightKg')}
-      {type === 'jump' && number('Sprunghöhe (cm)', 'heightCm')}
-      {type === 'distance' && number('Distanz', 'distanceValue')}
-      {type === 'distance' && <label className="training-field">Einheit
-        <select className="field" value={entry.distanceUnit ?? 'm'}
-          onChange={(event) => onChange({ distanceUnit: event.target.value })}>
-          <option value="m">Meter</option><option value="km">Kilometer</option>
-        </select></label>}
-      {timed && number('Dauer', 'durationValue')}
-      {timed && <label className="training-field">Einheit
-        <select className="field" value={entry.durationUnit ?? 's'}
-          onChange={(event) => onChange({ durationUnit: event.target.value })}>
-          <option value="s">Sekunden</option><option value="min">Minuten</option>
-        </select></label>}
-    </div>
-    <input className="field training-set-note" aria-label={`Notiz zu Satz ${index + 1}`}
-      placeholder="Notiz zum Satz (optional)" value={entry.notes ?? ''}
-      onChange={(event) => onChange({ notes: event.target.value })} />
-  </div>
-}
-
 export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   setExerciseLibrary, trainingPlans, setTrainingPlans, setNotice }) {
   const [selectedDate, setSelectedDate] = useState(today)
+  const [customDate, setCustomDate] = useState(false)
   const [newCategory, setNewCategory] = useState('Krafttraining')
-  const [selectedPlanId, setSelectedPlanId] = useState('')
   const [activeSessionId, setActiveSessionId] = useState(null)
-  const [exerciseChoice, setExerciseChoice] = useState('')
+  const [flowStep, setFlowStep] = useState('exercise')
+  const [flowMessage, setFlowMessage] = useState('')
+  const [activeExerciseId, setActiveExerciseId] = useState(null)
+  const [selectedGroup, setSelectedGroup] = useState('')
+  const [editingSetId, setEditingSetId] = useState(null)
   const [planChoice, setPlanChoice] = useState('')
   const [planDraft, setPlanDraft] = useState(null)
   const [customName, setCustomName] = useState('')
@@ -94,6 +56,22 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [renamingIndex, setRenamingIndex] = useState(null)
   const [renameValue, setRenameValue] = useState('')
   const activeSession = sessions.find((session) => session.id === activeSessionId)
+  const managedLibrary = exerciseLibrary.map((item, sourceIndex) => ({
+    ...item, id: exerciseIdentity(item),
+    category: canonicalCategory(item.category, item.name),
+    sourceIndex,
+  }))
+  const essentialActivities = [
+    { id: 'system:incline-press', name: 'Schrägbankdrücken',
+      category: 'Krafttraining', muscleGroup: 'Brust', type: 'strength' },
+    { id: 'system:beach-training', name: 'Beachvolleyball-Training',
+      category: 'Beach-Training', type: 'duration' },
+    { id: 'system:indoor-training', name: 'Hallenvolleyball-Training',
+      category: 'Hallentraining', type: 'duration' },
+  ]
+  const visibleLibrary = [...managedLibrary, ...essentialActivities.filter((item) =>
+    !managedLibrary.some((existing) => existing.category === item.category
+      && existing.name === item.name))]
   const sortedSessions = [...sessions].sort((a, b) =>
     b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 
@@ -107,52 +85,186 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         exercise.id === id ? { ...exercise, ...changes } : exercise) } : session))
   }
   function startSession() {
-    if (!selectedDate) { setNotice('Bitte wähle ein Trainingsdatum.'); return }
-    const plan = trainingPlans.find((item) => item.id === selectedPlanId && item.category === newCategory)
+    const entryDate = customDate ? selectedDate : today()
+    if (!entryDate) { setNotice('Bitte wähle ein Trainingsdatum.'); return }
     const session = {
-      id: crypto.randomUUID(), date: selectedDate, title: plan?.name || newCategory,
-      category: newCategory, subcategory: '', planId: plan?.id ?? null,
+      id: crypto.randomUUID(), date: entryDate,
+      category: newCategory, subcategory: '', planId: null,
       durationMinutes: '', intensity: '', notes: '', status: 'ongoing',
-      exercises: (plan?.exercises ?? []).map((reference) => {
-        const item = exerciseLibrary.find((candidate) => exerciseIdentity(candidate) === reference.libraryId)
-        return createLoggedExercise(item ?? { ...reference, id: reference.libraryId, category: newCategory })
-      }), createdAt: new Date().toISOString(),
+      exercises: [], createdAt: new Date().toISOString(),
     }
     setSessions((previous) => [...previous, session])
     setActiveSessionId(session.id)
+    setActiveExerciseId(null)
+    setFlowStep('exercise')
+    setFlowMessage('')
+    setSelectedGroup('')
     setCustomType(defaultMeasurement(newCategory))
-    setExerciseChoice('')
     setNotice('')
   }
-  function addExercise() {
-    const item = exerciseLibrary.find((candidate) => candidate.category === activeSession?.category
-      && exerciseIdentity(candidate) === exerciseChoice)
-    if (!item) { setNotice('Bitte wähle eine Übung aus.'); return }
-    updateSession({ exercises: [...activeSession.exercises, createLoggedExercise(item)] })
-    setExerciseChoice('')
-    setNotice('Übung hinzugefügt.')
+  function addExercise(item) {
+    const exercise = createLoggedExercise(item)
+    exercise.entries = [{ ...createTrainingSet(exercise.type), completed: false }]
+    updateSession({ exercises: [...activeSession.exercises, exercise] })
+    setActiveExerciseId(exercise.id)
+    setFlowStep('set')
+    setEditingSetId(null)
+    setFlowMessage('')
+    setNotice('')
+  }
+  function openExercise(exercise) {
+    const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
+    if (!(exercise.entries ?? []).some((entry) => entry.completed === false)) {
+      updateExercise(exercise.id, { entries: [...(exercise.entries ?? []),
+        { ...createTrainingSet(type), completed: false }] })
+    }
+    setActiveExerciseId(exercise.id)
+    setFlowStep('set')
+    setEditingSetId(null)
+    setFlowMessage('')
+  }
+  function applyPlan(plan) {
+    if (activeSession.exercises.length) {
+      setFlowMessage('Eine Vorlage kannst du nur vor der ersten Übung laden.'); return
+    }
+    const exercises = plan.exercises.map((reference) => {
+      const item = visibleLibrary.find((candidate) => exerciseIdentity(candidate) === reference.libraryId)
+      return createLoggedExercise(item ?? { ...reference, id: reference.libraryId,
+        category: activeSession.category })
+    })
+    if (exercises.length) {
+      const first = exercises[0]
+      updateSession({ planId: plan.id, exercises: exercises.map((exercise, index) =>
+        index === 0 ? { ...exercise, entries: [{ ...createTrainingSet(exercise.type), completed: false }] }
+          : exercise) })
+      setActiveExerciseId(first.id)
+      setFlowStep('set')
+      setEditingSetId(null)
+      setFlowMessage('')
+    }
+  }
+  function confirmSet() {
+    const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
+    if (!exercise) return
+    const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
+    const entries = exercise.entries ?? []
+    const advanced = confirmAndAdvanceSet(entries, type)
+    if (!advanced) {
+      setFlowMessage('Bitte gib die Werte für diesen Satz ein.'); return
+    }
+    updateExercise(exercise.id, { entries: advanced })
+    setFlowMessage('')
+  }
+  function finishExercise() {
+    const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
+    if (!exercise) return
+    const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
+    const kept = finishTrainingExerciseEntries(exercise.entries ?? [], type)
+    if (!kept) {
+      setFlowMessage('Bestätige den begonnenen Satz mit dem Haken oder entferne seine Werte.'); return
+    }
+    if (!kept.length && !hasLegacyValues(exercise)) {
+      setFlowMessage('Bestätige mindestens einen Satz, bevor du die Übung beendest.'); return
+    }
+    const exercises = activeSession.exercises.map((item) => item.id === exercise.id
+      ? { ...item, entries: kept, done: true } : item)
+    updateSession({ exercises })
+    setActiveExerciseId(null)
+    setFlowStep('exercise')
+    setFlowMessage('')
+  }
+  function openHistorySession(session) {
+    const category = canonicalCategory(session.category, session.subcategory)
+    if (category !== session.category) {
+      setSessions((previous) => previous.map((item) => item.id === session.id
+        ? { ...item, category, legacyCategory: item.category,
+          exercises: item.exercises.map((exercise) => ({ ...exercise,
+            ...(exercise.category ? { category } : {}) })) } : item))
+    }
+    setActiveSessionId(session.id)
+    setSelectedDate(session.date)
+    setNewCategory(TRAINING_CATEGORIES.includes(category) ? category : 'Krafttraining')
+    setCustomType(defaultMeasurement(category))
+    setActiveExerciseId(null)
+    setFlowStep('exercise')
+    setFlowMessage('')
+    setSelectedGroup('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  function recategorizeSession(category) {
+    updateSession({ category, legacyCategory: activeSession.category,
+      exercises: activeSession.exercises.map((exercise) => ({ ...exercise,
+        ...(exercise.category ? { category } : {}) })) })
+    setCustomType(defaultMeasurement(category))
   }
   function createCustomExercise() {
     const name = customName.trim()
-    if (!name || !activeSession) { setNotice('Bitte gib einen Übungsnamen ein.'); return }
-    if (exerciseLibrary.some((item) => item.category === activeSession.category
+    if (!name || !activeSession) { setFlowMessage('Bitte gib einen Übungsnamen ein.'); return }
+    if (visibleLibrary.some((item) => item.category === activeSession.category
       && item.name.toLocaleLowerCase('de-DE') === name.toLocaleLowerCase('de-DE'))) {
-      setNotice('Diese Übung gibt es in der Kategorie bereits.'); return
+      setFlowMessage('Diese Übung gibt es in der Kategorie bereits.'); return
     }
     const item = { id: crypto.randomUUID(), name, category: activeSession.category,
       type: customType, ...(activeSession.category === 'Krafttraining' ? { muscleGroup: customGroup } : {}) }
     setExerciseLibrary((previous) => [...previous, item])
-    updateSession({ exercises: [...activeSession.exercises, createLoggedExercise(item)] })
+    const exercise = createLoggedExercise(item)
+    exercise.entries = [{ ...createTrainingSet(exercise.type), completed: false }]
+    updateSession({ exercises: [...activeSession.exercises, exercise] })
+    setActiveExerciseId(exercise.id)
+    setFlowStep('set')
+    setEditingSetId(null)
     setCustomName('')
+    setFlowMessage('')
     setNotice('Neue Übung angelegt und hinzugefügt.')
   }
+  function removeExercise(exercise) {
+    if (!window.confirm(`„${exercise.name}“ aus dieser Einheit entfernen?`)) return
+    updateSession({ exercises: activeSession.exercises.filter((item) => item.id !== exercise.id) })
+    setActiveExerciseId(null)
+    setFlowStep('exercise')
+    setFlowMessage('')
+  }
+  function saveTraining() {
+    if (!activeSession.date) { setFlowMessage('Bitte wähle ein Trainingsdatum.'); return }
+    if (activeSession.exercises.some((exercise) => {
+      const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
+      return (exercise.entries ?? []).some((entry) => entry.completed === true
+        && !hasMeasuredValue(entry, type))
+    })) {
+      setFlowMessage('Ein bestätigter Satz hat keine gültigen Werte. Bitte korrigiere ihn.'); return
+    }
+    const unfinished = activeSession.exercises.some((exercise) =>
+      (exercise.entries ?? []).some((entry) => entry.completed === false
+        && hasMeasuredValue(entry, exerciseMeasurement({ ...exercise,
+          category: activeSession.category }))))
+    if (unfinished) {
+      setFlowMessage('Bei einer Übung sind Satzwerte noch nicht mit dem Haken bestätigt.'); return
+    }
+    const exercises = activeSession.exercises.map((exercise) => {
+      const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
+      return { ...exercise, entries: (exercise.entries ?? [])
+        .filter((entry) => isConfirmedSet(entry, type)) }
+    }).filter((exercise) => exercise.entries.length || hasLegacyValues(exercise)
+      || exercise.notes?.trim() || !Array.isArray(activeSession.exercises
+        .find((original) => original.id === exercise.id)?.entries))
+    if (!exercises.length && !activeSession.durationMinutes && !activeSession.notes?.trim()) {
+      setFlowMessage('Bitte erfasse mindestens eine Übung, eine Dauer oder eine Notiz.'); return
+    }
+    updateSession({ exercises, status: 'completed', completedAt: new Date().toISOString() })
+    setActiveSessionId(null)
+    setActiveExerciseId(null)
+    setFlowStep('exercise')
+    setNotice('Trainingseinheit abgeschlossen.')
+  }
   function beginPlan(plan) {
-    setPlanDraft(plan ? { ...plan, exercises: [...plan.exercises] }
+    setPlanDraft(plan ? { ...plan,
+      category: canonicalCategory(plan.category, plan.name),
+      exercises: [...plan.exercises] }
       : { id: crypto.randomUUID(), name: '', category: newCategory, exercises: [] })
     setPlanChoice('')
   }
   function addPlanExercise() {
-    const item = exerciseLibrary.find((candidate) => candidate.category === planDraft?.category
+    const item = visibleLibrary.find((candidate) => candidate.category === planDraft?.category
       && exerciseIdentity(candidate) === planChoice)
     if (!item) { setNotice('Bitte wähle eine Übung für die Vorlage aus.'); return }
     if (planDraft.exercises.some((reference) => reference.libraryId === planChoice)) {
@@ -166,19 +278,21 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   }
   function savePlan() {
     if (!planDraft.name.trim()) { setNotice('Bitte gib der Vorlage einen Namen.'); return }
+    if (!TRAINING_CATEGORIES.includes(planDraft.category)) {
+      setNotice('Bitte ordne die ältere Vorlage einer neuen Hauptkategorie zu.'); return
+    }
     if (!planDraft.exercises.length) { setNotice('Füge mindestens eine Übung zur Vorlage hinzu.'); return }
     const saved = { ...planDraft, name: planDraft.name.trim() }
     setTrainingPlans((previous) => previous.some((plan) => plan.id === saved.id)
       ? previous.map((plan) => plan.id === saved.id ? saved : plan) : [...previous, saved])
     setNewCategory(saved.category)
-    setSelectedPlanId(saved.id)
     setPlanDraft(null)
     setNotice('Trainingsvorlage gespeichert.')
   }
   function addLibraryItem() {
     const name = libraryName.trim()
     if (!name) { setNotice('Bitte gib einen Übungsnamen ein.'); return }
-    if (exerciseLibrary.some((item) => item.category === libraryCategory
+    if (visibleLibrary.some((item) => item.category === libraryCategory
       && item.name.toLocaleLowerCase('de-DE') === name.toLocaleLowerCase('de-DE'))) {
       setNotice('Diese Übung gibt es in der Kategorie bereits.'); return
     }
@@ -192,7 +306,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const old = exerciseLibrary[index]
     const name = renameValue.trim()
     if (!name) { setNotice('Bitte gib einen Übungsnamen ein.'); return }
-    if (exerciseLibrary.some((item, i) => i !== index && item.category === old.category
+    if (visibleLibrary.some((item) => item.sourceIndex !== index
+      && item.category === canonicalCategory(old.category, old.name)
       && item.name.toLocaleLowerCase('de-DE') === name.toLocaleLowerCase('de-DE'))) {
       setNotice('Diese Übung gibt es in der Kategorie bereits.'); return
     }
@@ -230,153 +345,60 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setPlanDraft((draft) => draft ? { ...draft, exercises: draft.exercises.map((reference) =>
       reference.libraryId === id ? { ...reference, muscleGroup: group } : reference) } : null)
   }
+  function reassignLibraryItem(index, category) {
+    const item = exerciseLibrary[index]
+    if (visibleLibrary.some((entry) => entry.sourceIndex !== index
+      && entry.category === category
+      && entry.name.toLocaleLowerCase('de-DE') === item.name.toLocaleLowerCase('de-DE'))) {
+      setNotice('In dieser Kategorie gibt es bereits eine Übung mit diesem Namen.'); return
+    }
+    setExerciseLibrary((previous) => previous.map((entry, i) => i === index
+      ? { ...entry, id: exerciseIdentity(item), category,
+        ...(category === 'Krafttraining' ? { muscleGroup: item.muscleGroup || 'Ganzkörper' } : {}) }
+      : entry))
+    setNotice('Ältere Übung der neuen Hauptkategorie zugeordnet.')
+  }
 
   return <div className="training-view">
     <section className="diary-intro">
       <p className="eyebrow">TRAININGSTAGEBUCH</p><h2>Trainieren. Erfassen. Entwickeln.</h2>
-      <p>Wähle eine Vorlage oder starte frei. Erfasse die tatsächlichen Werte jeder Übung und jedes Satzes.</p>
+      <p>Wähle deine Trainingsart und erfasse Übung für Übung deine tatsächlichen Werte.</p>
     </section>
 
     {!activeSession && <section className="diary-panel">
       <div className="section-heading"><div><p className="eyebrow">NEUE EINHEIT</p><h2>Training starten</h2></div></div>
-      <div className="training-start-grid">
-        <label className="training-field" htmlFor="training-date">Datum
-          <input id="training-date" className="field" type="date" value={selectedDate}
-            onChange={(event) => setSelectedDate(event.target.value)} /></label>
-        <label className="training-field" htmlFor="training-category">Hauptkategorie
-          <select id="training-category" className="field" value={newCategory}
-            onChange={(event) => { setNewCategory(event.target.value); setSelectedPlanId('') }}>
-            {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
-          </select></label>
-      </div>
-      <label className="field-label" htmlFor="training-plan">Trainingsvorlage (optional)</label>
-      <select id="training-plan" className="field" value={selectedPlanId}
-        onChange={(event) => setSelectedPlanId(event.target.value)}>
-        <option value="">Freies Training</option>
-        {trainingPlans.filter((plan) => plan.category === newCategory)
-          .map((plan) => <option key={plan.id} value={plan.id}>{plan.name}</option>)}
+      <label className="field-label" htmlFor="training-category">Hauptkategorie</label>
+      <select id="training-category" className="field" value={newCategory}
+        onChange={(event) => setNewCategory(event.target.value)}>
+        {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
       </select>
-      {selectedPlanId && <p className="helper-text">{trainingPlans.find((plan) => plan.id === selectedPlanId)
-        ?.exercises.map((item) => item.name).join(' · ')}</p>}
+      <details className="training-date-option"><summary>Anderes Datum erfassen</summary>
+        <label className="field-label" htmlFor="training-date">Trainingsdatum</label>
+        <input id="training-date" className="field" type="date"
+          value={customDate ? selectedDate : today()}
+          onChange={(event) => { setSelectedDate(event.target.value); setCustomDate(true) }} />
+        {customDate && <button type="button" className="text-button"
+          onClick={() => setCustomDate(false)}>Wieder heute verwenden</button>}
+      </details>
       <button type="button" className="primary-button" onClick={startSession}>＋ Training starten</button>
-      {sessions.some((session) => session.date === selectedDate) &&
+      {sessions.some((session) => session.date === (customDate ? selectedDate : today())) &&
         <p className="helper-text">An diesem Tag gibt es bereits Einheiten. Du kannst eine weitere beginnen oder unten eine öffnen.</p>}
     </section>}
 
-    {activeSession && <section className="diary-panel active-workout">
-      <div className="section-heading"><div>
-        <p className="eyebrow">{formatDate(activeSession.date)} · {activeSession.category}</p>
-        <h2>Training erfassen</h2></div></div>
-      <p className="helper-text">Änderungen werden sofort gespeichert.</p>
-      <label className="field-label" htmlFor="session-title">Name der Einheit</label>
-      <input id="session-title" className="field" value={activeSession.title ?? ''}
-        onChange={(event) => updateSession({ title: event.target.value })} />
-      {!activeSession.exercises.length && <>
-        <label className="field-label" htmlFor="session-category">Hauptkategorie</label>
-        <select id="session-category" className="field" value={activeSession.category}
-          onChange={(event) => {
-            const category = event.target.value
-            updateSession({ category, subcategory: '',
-              title: activeSession.title === activeSession.category ? category : activeSession.title })
-            setCustomType(defaultMeasurement(category))
-            setExerciseChoice('')
-          }}>
-          {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
-        </select></>}
-      {activeSession.category === 'Sport' && <>
-        <label className="field-label" htmlFor="session-sport">Sportart</label>
-        <select id="session-sport" className="field" value={activeSession.subcategory ?? ''}
-          onChange={(event) => updateSession({ subcategory: event.target.value })}>
-          <option value="">Sportart auswählen</option>
-          {SPORTS.map((sport) => <option key={sport}>{sport}</option>)}
-        </select></>}
-      <div className="training-session-basics">
-        <NumberField label="Dauer der Einheit (Min., optional)" value={activeSession.durationMinutes}
-          onChange={(value) => updateSession({ durationMinutes: value })} />
-        <RatingStepper id="session-intensity" label="Anstrengung der Einheit (1–10, optional)"
-          value={activeSession.intensity ?? ''}
-          onChange={(value) => updateSession({ intensity: value })} />
-      </div>
-      <label className="field-label" htmlFor="session-notes">Notizen zur Einheit</label>
-      <textarea id="session-notes" className="field notes-field" rows="3" value={activeSession.notes ?? ''}
-        onChange={(event) => updateSession({ notes: event.target.value })} />
-      <div className="training-activities">
-        <h3>Übungen</h3>
-        {!activeSession.exercises.length && <p className="helper-text">Noch keine Übung erfasst. Du kannst unten eine auswählen oder anlegen.</p>}
-        {activeSession.exercises.map((exercise, index) => {
-          const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
-          const previous = previousExercise(sessions, activeSession, exercise)
-          const previousSets = previous?.item.entries?.map((entry) =>
-            formatTrainingEntry(entry, exerciseMeasurement({ ...previous.item, category: activeSession.category })))
-            .filter(Boolean)
-          return <article className="training-activity" key={exercise.id}>
-            <div className="exercise-card-heading"><div>
-              <span className="exercise-number">ÜBUNG {index + 1}</span><h4>{exercise.name}</h4>
-              <span className="history-meta">{activeSession.category}
-                {activeSession.category === 'Krafttraining' && ` · ${exercise.muscleGroup || 'Ohne Muskelgruppe'}`}</span>
-            </div><button type="button" className="icon-button" aria-label={`${exercise.name} entfernen`}
-              onClick={() => {
-                if (!window.confirm(`„${exercise.name}“ aus dieser Einheit entfernen?`)) return
-                updateSession({ exercises: activeSession.exercises.filter((item) => item.id !== exercise.id) })
-              }}>×</button></div>
-            {previousSets?.length > 0 && <p className="training-previous">
-              Zuletzt am {formatDate(previous.session.date)}: {previousSets.join(' · ')}
-            </p>}
-            {hasLegacyValues(exercise) && <div className="training-legacy">
-              <strong>Früherer Sammeleintrag</strong>
-              <p className="helper-text">Diese Werte bleiben erhalten. Einzelne Sätze wurden damals nicht erfasst.</p>
-              <div className="training-activity-fields">{Object.entries(legacyLabels)
-                .filter(([field]) => exercise[field] !== '' && exercise[field] != null)
-                .map(([field, label]) => <label className="training-field" key={field}>{label}
-                  <input className="field" value={exercise[field] ?? ''}
-                    onChange={(event) => updateExercise(exercise.id, { [field]: event.target.value })} /></label>)}</div>
-            </div>}
-            {(exercise.entries ?? []).map((entry, entryIndex) => <SetEditor key={entry.id}
-              entry={entry} type={type} index={entryIndex}
-              onChange={(changes) => updateExercise(exercise.id, { entries: exercise.entries.map((item) =>
-                item.id === entry.id ? { ...item, ...changes } : item) })}
-              onRemove={() => updateExercise(exercise.id, { entries: exercise.entries.filter((item) => item.id !== entry.id) })} />)}
-            <button type="button" className="secondary-button"
-              onClick={() => updateExercise(exercise.id, { entries: [...(exercise.entries ?? []), createTrainingSet(type)] })}>
-              ＋ Satz hinzufügen</button>
-            <label className="field-label" htmlFor={`exercise-notes-${exercise.id}`}>Notizen zur Übung</label>
-            <textarea id={`exercise-notes-${exercise.id}`} className="field notes-field" rows="2"
-              value={exercise.notes ?? ''} onChange={(event) => updateExercise(exercise.id, { notes: event.target.value })} />
-          </article>
-        })}
-      </div>
-      <div className="training-add-activity">
-        <label className="field-label" htmlFor="exercise-select">Übung hinzufügen</label>
-        <ExercisePicker id="exercise-select" library={exerciseLibrary} category={activeSession.category}
-          value={exerciseChoice} onChange={setExerciseChoice} />
-        <button type="button" className="secondary-button" onClick={addExercise}>＋ Übung hinzufügen</button>
-        <details className="training-custom"><summary>Eigene Übung anlegen</summary>
-          <label className="field-label" htmlFor="custom-name">Übungsname</label>
-          <input id="custom-name" className="field" value={customName}
-            onChange={(event) => setCustomName(event.target.value)} />
-          <label className="field-label" htmlFor="custom-type">Was wird gemessen?</label>
-          <select id="custom-type" className="field" value={customType}
-            onChange={(event) => setCustomType(event.target.value)}>
-            {MEASUREMENT_TYPES.map(([type, label]) => <option key={type} value={type}>{label}</option>)}
-          </select>
-          {activeSession.category === 'Krafttraining' && <>
-            <label className="field-label" htmlFor="custom-group">Muskelgruppe</label>
-            <select id="custom-group" className="field" value={customGroup}
-              onChange={(event) => setCustomGroup(event.target.value)}>
-              {MUSCLE_GROUPS.map((group) => <option key={group}>{group}</option>)}
-            </select></>}
-          <button type="button" className="secondary-button" onClick={createCustomExercise}>Anlegen und hinzufügen</button>
-        </details>
-      </div>
-      <div className="training-finish-actions">
-        <button type="button" className="primary-button" onClick={() => {
-          updateSession({ status: 'completed', completedAt: new Date().toISOString() })
-          setActiveSessionId(null); setNotice('Trainingseinheit abgeschlossen.')
-        }}>Training abschließen</button>
-        <button type="button" className="secondary-button" onClick={() => setActiveSessionId(null)}>Für später schließen</button>
-      </div>
-    </section>}
-
+    {activeSession && <GuidedTrainingPanel
+      session={activeSession} sessions={sessions} library={visibleLibrary} plans={trainingPlans}
+      step={flowStep} setStep={setFlowStep} activeExerciseId={activeExerciseId}
+      group={selectedGroup} setGroup={setSelectedGroup}
+      editingSetId={editingSetId} setEditingSetId={setEditingSetId}
+      flowMessage={flowMessage} newCategory={newCategory} setNewCategory={setNewCategory}
+      customName={customName} setCustomName={setCustomName}
+      customType={customType} setCustomType={setCustomType}
+      customGroup={customGroup} setCustomGroup={setCustomGroup}
+      onAddExercise={addExercise} onOpenExercise={openExercise} onApplyPlan={applyPlan}
+      onCreateCustom={createCustomExercise} onUpdateSession={updateSession}
+      onUpdateExercise={updateExercise} onRemoveExercise={removeExercise} onConfirmSet={confirmSet}
+      onFinishExercise={finishExercise} onSave={saveTraining}
+      onRecategorize={recategorizeSession} onClose={() => setActiveSessionId(null)} />}
     {!activeSession && <section className="diary-panel training-plans">
       <div className="section-heading"><div><p className="eyebrow">WIEDERVERWENDBAR</p><h2>Trainingsvorlagen</h2></div></div>
       {!planDraft && <>
@@ -387,7 +409,6 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           <button type="button" className="text-button" onClick={() => {
             if (!window.confirm(`Vorlage „${plan.name}“ löschen? Abgeschlossene Einheiten bleiben erhalten.`)) return
             setTrainingPlans((previous) => previous.filter((item) => item.id !== plan.id))
-            if (selectedPlanId === plan.id) setSelectedPlanId('')
           }}>Löschen</button>
         </div>)}
         <button type="button" className="secondary-button" onClick={() => beginPlan(null)}>＋ Vorlage erstellen</button>
@@ -399,7 +420,11 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           placeholder="z. B. Oberkörper" />
         <label className="field-label" htmlFor="plan-category">Hauptkategorie</label>
         <select id="plan-category" className="field" value={planDraft.category}
-          onChange={(event) => { setPlanDraft((draft) => ({ ...draft, category: event.target.value, exercises: [] })); setPlanChoice('') }}>
+          onChange={(event) => { setPlanDraft((draft) => ({ ...draft, category: event.target.value,
+            exercises: draft.exercises.filter((reference) => visibleLibrary.some((item) =>
+              exerciseIdentity(item) === reference.libraryId && item.category === event.target.value)) })); setPlanChoice('') }}>
+          {!TRAINING_CATEGORIES.includes(planDraft.category)
+            && <option value={planDraft.category}>{planDraft.category} (alte Kategorie)</option>}
           {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
         </select>
         {planDraft.exercises.map((item, index) => <div className="training-plan-row" key={item.libraryId}>
@@ -409,7 +434,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           }))}>Entfernen</button>
         </div>)}
         <label className="field-label" htmlFor="plan-exercise">Übung aus Bibliothek</label>
-        <ExercisePicker id="plan-exercise" library={exerciseLibrary} category={planDraft.category}
+        <ExercisePicker id="plan-exercise" library={visibleLibrary} category={planDraft.category}
           value={planChoice} onChange={setPlanChoice} />
         <button type="button" className="secondary-button" onClick={addPlanExercise}>＋ Übung zur Vorlage</button>
         <div className="training-finish-actions">
@@ -424,14 +449,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         <span className="count-badge">{sessions.length}</span></div>
       {!sortedSessions.length ? <p className="helper-text">Noch keine Trainingseinheiten gespeichert.</p>
         : <div className="history-list">{sortedSessions.map((session) => <article className="history-item" key={session.id}>
-          <button type="button" className="history-main" onClick={() => {
-            setActiveSessionId(session.id); setSelectedDate(session.date); setExerciseChoice('')
-            setCustomType(defaultMeasurement(session.category))
-            window.scrollTo({ top: 0, behavior: 'smooth' })
-          }}>
+          <button type="button" className="history-main" onClick={() => openHistorySession(session)}>
             <span className="history-date">{formatDate(session.date)}</span>
-            <strong>{session.title || session.category || 'Training'}</strong>
-            <span className="history-meta">{session.category || 'Training'} · {session.exercises.length} Übungen
+            <strong>{canonicalCategory(session.category, session.subcategory) || 'Training'}</strong>
+            <span className="history-meta">{session.exercises.length} Übungen
               {session.durationMinutes ? ` · ${session.durationMinutes} Min.` : ''}
               {session.status === 'ongoing' ? ' · In Bearbeitung' : ''}</span>
           </button>
@@ -467,10 +488,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         </select></>}
       <button type="button" className="secondary-button" onClick={addLibraryItem}>＋ Zur Bibliothek</button>
       <div className="training-library-list">
-        {groupsFor(exerciseLibrary, libraryCategory).map(([group, items]) => <div key={group}>
+        {groupsFor(managedLibrary, libraryCategory).map(([group, items]) => <div key={group}>
           {libraryCategory === 'Krafttraining' && <h3 className="training-group-heading">{group}</h3>}
           {items.map((item) => {
-            const index = exerciseLibrary.indexOf(item)
+            const index = item.sourceIndex
             return <div className="training-library-item" key={exerciseIdentity(item)}>
               {renamingIndex === index ? <>
                 <input className="field" aria-label="Neuer Übungsname" value={renameValue}
@@ -494,6 +515,19 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
             </div>
           })}</div>)}
       </div>
+      {managedLibrary.some((item) => !TRAINING_CATEGORIES.includes(item.category))
+        && <div className="training-legacy">
+          <strong>Ältere Übungen ohne neue Hauptkategorie</strong>
+          <p className="helper-text">Diese Übungen bleiben erhalten. Ordne sie bei Bedarf selbst zu.</p>
+          {managedLibrary.filter((item) => !TRAINING_CATEGORIES.includes(item.category))
+            .map((item) => <label className="training-field" key={item.id}>{item.name} · {item.category}
+              <select className="field" value="" onChange={(event) =>
+                reassignLibraryItem(item.sourceIndex, event.target.value)}>
+                <option value="">Neue Kategorie wählen</option>
+                {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
+              </select>
+            </label>)}
+        </div>}
     </details>
   </div>
 }

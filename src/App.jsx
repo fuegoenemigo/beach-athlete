@@ -23,18 +23,19 @@ const EXERCISES = [
   { name: "Wadenheben", type: "strength", category: "Krafttraining", muscleGroup: "Beine" },
   { name: "Liegestütze", type: "strength", category: "Krafttraining", muscleGroup: "Brust" },
 
-  { name: "Plank", type: "duration", category: "Core & Stabilität", muscleGroup: "Core" },
-  { name: "Side Plank", type: "duration", category: "Core & Stabilität", muscleGroup: "Core" },
-  { name: "L-Sit", type: "duration", category: "Core & Stabilität", muscleGroup: "Core" },
+  { name: "Plank", type: "duration", category: "Core und Mobility", muscleGroup: "Core" },
+  { name: "Side Plank", type: "duration", category: "Core und Mobility", muscleGroup: "Core" },
+  { name: "L-Sit", type: "duration", category: "Core und Mobility", muscleGroup: "Core" },
 
-  { name: "Box Jumps", type: "reps", category: "Sprungkraft & Explosivität", muscleGroup: "Sprungkraft" },
-  { name: "Countermovement Jump", type: "jump", category: "Sprungkraft & Explosivität", muscleGroup: "Sprungkraft" },
-  { name: "Seitliche Sprünge", type: "reps", category: "Sprungkraft & Explosivität", muscleGroup: "Sprungkraft" },
+  { name: "Box Jumps", type: "reps", category: "Sprungkraft und Agilität", muscleGroup: "Sprungkraft" },
+  { name: "Countermovement Jump", type: "jump", category: "Sprungkraft und Agilität", muscleGroup: "Sprungkraft" },
+  { name: "Seitliche Sprünge", type: "reps", category: "Sprungkraft und Agilität", muscleGroup: "Sprungkraft" },
 
-  { name: "Sprint", type: "distance", category: "Schnelligkeit & Agilität", muscleGroup: "Schnelligkeit" },
-  { name: "Mobilitätsroutine", type: "duration", category: "Mobility", muscleGroup: "Ganzkörper" },
+  { name: "Sprint", type: "distance", category: "Sprungkraft und Agilität", muscleGroup: "Schnelligkeit" },
+  { name: "Mobilitätsroutine", type: "duration", category: "Core und Mobility", muscleGroup: "Ganzkörper" },
 
-  { name: "Beachvolleyball", type: "volleyball", category: "Sport", muscleGroup: "Sport" },
+  { name: "Beachvolleyball-Training", type: "duration", category: "Beach-Training" },
+  { name: "Hallenvolleyball-Training", type: "duration", category: "Hallentraining" },
   { name: "Radfahren", type: "distance", category: "Ausdauer", muscleGroup: "Ausdauer" },
 ];
 

@@ -8,6 +8,129 @@
   margin: 0;
 }
 
+.training-flow-steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 16px 0 24px;
+}
+
+.training-flow-steps span {
+  padding: 9px 5px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 0.73rem;
+  text-align: center;
+}
+
+.training-flow-steps .current {
+  color: var(--green);
+  border-color: #537b46;
+  background: #233421;
+}
+
+.training-flow h2 {
+  margin: 0 0 16px;
+}
+
+.training-flow h3 {
+  margin: 22px 0 10px;
+  font-size: 1rem;
+}
+
+.training-date-option {
+  margin: 14px 0;
+  color: var(--muted);
+}
+
+.training-date-option summary {
+  cursor: pointer;
+}
+
+.training-date-option .field-label {
+  display: block;
+  margin-top: 12px;
+}
+
+.training-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.training-choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.training-choice {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  color: #e9f0ea;
+  background: #1b251c;
+  text-align: left;
+}
+
+.training-choice.selected {
+  color: var(--green);
+  border-color: #668f5a;
+  background: #273a27;
+}
+
+.training-next-planned {
+  margin: 12px 0 18px;
+  border-color: #668f5a;
+  color: var(--green);
+}
+
+.training-done-list {
+  margin: 18px 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.training-done-list h3 {
+  margin-top: 0;
+}
+
+.training-done-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: #e9f0ea;
+  background: transparent;
+  text-align: left;
+}
+
+.training-current-set {
+  margin: 22px 0;
+  padding: 17px;
+  border: 1px solid #587c4b;
+  border-radius: 15px;
+  background: #1a2b1c;
+}
+
+.training-current-set h3 {
+  margin: 0;
+}
+
+.training-flow-error {
+  margin: 13px 0;
+  color: #ffb2a8;
+  font-size: 0.87rem;
+}
+
 .training-session-basics,
 .training-activities,
 .training-add-activity {
