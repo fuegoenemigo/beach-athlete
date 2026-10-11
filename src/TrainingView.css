@@ -207,6 +207,19 @@
 
 .training-plan-row .secondary-button { margin-top: 0; }
 
+.training-plan-groups { display: grid; gap: 10px; margin: 16px 0; }
+.training-plan-group { overflow: hidden; border: 1px solid var(--border); border-radius: 13px; background: #172019; }
+.training-plan-group-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 12px 15px; border: 0; color: #edf3ed; background: transparent; text-align: left; }
+.training-plan-group-toggle strong { flex: 1; font-size: 0.98rem; }
+.training-plan-group-toggle span { color: var(--muted); font-size: 0.8rem; }
+.training-plan-group-toggle span:last-child { color: var(--green); font-size: 1.15rem; }
+.training-plan-group-toggle:hover { background: #203023; }
+.training-plan-group-toggle:focus-visible { outline: 2px solid var(--green); outline-offset: -3px; }
+.training-plan-group-content { padding: 0 15px 6px; border-top: 1px solid var(--border); }
+.training-plan-group-content .training-plan-row > div { flex-basis: 100%; }
+.training-plan-group-content .training-plan-row > button { flex: 1 1 100px; }
+.training-plan-delete { color: #f0b3a7; border-color: #744d46; background: #2b1d1b; }
+
 .training-choice-list {
   display: grid;
   gap: 8px;

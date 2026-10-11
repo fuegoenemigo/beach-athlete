@@ -1,0 +1,31 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import { isTrainingPlan } from '../src/trainingModel.js'
+import { isAthleteData } from '../src/syncPolicy.js'
+import { BUILT_IN_PLANS, groupedTrainingPlans, removeTrainingPlan,
+  restoreBuiltInPlans, visibleTrainingPlans } from '../src/trainingPlanLibrary.js'
+
+test('built-in edits replace their original and custom plans join the right category', () => {
+  const original = BUILT_IN_PLANS[0]
+  const edited = { ...original, name: 'Mein Ganzkörpertraining' }
+  const custom = { id: 'own-core', name: 'Eigener Core-Tag', category: 'Core und Mobility', exercises: [] }
+  const visible = visibleTrainingPlans([edited, custom])
+  assert.equal(visible.filter((plan) => plan.id === original.id).length, 1)
+  assert.equal(visible.find((plan) => plan.id === original.id).name, edited.name)
+  assert.ok(groupedTrainingPlans(visible).find((group) => group.category === 'Core und Mobility')
+    .plans.some((plan) => plan.id === custom.id))
+})
+
+test('deleting a built-in hides it in valid synced data and restoration returns it', () => {
+  const original = BUILT_IN_PLANS[0]
+  const hidden = removeTrainingPlan([], { ...original, category: 'Noch nicht gespeichert' })
+  assert.equal(isTrainingPlan(hidden[0]), true)
+  assert.equal(isAthleteData({ sessions: [], exerciseLibrary: [], volleyballDays: [], trainingPlans: hidden }), true)
+  assert.equal(visibleTrainingPlans(hidden).some((plan) => plan.id === original.id), false)
+  assert.equal(visibleTrainingPlans(restoreBuiltInPlans(hidden)).some((plan) => plan.id === original.id), true)
+})
+
+test('deleting a personal plan removes it without hiding built-ins', () => {
+  const personal = { id: 'own-plan', name: 'Eigener Plan', category: 'Krafttraining', exercises: [] }
+  assert.deepEqual(removeTrainingPlan([personal], personal), [])
+})

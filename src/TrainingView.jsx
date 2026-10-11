@@ -4,8 +4,9 @@ import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
 import { isRecentDate } from './activityHistory.js'
-import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
-  enrichExercise, searchTrainingPlans } from './volleyballTraining.js'
+import { DEFAULT_EXERCISES, enrichExercise, searchTrainingPlans } from './volleyballTraining.js'
+import { groupedTrainingPlans, isBuiltInPlan, removeTrainingPlan,
+  restoreBuiltInPlans, visibleTrainingPlans } from './trainingPlanLibrary.js'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   defaultMeasurement, exerciseIdentity, exerciseMeasurement,
@@ -79,6 +80,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [activeSessionId, setActiveSessionId] = useState(null)
   const [expandedSessionId, setExpandedSessionId] = useState(null)
   const [showPlans, setShowPlans] = useState(false)
+  const [expandedPlanCategory, setExpandedPlanCategory] = useState(null)
   const [showLibrary, setShowLibrary] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [flowStep, setFlowStep] = useState('exercise')
@@ -108,7 +110,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const visibleLibrary = [...managedLibrary, ...DEFAULT_EXERCISES.filter((item) =>
     !managedLibrary.some((existing) => existing.category === item.category
       && existing.name === item.name))]
-  const visiblePlans = [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS, ...trainingPlans]
+  const visiblePlans = visibleTrainingPlans(trainingPlans)
+  const planGroups = groupedTrainingPlans(visiblePlans)
   const matchingPlans = searchTrainingPlans(visiblePlans, planSearch)
   const libraryGroups = groupsFor(visibleLibrary, libraryCategory).map(([group]) => group)
   const sortedSessions = [...sessions].sort((a, b) =>
@@ -381,6 +384,16 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setPlanDraft(null)
     setNotice('Trainingsvorlage gespeichert.')
   }
+  function deletePlan(plan) {
+    const standard = isBuiltInPlan(plan)
+    const question = standard
+      ? `Standardvorlage „${plan.name}“ aus deiner Vorlagenliste entfernen? Abgeschlossene Einheiten bleiben erhalten.`
+      : `Vorlage „${plan.name}“ löschen? Abgeschlossene Einheiten bleiben erhalten.`
+    if (!window.confirm(question)) return
+    setTrainingPlans((previous) => removeTrainingPlan(previous, plan))
+    setPlanDraft(null)
+    setNotice(standard ? 'Standardvorlage aus deiner Liste entfernt.' : 'Trainingsvorlage gelöscht.')
+  }
   function addLibraryItem() {
     const name = libraryName.trim()
     if (!name) { setNotice('Bitte gib einen Übungsnamen ein.'); return }
@@ -584,49 +597,32 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       </button>
       {showPlans && <>
       {!planDraft && <>
-        <p className="helper-text">Starte eine Vorlage oder erstelle deinen eigenen Trainingstag. Für den Einstieg sind Ganzkörper-Einheiten meist einfacher als ein Split.</p>
+        <p className="helper-text">Wähle einen Trainingsbereich und öffne dort eine passende Vorlage.</p>
         {openSessions.length > 0 && <p className="helper-text">Zum Starten einer Vorlage zuerst das offene Training abschließen.</p>}
-        <h3 className="training-group-heading">Fitnessstudio · Einstieg</h3>
-        {STANDARD_PLANS.map((plan) => <div className="training-plan-row" key={plan.id}>
-          <div><strong>{plan.name}</strong>
-            <span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span>
-            <span className="training-plan-description">{plan.description}</span></div>
-          <button type="button" className="secondary-button" disabled={openSessions.length > 0}
-            onClick={() => openNewTraining(plan)}>Starten</button>
-          <button type="button" className="text-button" onClick={() => beginPlan({ ...plan,
-            id: crypto.randomUUID(), name: `${plan.name} · Eigene Variante` })}>Kopie anpassen</button>
-        </div>)}
-        <h3 className="training-group-heading">Fitnessstudio · Schwerpunkte</h3>
-        {FOCUS_PLANS.map((plan) => <div className="training-plan-row" key={plan.id}>
-          <div><strong>{plan.name}</strong>
-            <span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span>
-            <span className="training-plan-description">{plan.description}</span></div>
-          <button type="button" className="secondary-button" disabled={openSessions.length > 0}
-            onClick={() => openNewTraining(plan)}>Starten</button>
-          <button type="button" className="text-button" onClick={() => beginPlan({ ...plan,
-            id: crypto.randomUUID(), name: `${plan.name} · Eigene Variante` })}>Kopie anpassen</button>
-        </div>)}
-        <h3 className="training-group-heading">Volleyball-Vorschläge</h3>
-        {VOLLEYBALL_PLANS.map((plan) => <div className="training-plan-row" key={plan.id}>
-          <div><strong>{plan.name}</strong>
-            <span className="history-meta">{(plan.categories ?? [plan.category]).join(' + ')} · {plan.exercises.length} Übungen</span>
-            <span className="training-plan-description">{plan.description}</span></div>
-          <button type="button" className="secondary-button" disabled={openSessions.length > 0}
-            onClick={() => openNewTraining(plan)}>Starten</button>
-          <button type="button" className="text-button" onClick={() => beginPlan({ ...plan,
-            id: crypto.randomUUID(), name: `${plan.name} · Eigene Variante` })}>Kopie anpassen</button>
-        </div>)}
-        {trainingPlans.length > 0 && <h3 className="training-group-heading">Meine Vorlagen</h3>}
-        {trainingPlans.map((plan) => <div className="training-plan-row" key={plan.id}>
-          <div><strong>{plan.name}</strong><span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span></div>
-          <button type="button" className="secondary-button" disabled={openSessions.length > 0}
-            onClick={() => openNewTraining(plan)}>Starten</button>
-          <button type="button" className="text-button" onClick={() => beginPlan(plan)}>Bearbeiten</button>
+        <div className="training-plan-groups">{planGroups.map(({ category, plans }) =>
+          <section className="training-plan-group" key={category}>
+            <button type="button" className="training-plan-group-toggle"
+              aria-expanded={expandedPlanCategory === category}
+              onClick={() => setExpandedPlanCategory(expandedPlanCategory === category ? null : category)}>
+              <strong>{category}</strong><span>{plans.length} {plans.length === 1 ? 'Vorlage' : 'Vorlagen'}</span>
+              <span aria-hidden="true">{expandedPlanCategory === category ? '⌃' : '⌄'}</span>
+            </button>
+            {expandedPlanCategory === category && <div className="training-plan-group-content">
+              {plans.map((plan) => <div className="training-plan-row" key={plan.id}>
+                <div><strong>{plan.name}</strong>
+                  <span className="history-meta">{(plan.categories ?? [plan.category]).join(' + ')} · {plan.exercises.length} Übungen{!isBuiltInPlan(plan) ? ' · Eigene Vorlage' : ''}</span>
+                  {plan.description && <span className="training-plan-description">{plan.description}</span>}</div>
+                <button type="button" className="secondary-button" disabled={openSessions.length > 0}
+                  onClick={() => openNewTraining(plan)}>Starten</button>
+                <button type="button" className="secondary-button" onClick={() => beginPlan(plan)}>Anpassen</button>
+              </div>)}
+            </div>}
+          </section>)}</div>
+        {trainingPlans.some((plan) => isBuiltInPlan(plan) && plan.hidden) &&
           <button type="button" className="text-button" onClick={() => {
-            if (!window.confirm(`Vorlage „${plan.name}“ löschen? Abgeschlossene Einheiten bleiben erhalten.`)) return
-            setTrainingPlans((previous) => previous.filter((item) => item.id !== plan.id))
-          }}>Löschen</button>
-        </div>)}
+            setTrainingPlans((previous) => restoreBuiltInPlans(previous))
+            setNotice('Standardvorlagen wiederhergestellt.')
+          }}>Entfernte Standardvorlagen wiederherstellen</button>}
         <button type="button" className="secondary-button" onClick={() => beginPlan(null)}>＋ Vorlage erstellen</button>
       </>}
       {planDraft && <div className="training-plan-editor">
@@ -660,6 +656,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         <div className="training-finish-actions">
           <button type="button" className="primary-button" onClick={savePlan}>Vorlage speichern</button>
           <button type="button" className="secondary-button" onClick={() => setPlanDraft(null)}>Abbrechen</button>
+          {(isBuiltInPlan(planDraft) || trainingPlans.some((plan) => plan.id === planDraft.id)) &&
+            <button type="button" className="secondary-button training-plan-delete"
+              onClick={() => deletePlan(planDraft)}>Vorlage löschen</button>}
         </div>
       </div>}
       </>}
