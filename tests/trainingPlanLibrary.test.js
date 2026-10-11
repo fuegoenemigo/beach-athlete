@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { isTrainingPlan } from '../src/trainingModel.js'
+import { isTrainingPlan, TRAINING_CATEGORIES } from '../src/trainingModel.js'
 import { isAthleteData } from '../src/syncPolicy.js'
 import { BUILT_IN_PLANS, groupedTrainingPlans, removeTrainingPlan,
   restoreBuiltInPlans, visibleTrainingPlans } from '../src/trainingPlanLibrary.js'
@@ -28,4 +28,12 @@ test('deleting a built-in hides it in valid synced data and restoration returns 
 test('deleting a personal plan removes it without hiding built-ins', () => {
   const personal = { id: 'own-plan', name: 'Eigener Plan', category: 'Krafttraining', exercises: [] }
   assert.deepEqual(removeTrainingPlan([personal], personal), [])
+})
+
+test('recovery is no longer a training choice, while old plans remain valid and stored', () => {
+  const oldPlan = { id: 'old-recovery', name: 'Alter Ruhetag', category: 'Regeneration', exercises: [] }
+  assert.equal(TRAINING_CATEGORIES.includes('Regeneration'), false)
+  assert.equal(isTrainingPlan(oldPlan), true)
+  assert.equal(isAthleteData({ sessions: [], exerciseLibrary: [], volleyballDays: [], trainingPlans: [oldPlan] }), true)
+  assert.equal(visibleTrainingPlans([oldPlan]).some((plan) => plan.id === oldPlan.id), false)
 })

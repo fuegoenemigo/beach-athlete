@@ -1,11 +1,11 @@
 export const TRAINING_CATEGORIES = [
   'Krafttraining', 'Sprungkraft und Agilität', 'Ausdauer', 'Core und Mobility',
-  'Beach-Training', 'Hallentraining', 'Regeneration',
+  'Beach-Training', 'Hallentraining',
 ]
 
 export const LEGACY_TRAINING_CATEGORIES = [
   'Sprungkraft & Explosivität', 'Schnelligkeit & Agilität',
-  'Core & Stabilität', 'Mobility', 'Sport',
+  'Core & Stabilität', 'Mobility', 'Sport', 'Regeneration',
 ]
 
 export const isOpenTraining = (session) => session?.status === 'ongoing'
@@ -47,7 +47,6 @@ export function defaultMeasurement(category) {
     Krafttraining: 'strength', 'Sprungkraft und Agilität': 'jump',
     Ausdauer: 'distance', 'Core und Mobility': 'duration',
     'Beach-Training': 'duration', Hallentraining: 'duration',
-    Regeneration: 'duration',
   }[category] ?? 'duration'
 }
 
@@ -123,7 +122,7 @@ export function isTrainingPlan(plan) {
     && plan.name.trim() && [...TRAINING_CATEGORIES, ...LEGACY_TRAINING_CATEGORIES].includes(plan.category)
     && (plan.categories === undefined || (Array.isArray(plan.categories)
       && plan.categories.includes(plan.category)
-      && plan.categories.every((category) => TRAINING_CATEGORIES.includes(category))))
+      && plan.categories.every((category) => [...TRAINING_CATEGORIES, ...LEGACY_TRAINING_CATEGORIES].includes(category))))
     && Array.isArray(plan.exercises)
     && plan.exercises.every((item) => item && typeof item.libraryId === 'string'
       && typeof item.name === 'string'

@@ -1,6 +1,18 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { calendarDayActivity } from '../src/calendarActivities.js'
+import { calendarDayActivity, isRecoveryDay } from '../src/calendarActivities.js'
+
+test('an empty current or past day is recovery, while future and recorded days are not', () => {
+  assert.equal(isRecoveryDay('2026-10-10', [], '2026-10-11'), true)
+  assert.equal(isRecoveryDay('2026-10-11', [], '2026-10-11'), true)
+  assert.equal(isRecoveryDay('2026-10-12', [], '2026-10-11'), false)
+  assert.equal(isRecoveryDay('2026-10-10', [{ type: 'beach' }], '2026-10-11'), false)
+  assert.equal(isRecoveryDay('2026-10-10', [{ type: 'training' }], '2026-10-11'), false)
+  const legacyRecovery = [{ type: 'training', item: { category: 'Regeneration' } }]
+  assert.equal(isRecoveryDay('2026-10-10', legacyRecovery, '2026-10-11'), true)
+  assert.equal(calendarDayActivity(legacyRecovery), null)
+  assert.equal(isRecoveryDay('2026-10-10', [...legacyRecovery, { type: 'beach' }], '2026-10-11'), false)
+})
 
 test('training takes priority over volleyball on a shared day', () => {
   const entries = [

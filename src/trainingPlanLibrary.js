@@ -13,7 +13,8 @@ export function visibleTrainingPlans(personalPlans) {
   return [
     ...BUILT_IN_PLANS.map((plan) => personalById.get(plan.id) ?? plan),
     ...personalPlans.filter((plan) => !builtInIds.has(plan.id)),
-  ].filter((plan) => !plan.hidden)
+  ].filter((plan) => !plan.hidden && plan.category !== 'Regeneration'
+    && !plan.categories?.includes('Regeneration'))
 }
 
 export function groupedTrainingPlans(plans) {

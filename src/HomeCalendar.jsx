@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { activityEntries, activityTitle, localDate } from './activityHistory.js'
-import { calendarDayActivity } from './calendarActivities.js'
+import { calendarDayActivity, isRecoveryDay, RECOVERY_DAY } from './calendarActivities.js'
 import { trainingDayPerformances } from './calendarPerformance.js'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
@@ -48,6 +48,7 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
   }
   const monthLabel = new Date(`${month}-01T12:00:00`).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })
   const dayEntries = byDate.get(selectedDate) ?? []
+  const selectedRecovery = isRecoveryDay(selectedDate, dayEntries)
   const selectedPerformance = trainingPerformance.get(selectedDate)
 
   return <section className={`home-widget home-calendar${expanded ? ' home-calendar-expanded' : ''}`} aria-label="Sportkalender">
@@ -66,17 +67,18 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
         if (!date) return <span key={`empty-${index}`} />
         const dayEntries = byDate.get(date) ?? []
         const activity = calendarDayActivity(dayEntries)
+        const recovery = isRecoveryDay(date, dayEntries)
         const performance = trainingPerformance.get(date)
-        return <button className={`home-calendar-day${dayEntries.length ? ' has-activity' : ''}${date === localDate() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`}
+        return <button className={`home-calendar-day${dayEntries.length ? ' has-activity' : ''}${recovery ? ' is-recovery' : ''}${date === localDate() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`}
           type="button" key={date} aria-pressed={date === selectedDate}
-          aria-label={`${formatDate(date)}${dayEntries.length ? `, ${dayEntries.length} ${dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}: ${activity?.label ?? 'Aktivität'}` : ''}${performanceLabels[performance?.status] ? `, ${performanceLabels[performance.status]}` : ''}`}
+          aria-label={`${formatDate(date)}${recovery ? `, ${RECOVERY_DAY.label}` : dayEntries.length ? `, ${dayEntries.length} ${dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}: ${activity?.label ?? 'Aktivität'}` : ''}${performanceLabels[performance?.status] ? `, ${performanceLabels[performance.status]}` : ''}`}
           onClick={() => setSelectedDate(date)}>
           <span className="home-calendar-number">{Number(date.slice(-2))}</span>
           <span className="home-calendar-activity" aria-hidden="true">
             {activity?.icon === 'barbell' ? <SteelDumbbell /> : activity?.emoji}
           </span>
           <span className={`home-calendar-performance${performance?.status && performance.status !== 'unrated' ? ` is-${performance.status}` : ''}`}
-            aria-hidden="true">{performanceSymbols[performance?.status] ?? ''}</span>
+            aria-hidden="true">{recovery ? RECOVERY_DAY.emoji : performanceSymbols[performance?.status] ?? ''}</span>
         </button>
       })}
     </div>
@@ -84,8 +86,9 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
       <span>📉 Rückgang</span>
       <span><i className="performance-minus">−</i> Gleich</span>
       <span>📈 Leicht besser</span>
+      <span>🌿 Regeneration</span>
     </div>
-    <p className="home-calendar-hint">Das große Symbol zeigt den Vergleich mit früheren Trainings. Volleyballtage ohne Training bleiben vorerst ohne Wertung.</p>
+    <p className="home-calendar-hint">Das große Symbol zeigt den Vergleich mit früheren Trainings. Tage ohne Eintrag bis heute gelten automatisch als Regeneration. Volleyballtage ohne Training bleiben vorerst ohne Wertung.</p>
     <details className="home-calendar-method">
       <summary>Wie entsteht die Wertung?</summary>
       <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Aus den prozentualen Änderungen entsteht der Tagesdurchschnitt. Unter −1 % erscheint 📉, zwischen −1 % und +1 % ein graues Minus und über +1 % 📈.</p>
@@ -103,7 +106,8 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
           <strong>{percent(comparison.changePercent)}</strong>
         </li>)}
       </ul>}
-      {!dayEntries.length && <p className="helper-text">Für diesen Tag ist noch nichts eingetragen.</p>}
+      {selectedRecovery && <p className="helper-text">Regenerationstag – keine sportliche Aktivität erfasst.</p>}
+      {!dayEntries.length && !selectedRecovery && <p className="helper-text">Für diesen Tag ist noch nichts eingetragen.</p>}
       {dayEntries.map((entry) => <article className="diary-panel home-day-entry" key={entry.id}>
         <a className="home-activity-link" href={`#${entry.type}`}
           onClick={(event) => { event.preventDefault(); onOpenActivity(entry) }}>

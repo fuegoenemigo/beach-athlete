@@ -1,4 +1,12 @@
 import { canonicalCategory, exerciseMeasurement, hasLegacyValues, isConfirmedSet } from './trainingModel.js'
+import { localDate } from './activityHistory.js'
+
+export const RECOVERY_DAY = { emoji: '🌿', label: 'Regeneration' }
+
+export function isRecoveryDay(date, entries, today = localDate()) {
+  return Boolean(date) && date <= today && entries.every((entry) =>
+    entry.type === 'training' && entry.item?.category === 'Regeneration')
+}
 
 const categorySymbols = {
   Krafttraining: { icon: 'barbell', label: 'Krafttraining' },
@@ -7,7 +15,6 @@ const categorySymbols = {
   'Core und Mobility': { emoji: '🧘', label: 'Core und Mobility' },
   'Beach-Training': { emoji: '🏐', label: 'Beach-Training' },
   Hallentraining: { emoji: '🏐', label: 'Hallentraining' },
-  Regeneration: { emoji: '🌿', label: 'Regeneration' },
 }
 
 function trainedCategories(session) {
@@ -20,7 +27,8 @@ function trainedCategories(session) {
 }
 
 export function calendarDayActivity(entries) {
-  const training = entries.find((entry) => entry.type === 'training')
+  const training = entries.find((entry) => entry.type === 'training'
+    && entry.item.category !== 'Regeneration')
   if (training) {
     const categories = trainedCategories(training.item)
     const primary = canonicalCategory(training.item.category, training.item.subcategory)

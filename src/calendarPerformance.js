@@ -66,7 +66,8 @@ function evaluateDay(exercises, previousById) {
 }
 
 export function trainingDayPerformances(sessions) {
-  const ordered = sessions.filter((session) => !isOpenTraining(session))
+  const ordered = sessions.filter((session) => !isOpenTraining(session)
+    && session.category !== 'Regeneration')
     .sort((a, b) => a.date.localeCompare(b.date)
       || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
   const byDate = new Map()

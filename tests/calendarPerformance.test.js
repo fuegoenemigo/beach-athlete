@@ -9,6 +9,13 @@ const core = (seconds) => ({ libraryId: 'plank', name: 'Plank', category: 'Core 
 const session = (id, date, exercises, status = 'completed') =>
   ({ id, date, status, exercises, createdAt: `${date}T12:00:00Z` })
 
+test('old regeneration records do not create a training performance', () => {
+  const oldRecovery = { ...session('recovery', '2026-10-10', [strength('bench', 50)]), category: 'Regeneration' }
+  const scores = trainingDayPerformances([oldRecovery, session('training', '2026-10-11', [strength('bench', 55)])])
+  assert.equal(scores.has('2026-10-10'), false)
+  assert.equal(scores.get('2026-10-11').status, 'unrated')
+})
+
 test('calendar compares the same exercise ID to its last older date without a time limit', () => {
   const sessions = [
     session('old', '2025-01-01', [strength('bench', 50), strength('other-bench', 90), core(60)]),
