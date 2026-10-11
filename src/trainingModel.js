@@ -13,20 +13,16 @@ export const isOpenTraining = (session) => session?.status === 'ongoing'
 export const isSportTrainingCategory = (category) =>
   category === 'Beach-Training' || category === 'Hallentraining'
 
-export function sportTrainingDuration(startTime, endTime) {
-  const validTime = /^([01]\d|2[0-3]):[0-5]\d$/
-  if (!validTime.test(startTime) || !validTime.test(endTime)) return null
-  const minutes = (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3))
-  const duration = minutes(endTime) - minutes(startTime)
-  return duration > 0 ? duration : null
-}
+export const isSportTrainingAttendance = (session) =>
+  isSportTrainingCategory(session?.category) && session.status === 'completed'
+  && (session.attendanceOnly === true
+    || Boolean(session.startTime && session.endTime && session.exercises?.length === 0))
 
-export function createSportTrainingSession({ id, date, category, startTime, endTime, timestamp }) {
-  const duration = sportTrainingDuration(startTime, endTime)
-  if (!id || !date || !isSportTrainingCategory(category) || !duration) return null
+export function createSportTrainingSession({ id, date, category, timestamp }) {
+  if (!id || !date || !isSportTrainingCategory(category)) return null
   return {
     id, date, category, categories: [category], subcategory: '', planId: null, planName: '',
-    startTime, endTime, durationMinutes: String(duration), intensity: '', notes: '',
+    durationMinutes: '', intensity: '', notes: '', attendanceOnly: true,
     status: 'completed', exercises: [], createdAt: timestamp, completedAt: timestamp,
   }
 }

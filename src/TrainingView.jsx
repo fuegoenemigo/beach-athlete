@@ -14,7 +14,7 @@ import {
   canonicalCategory,
   hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
-  isSportTrainingCategory, sportTrainingDuration, createSportTrainingSession,
+  isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
 } from './trainingModel.js'
 import './TrainingView.css'
 
@@ -42,30 +42,18 @@ function ExercisePicker({ id, library, category, value, onChange }) {
 
 function SportTrainingEditor({ session, onSave, onClose }) {
   const [date, setDate] = useState(session.date)
-  const [startTime, setStartTime] = useState(session.startTime)
-  const [endTime, setEndTime] = useState(session.endTime)
   const [error, setError] = useState('')
 
   function save() {
-    const duration = sportTrainingDuration(startTime, endTime)
     if (!date) { setError('Bitte wähle ein Trainingsdatum.'); return }
-    if (!duration) {
-      setError('Bitte gib Beginn und Ende an. Die Endzeit muss nach der Startzeit liegen.'); return
-    }
-    onSave({ date, startTime, endTime, durationMinutes: String(duration) })
+    onSave({ date })
   }
 
   return <section className="diary-panel training-start-window">
-    <p className="helper-text">Für diesen Trainingstag werden nur Datum und Trainingszeit gespeichert.</p>
+    <p className="helper-text">Dieser Trainingstag ist abgeschlossen. Hier kannst du sein Datum korrigieren.</p>
     <label className="field-label" htmlFor="sport-edit-date">Datum</label>
     <input id="sport-edit-date" className="field" type="date" value={date}
       onChange={(event) => { setDate(event.target.value); setError('') }} />
-    <label className="field-label" htmlFor="sport-edit-start">Beginn</label>
-    <input id="sport-edit-start" className="field" type="time" value={startTime}
-      onChange={(event) => { setStartTime(event.target.value); setError('') }} />
-    <label className="field-label" htmlFor="sport-edit-end">Ende</label>
-    <input id="sport-edit-end" className="field" type="time" value={endTime}
-      onChange={(event) => { setEndTime(event.target.value); setError('') }} />
     {error && <p className="training-flow-error" role="alert">{error}</p>}
     <div className="training-finish-actions">
       <button type="button" className="primary-button" onClick={save}>Änderungen speichern</button>
@@ -79,8 +67,7 @@ function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, on
   return <article id={`training-session-${session.id}`} className={`diary-panel training-session-card${ongoing ? ' training-session-open' : ''}`}>
     <div className="volleyball-day-header">
       <h3>{formatDate(session.date)}</h3>
-      <span>{isSportTrainingCategory(session.category) && session.startTime && session.endTime
-        ? `${session.startTime}–${session.endTime} Uhr` : `${session.exercises.length} Übungen`}</span>
+      <span>{isSportTrainingAttendance(session) ? 'Abgeschlossen' : `${session.exercises.length} Übungen`}</span>
     </div>
     <p className="training-session-category">{canonicalCategory(session.category, session.subcategory) || 'Training'}</p>
     {planName && <p className="training-history-plan">Vorlage: {planName}</p>}
@@ -95,7 +82,7 @@ function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, on
       <TrainingHistoryDetails session={session} />
       <div className="training-history-actions">
         {!ongoing && <button type="button" className="secondary-button" onClick={onOpen}>
-          Training bearbeiten
+          {isSportTrainingAttendance(session) ? 'Datum ändern' : 'Training bearbeiten'}
         </button>}
       </div>
     </div>}
@@ -113,9 +100,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [newSessionOpen, setNewSessionOpen] = useState(false)
   const [pendingPlan, setPendingPlan] = useState(null)
   const [planSearch, setPlanSearch] = useState('')
-  const [sportStartTime, setSportStartTime] = useState('')
-  const [sportEndTime, setSportEndTime] = useState('')
-  const [sportTimeError, setSportTimeError] = useState('')
+  const [sportDateError, setSportDateError] = useState('')
   const [activeSessionId, setActiveSessionId] = useState(null)
   const [expandedSessionId, setExpandedSessionId] = useState(null)
   const [showPlans, setShowPlans] = useState(false)
@@ -208,9 +193,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     }
     setPendingPlan(isSportTrainingCategory(plan?.category) ? null : plan)
     setPlanSearch('')
-    setSportStartTime('')
-    setSportEndTime('')
-    setSportTimeError('')
+    setSportDateError('')
     setCustomDate(false)
     setSelectedDate(today())
     if (plan) setNewCategory(plan.category)
@@ -218,20 +201,18 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   }
   function saveSportTraining() {
     const entryDate = customDate ? selectedDate : today()
-    if (!entryDate) { setSportTimeError('Bitte wähle ein Trainingsdatum.'); return }
+    if (!entryDate) { setSportDateError('Bitte wähle ein Trainingsdatum.'); return }
     const timestamp = new Date().toISOString()
     const session = createSportTrainingSession({ id: crypto.randomUUID(), date: entryDate,
-      category: newCategory, startTime: sportStartTime, endTime: sportEndTime, timestamp })
-    if (!session) {
-      setSportTimeError('Bitte gib Beginn und Ende an. Die Endzeit muss nach der Startzeit liegen.'); return
-    }
+      category: newCategory, timestamp })
+    if (!session) return
     if (openSessions.length) {
-      setSportTimeError('Bitte schließe zuerst dein offenes Training ab.'); return
+      setSportDateError('Bitte schließe zuerst dein offenes Training ab.'); return
     }
     setSessions((previous) => [...previous, session])
     setNewSessionOpen(false)
-    setSportTimeError('')
-    setNotice(`${newCategory} gespeichert.`)
+    setSportDateError('')
+    setNotice(`${newCategory} abgeschlossen.`)
   }
   function startSession(plan = null) {
     if (openSessions.length) {
@@ -558,7 +539,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   return <div className="training-view">
     <section className="diary-intro">
       <p className="eyebrow">TRAININGSTAGEBUCH</p><h2>Trainieren. Erfassen. Entwickeln.</h2>
-      <p>Wähle deine Trainingsart. Erfasse Übungen und Werte oder halte beim Volleyballtraining nur die Zeit fest.</p>
+      <p>Wähle deine Trainingsart. Erfasse Übungen und Werte oder bestätige ein absolviertes Volleyballtraining.</p>
     </section>
 
     {openSessions.length > 0 && <section className="diary-panel training-open-section">
@@ -606,17 +587,11 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       </> : <>
       <label className="field-label" htmlFor="training-category">Hauptkategorie</label>
       <select id="training-category" className="field" value={newCategory}
-        onChange={(event) => { setNewCategory(event.target.value); setPlanSearch(''); setSportTimeError('') }}>
+        onChange={(event) => { setNewCategory(event.target.value); setPlanSearch(''); setSportDateError('') }}>
         {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
       </select>
       {isSportTrainingCategory(newCategory) ? <>
-        <p className="helper-text">Erfasse nur die Trainingszeit. Übungen und Leistungswerte sind hier nicht nötig.</p>
-        <label className="field-label" htmlFor="sport-training-start">Beginn</label>
-        <input id="sport-training-start" className="field" type="time" required
-          value={sportStartTime} onChange={(event) => { setSportStartTime(event.target.value); setSportTimeError('') }} />
-        <label className="field-label" htmlFor="sport-training-end">Ende</label>
-        <input id="sport-training-end" className="field" type="time" required
-          value={sportEndTime} onChange={(event) => { setSportEndTime(event.target.value); setSportTimeError('') }} />
+        <p className="helper-text">Hat dieses Training am gewählten Tag stattgefunden? Es werden keine Übungen, Zeiten oder Leistungswerte erfasst.</p>
       </> : <>
       <label className="field-label" htmlFor="training-plan-search">Trainingsvorlage suchen (optional)</label>
       <input id="training-plan-search" className="field" type="search" value={planSearch}
@@ -646,11 +621,11 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       {openSessions.length > 0 && <p className="training-open-hint" role="status">
         Ein anderes Training ist noch offen. Schließe dieses Fenster und setze es oben fort.
       </p>}
-      {sportTimeError && <p className="training-flow-error" role="alert">{sportTimeError}</p>}
+      {sportDateError && <p className="training-flow-error" role="alert">{sportDateError}</p>}
       <button type="button" className="primary-button" disabled={openSessions.length > 0}
         onClick={() => isSportTrainingCategory(newCategory) && !pendingPlan
           ? saveSportTraining() : startSession(pendingPlan)}>
-        {isSportTrainingCategory(newCategory) && !pendingPlan ? 'Trainingstag speichern' : '＋ Training starten'}
+        {isSportTrainingCategory(newCategory) && !pendingPlan ? 'Ja, Training abgeschlossen' : '＋ Training starten'}
       </button>
       {sessions.some((session) => session.date === (customDate ? selectedDate : today())) &&
         <p className="helper-text">An diesem Tag gibt es bereits Einheiten. Du kannst eine weitere beginnen oder unten eine öffnen.</p>}
@@ -659,9 +634,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
 
     {activeSession && <EntryWindow title={activeSession.planName || 'Training erfassen'}
       subtitle={`${formatDate(activeSession.date)} · ${activeSession.category}`} onClose={closeTraining}>
-      {isSportTrainingCategory(activeSession.category) && activeSession.startTime && activeSession.endTime
+      {isSportTrainingAttendance(activeSession)
         ? <SportTrainingEditor key={activeSession.id} session={activeSession} onClose={closeTraining}
-          onSave={(changes) => { updateSession(changes); closeTraining(); setNotice('Trainingszeit gespeichert.') }} />
+          onSave={(changes) => { updateSession(changes); closeTraining(); setNotice('Trainingsdatum gespeichert.') }} />
         : <GuidedTrainingPanel
       session={activeSession} sessions={sessions} library={visibleLibrary} plans={visiblePlans}
       athleteProfile={athleteProfile} exerciseCategory={selectedExerciseCategory}

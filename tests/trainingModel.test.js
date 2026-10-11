@@ -5,7 +5,7 @@ import {
   previousExercise, formatTrainingEntry, canonicalCategory,
   hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
-  createSportTrainingSession,
+  createSportTrainingSession, isSportTrainingAttendance,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
 import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
@@ -17,17 +17,23 @@ const library = [{ name: 'Bankdrücken', category: 'Krafttraining',
 const base = () => ({ sessions: [], exerciseLibrary: structuredClone(library),
   volleyballDays: [], trainingPlans: [] })
 
-test('beach and hall training save only times and no exercises', () => {
+test('beach and hall training save attendance only and no exercises or times', () => {
   for (const category of ['Beach-Training', 'Hallentraining']) {
     const entry = createSportTrainingSession({ id: category, date: '2026-10-11', category,
-      startTime: '18:15', endTime: '19:45', timestamp: '2026-10-11T19:45:00Z' })
-    assert.equal(entry.durationMinutes, '90')
+      timestamp: '2026-10-11T19:45:00Z' })
+    assert.equal(entry.durationMinutes, '')
     assert.equal(entry.status, 'completed')
+    assert.equal(entry.attendanceOnly, true)
     assert.deepEqual(entry.exercises, [])
+    assert.equal('startTime' in entry, false)
+    assert.equal('endTime' in entry, false)
+    assert.equal(isSportTrainingAttendance(entry), true)
     assert.equal(isAthleteData({ sessions: [entry], exerciseLibrary: [], volleyballDays: [] }), true)
   }
+  assert.equal(isSportTrainingAttendance({ category: 'Beach-Training', status: 'completed',
+    startTime: '18:15', endTime: '19:45', exercises: [] }), true)
   assert.equal(createSportTrainingSession({ id: 'invalid', date: '2026-10-11',
-    category: 'Beach-Training', startTime: '19:45', endTime: '18:15' }), null)
+    category: 'Krafttraining' }), null)
 })
 
 test('a plan and separate measured sets stay valid for cloud sync', () => {
