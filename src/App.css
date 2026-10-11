@@ -788,6 +788,22 @@ input[type="date"] {
   background: #2b1d1b;
 }
 
+.volleyball-list-toggle { margin-top: 0; }
+
+.volleyball-history-section > .volleyball-day-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.volleyball-history-section > .volleyball-day-list > .diary-panel { margin: 0; }
+
+.volleyball-day-details {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
 .set-result-heading {
   display: flex;
   align-items: center;

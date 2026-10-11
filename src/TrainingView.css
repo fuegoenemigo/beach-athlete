@@ -77,6 +77,7 @@
 .training-open-hint { margin: 10px 0 0; color: #cfe8c8; font-size: 0.85rem; }
 .training-session-details { margin-top: 16px; }
 .training-section-toggle { margin-top: 0; }
+.training-history-list { margin-top: 16px; }
 
 .training-view .primary-button:disabled,
 .training-view .secondary-button:disabled {

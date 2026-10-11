@@ -51,7 +51,7 @@ function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, on
       <button type="button" className="primary-button" onClick={onOpen}>Training fortsetzen</button>
     </>}
     <button type="button" className="secondary-button" aria-expanded={expanded} onClick={onToggle}>
-      {expanded ? 'Details schließen' : 'Details anzeigen'}
+      {expanded ? 'Training einklappen' : 'Training anzeigen'}
     </button>
     {expanded && <div className="training-session-details">
       <TrainingHistoryDetails session={session} />
@@ -59,11 +59,11 @@ function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, on
         {!ongoing && <button type="button" className="secondary-button" onClick={onOpen}>
           Training bearbeiten
         </button>}
-        <button type="button" className="text-button" onClick={onDelete}>
-          {ongoing ? 'Offenes Training verwerfen' : 'Training löschen'}
-        </button>
       </div>
     </div>}
+    <button type="button" className="secondary-button volleyball-delete-action" onClick={onDelete}>
+      Training löschen
+    </button>
   </article>
 }
 
@@ -79,6 +79,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [expandedSessionId, setExpandedSessionId] = useState(null)
   const [showPlans, setShowPlans] = useState(false)
   const [showLibrary, setShowLibrary] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [flowStep, setFlowStep] = useState('exercise')
   const [flowMessage, setFlowMessage] = useState('')
   const [activeExerciseId, setActiveExerciseId] = useState(null)
@@ -666,11 +667,19 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       <div className="section-heading"><div><p className="eyebrow">DEIN VERLAUF</p><h2>Trainingseinheiten</h2></div>
         <span className="count-badge">{completedSessions.length}</span></div>
       {!completedSessions.length ? <p className="helper-text">Noch keine abgeschlossenen Trainingseinheiten gespeichert.</p>
-        : <div className="volleyball-day-list">{completedSessions.map((session) =>
-          <TrainingSessionCard key={session.id} session={session} planName={planNameFor(session)}
-            expanded={expandedSessionId === session.id}
-            onToggle={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
-            onOpen={() => openHistorySession(session)} onDelete={() => deleteSession(session)} />)}</div>}
+        : <>
+          <button type="button" className="secondary-button training-section-toggle"
+            aria-expanded={showHistory} onClick={() => setShowHistory((open) => !open)}>
+            {showHistory ? 'Trainingseinheiten einklappen' : 'Alle Trainingseinheiten anzeigen'}
+          </button>
+          {showHistory && <div className="volleyball-day-list training-history-list">
+            {completedSessions.map((session) => <TrainingSessionCard key={session.id}
+              session={session} planName={planNameFor(session)}
+              expanded={expandedSessionId === session.id}
+              onToggle={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
+              onOpen={() => openHistorySession(session)} onDelete={() => deleteSession(session)} />)}
+          </div>}
+        </>}
     </section>
 
     <section className="diary-panel training-library">
