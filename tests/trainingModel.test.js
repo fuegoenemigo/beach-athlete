@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   createLoggedExercise, createTrainingSet, exerciseIdentity, hasLegacyValues,
-  previousExercise, formatTrainingEntry, canonicalCategory,
+  previousExercise, previousSetFor, formatTrainingEntry, canonicalCategory,
   hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   createSportTrainingSession, isSportTrainingAttendance,
@@ -114,6 +114,31 @@ test('the last saved exercise is used as reference, including older aggregate en
     exercises: [{ id: 'legacy', libraryId: id, name: 'Bankdrücken', reps: '8', weight: '60' }] }
   const current = { id: 'now', date: '2026-10-11', category: 'Krafttraining', exercises: [] }
   assert.equal(previousExercise([earlier, latest, current], current, earlier.exercises[0]).item.id, 'legacy')
+  assert.equal(previousSetFor(previousExercise([earlier, latest, current], current,
+    earlier.exercises[0]), 0), null)
+})
+
+test('each current set references only the matching set from the last exercise', () => {
+  const id = exerciseIdentity(library[0])
+  const earlier = { id: 'earlier', date: '2026-09-01', category: 'Krafttraining',
+    exercises: [{ id: 'old', libraryId: id, name: 'Bankdrücken', type: 'strength',
+      entries: [{ ...createTrainingSet(), reps: '10', weightKg: '40' }] }] }
+  const latest = { id: 'latest', date: '2026-10-01', category: 'Krafttraining',
+    exercises: [{ id: 'press', libraryId: id, name: 'Bankdrücken', type: 'strength',
+      entries: [
+        { ...createTrainingSet(), reps: '10', weightKg: '50' },
+        { ...createTrainingSet(), reps: '8', weightKg: '55' },
+        { ...createTrainingSet(), reps: '6', weightKg: '60' },
+        { ...createTrainingSet(), reps: '4', weightKg: '65', completed: false },
+      ] }] }
+  const current = { id: 'current', date: '2026-10-11', category: 'Krafttraining',
+    exercises: [] }
+  const previous = previousExercise([earlier, latest, current], current, latest.exercises[0])
+  assert.equal(previous.session.id, 'latest')
+  assert.deepEqual([0, 1, 2].map((index) => formatTrainingEntry(
+    previousSetFor(previous, index), 'strength')),
+  ['10 Wdh. · 50 kg', '8 Wdh. · 55 kg', '6 Wdh. · 60 kg'])
+  assert.equal(previousSetFor(previous, 3), null)
 })
 
 test('old training categories resolve to the requested new categories without guessing other sports', () => {

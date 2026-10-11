@@ -181,6 +181,15 @@ export function previousExercise(sessions, currentSession, exercise) {
         : item.name === exercise.name)) ?? null
 }
 
+export function previousSetFor(previous, setIndex) {
+  if (!previous || !Number.isInteger(setIndex) || setIndex < 0) return null
+  const type = exerciseMeasurement({
+    ...previous.item, category: previous.item.category ?? previous.session.category,
+  })
+  return (previous.item.entries ?? [])
+    .filter((entry) => isConfirmedSet(entry, type))[setIndex] ?? null
+}
+
 export function formatTrainingEntry(entry, type, exercise = {}) {
   const duration = entry.durationValue
     ? `${entry.durationValue} ${entry.durationUnit === 'min' ? 'Min.' : 'Sek.'}` : ''

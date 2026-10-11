@@ -2,7 +2,7 @@ import { RatingStepper } from './VolleyballInputs.jsx'
 import ExerciseInfo from './ExerciseInfo.jsx'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
-  exerciseMeasurement, formatTrainingEntry, previousExercise, isConfirmedSet,
+  exerciseMeasurement, formatTrainingEntry, previousExercise, previousSetFor, isConfirmedSet,
   hasLegacyValues, canonicalCategory, defaultMeasurement,
 } from './trainingModel.js'
 
@@ -58,13 +58,11 @@ function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
   </>
 }
 
-function PreviousExerciseReference({ date, values }) {
-  if (!values?.length) return null
+function PreviousExerciseReference({ number, value }) {
+  if (!value) return null
   return <aside className="training-reference" aria-label="Werte der letzten Ausführung">
-    <strong>Letzte Ausführung · {formatDate(date)}</strong>
-    <ol>{values.map((value, index) => <li key={index}>
-      {values.length > 1 ? `Satz ${index + 1}: ` : ''}{value}
-    </li>)}</ol>
+    <strong>Letzter Wert für Satz {number}</strong>
+    <span>{value}</span>
   </aside>
 }
 
@@ -83,16 +81,12 @@ export default function GuidedTrainingPanel({
   const confirmed = entries.filter((entry) => isConfirmedSet(entry, type))
   const draft = entries.find((entry) => entry.completed === false)
   const previous = exercise && previousExercise(sessions, session, exercise)
-  const previousSets = previous?.item.entries?.filter((entry) => isConfirmedSet(entry,
-    exerciseMeasurement({ ...previous.item, category: session.category })))
-    .map((entry) => formatTrainingEntry(entry,
-      exerciseMeasurement({ ...previous.item, category: session.category }), previous.item)).filter(Boolean)
-  const previousLegacy = previous && !previousSets?.length && hasLegacyValues(previous.item)
-    ? Object.entries(legacyLabels)
-      .filter(([field]) => previous.item[field] !== '' && previous.item[field] != null)
-      .map(([field, label]) => `${label}: ${previous.item[field]}`).join(' · ')
-    : ''
-  const previousValues = previousSets?.length ? previousSets : previousLegacy ? [previousLegacy] : []
+  const referenceFor = (index) => {
+    const entry = previousSetFor(previous, index)
+    return entry ? formatTrainingEntry(entry,
+      exerciseMeasurement({ ...previous.item,
+        category: previous.item.category ?? previous.session.category }), previous.item) : null
+  }
   const available = library.filter((item) => item.category === exerciseCategory)
   const groups = [...new Set(available.map((item) => item.muscleGroup || 'Allgemein'))]
     .sort((a, b) => a.localeCompare(b, 'de-DE'))
@@ -225,8 +219,8 @@ export default function GuidedTrainingPanel({
             <span>✓ Satz {index + 1}: {formatTrainingEntry(entry, type, exercise)}</span>
             <span>{editingSetId === entry.id ? 'Schließen' : 'Bearbeiten'}</span>
           </button>
-          {editingSetId === entry.id && <PreviousExerciseReference date={previous?.session.date}
-            values={previousValues} />}
+          {editingSetId === entry.id && <PreviousExerciseReference number={index + 1}
+            value={referenceFor(index)} />}
           {editingSetId === entry.id && <SetFields entry={entry} type={type}
             exercise={exercise} athleteProfile={athleteProfile}
             onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
@@ -239,7 +233,7 @@ export default function GuidedTrainingPanel({
       {draft && <div className="training-current-set">
         <p className="eyebrow">SATZ {confirmed.length + 1}</p>
         <h3>Werte eintragen</h3>
-        <PreviousExerciseReference date={previous?.session.date} values={previousValues} />
+        <PreviousExerciseReference number={confirmed.length + 1} value={referenceFor(confirmed.length)} />
         <SetFields entry={draft} type={type} exercise={exercise} athleteProfile={athleteProfile}
           onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
             item.id === draft.id ? { ...item, ...changes } : item) })} />
