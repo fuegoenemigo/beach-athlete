@@ -191,7 +191,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         ?? visibleLibrary.find((candidate) => candidate.name === reference.name
           && candidate.category === (reference.category ?? plan.category))
         ?? { ...reference, id: reference.libraryId, category: reference.category ?? plan.category }
-      const exercise = createLoggedExercise({ ...item, target: reference.target ?? item.target })
+      const exercise = createLoggedExercise({ ...item, ...reference,
+        id: item.id, target: reference.target ?? item.target })
       return index === 0 ? { ...exercise,
         entries: [{ ...createTrainingSet(exercise.type,
           exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
@@ -313,9 +314,52 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     updateExercise(exercise.id, { entries: advanced })
     setFlowMessage('')
   }
+  function recordTimerDuration(exerciseId, seconds, expectedIndex) {
+    setSessions((previous) => previous.map((session) => {
+      if (session.id !== activeSessionId) return session
+      return { ...session, exercises: session.exercises.map((exercise) => {
+        if (exercise.id !== exerciseId) return exercise
+        const type = exerciseMeasurement({ ...exercise, category: session.category })
+        const entries = exercise.entries ?? []
+        if (entries.filter((entry) => isConfirmedSet(entry, type)).length !== expectedIndex) return exercise
+        const ready = entries.map((entry) =>
+          entry.completed === false ? { ...entry, durationValue: String(seconds),
+            durationUnit: 's' } : entry)
+        return { ...exercise, entries: type === 'duration'
+          ? confirmAndAdvanceSet(ready, type) ?? ready : ready }
+      }) }
+    }))
+    setFlowMessage('')
+  }
+  function recordTimerInterval(exerciseId, seconds, expectedIndex) {
+    setSessions((previous) => previous.map((session) => {
+      if (session.id !== activeSessionId) return session
+      return { ...session, exercises: session.exercises.map((exercise) => {
+        if (exercise.id !== exerciseId) return exercise
+        const type = exerciseMeasurement({ ...exercise, category: session.category })
+        const entries = exercise.entries ?? []
+        if (entries.filter((entry) => isConfirmedSet(entry, type)).length !== expectedIndex) return exercise
+        const draft = entries.find((entry) => entry.completed === false)
+        const ready = draft ? entries.map((entry) => entry.id === draft.id
+          ? { ...entry, durationValue: String(seconds), durationUnit: 's' } : entry)
+          : [...entries, { ...createTrainingSet(type), durationValue: String(seconds),
+            durationUnit: 's', completed: false }]
+        const advanced = confirmAndAdvanceSet(ready, type)
+        return advanced ? { ...exercise, entries: advanced } : exercise
+      }) }
+    }))
+    setFlowMessage('')
+  }
   function finishExercise() {
     const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
     if (!exercise) return
+    try {
+      const timer = JSON.parse(localStorage.getItem(
+        `beach-athlete-timer:${activeSession.id}:${exercise.id}`))
+      if (timer && !timer.finished) {
+        setFlowMessage('Bitte stoppe zuerst die laufende Zeitmessung.'); return
+      }
+    } catch { /* Zeitmessung ist ohne lokalen Speicher weiterhin nutzbar. */ }
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     const kept = finishTrainingExerciseEntries(exercise.entries ?? [], type)
     if (!kept) {
@@ -681,6 +725,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       onAddExercise={addExercise} onOpenExercise={openExercise} onApplyPlan={applyPlan}
       onCreateCustom={createCustomExercise} onUpdateSession={updateSession}
       onUpdateExercise={updateExercise} onRemoveExercise={removeExercise} onConfirmSet={confirmSet}
+      onTimerDuration={recordTimerDuration} onTimerInterval={recordTimerInterval}
       onFinishExercise={finishExercise} onSave={saveTraining}
       onRecategorize={recategorizeSession} onClose={closeTraining}
       onCancel={cancelTraining} />}

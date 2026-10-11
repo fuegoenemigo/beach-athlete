@@ -392,6 +392,25 @@
   margin: 0;
 }
 
+.training-timer {
+  display: grid;
+  gap: 10px;
+  margin: 16px 0;
+  padding: 16px;
+  border: 1px solid #668f5a;
+  border-radius: 13px;
+  background: #142217;
+  text-align: center;
+}
+
+.training-timer > strong { color: var(--green); }
+.training-timer-rest { border-color: #6d86a6; background: #192637; }
+.training-timer-rest > strong { color: #a9cfff; }
+.training-timer-clock { font-variant-numeric: tabular-nums; font-size: clamp(2.5rem, 12vw, 4rem); font-weight: 800; line-height: 1; }
+.training-timer p { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.training-timer-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+.training-timer-actions button { flex: 1 1 135px; margin: 0; }
+
 .training-flow-error {
   margin: 13px 0;
   color: #ffb2a8;

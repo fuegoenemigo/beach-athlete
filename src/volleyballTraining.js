@@ -148,13 +148,13 @@ export const DEFAULT_EXERCISES = [
 ]
 
 const byId = new Map(DEFAULT_EXERCISES.map((item) => [item.id, item]))
-const ref = (id, target) => {
+const ref = (id, target, timing = {}) => {
   const item = byId.get(id.includes(':') ? id : `volleyball:${id}`)
   return { libraryId: item.id, name: item.name, category: item.category,
     type: item.type, muscleGroup: item.muscleGroup, loadMode: item.loadMode,
     intervalWorkMinutes: item.intervalWorkMinutes,
     performanceRole: item.performanceRole, defaultDurationUnit: item.defaultDurationUnit,
-    target }
+    target, ...timing }
 }
 
 export const STANDARD_PLANS = [
@@ -330,7 +330,9 @@ const intervalPlan = (id, name, exerciseId, count, workMinutes, restMinutes, lev
       : bike ? cyclingFourByFourSource : fourByFourSource,
     weeklyEvidence: enduranceMixSource,
     exercises: [ref(warmup, '10 Min. locker; tatsächliche Dauer erfassen'),
-      ref(exerciseId, `${count} Sätze = ${count} Belastungsabschnitte à ${workMinutes} Min.; je Satz tatsächliche Dauer und optional Distanz eintragen. ${restMinutes} Min. locker zwischen den Sätzen.`),
+      ref(exerciseId, `${count} Sätze = ${count} Belastungsabschnitte à ${workMinutes} Min.; je Satz tatsächliche Dauer und optional Distanz eintragen. ${restMinutes} Min. locker zwischen den Sätzen.`,
+        { targetDurationSeconds: workMinutes * 60, intervalCount: count,
+          intervalRestSeconds: restMinutes * 60 }),
       ref(cooldown, '5 Min. locker; tatsächliche Dauer erfassen')],
   }
 }
