@@ -3,6 +3,7 @@ import { activityEntries, activityTitle, localDate } from './activityHistory.js'
 import { calendarDayActivity, isRecoveryDay, RECOVERY_DAY } from './calendarActivities.js'
 import { trainingDayPerformances } from './calendarPerformance.js'
 import { isOpenTraining } from './trainingModel.js'
+import EntryWindow from './EntryWindow.jsx'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const performanceLabels = { decline: 'Rückgang', unchanged: 'Gleich', improved: 'Leicht besser' }
@@ -55,7 +56,7 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
   const volleyballDateTaken = volleyballDays.some((day) => day.date === selectedDate)
   const trainingOpen = sessions.some(isOpenTraining)
 
-  return <section className={`home-widget home-calendar${expanded ? ' home-calendar-expanded' : ''}`} aria-label="Sportkalender">
+  return <><section className={`home-widget home-calendar${expanded ? ' home-calendar-expanded' : ''}`} aria-label="Sportkalender">
     <div className="home-widget-header"><div>
       <span className="home-widget-kicker">DEIN MONAT</span>
       <span className="home-widget-title">Sportkalender</span>
@@ -98,8 +99,10 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
       <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Aus den prozentualen Änderungen entsteht der Tagesdurchschnitt. Unter −1 % erscheint 📉, zwischen −1 % und +1 % ein graues Minus und über +1 % 📈.</p>
       <p>Bei Kraftübungen zählt der beste geschätzte Kraftwert aus Gewicht und Wiederholungen. Bei Sprüngen zählt die gemessene Höhe, bei Core-Halteübungen die Dauer und bei Ausdauer mit gleicher Distanz das Tempo. Fehlt ein vergleichbarer Messwert, bleibt der Tag neutral.</p>
     </details>
-    {selectedDate && <div className="home-day-details">
-      <h3>{formatDate(selectedDate)}</h3>
+  </section>
+    {selectedDate && <EntryWindow compact title={formatDate(selectedDate)} subtitle="DEIN KALENDERTAG"
+      onClose={() => { setSelectedDate(null); setShowEntryChoices(false) }}>
+      <div className="home-day-details home-day-dialog">
       {!selectedRecovery && selectedPerformance && <p className="home-day-performance">
         {selectedPerformance.status === 'unrated' ? 'Noch keine vergleichbare frühere Übung für eine Tageswertung.'
           : `${performanceLabels[selectedPerformance.status]} · Durchschnitt ${percent(selectedPerformance.changePercent)} aus ${selectedPerformance.comparisons.length} von ${selectedPerformance.total} Übungen.`}
@@ -133,6 +136,7 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
           {trainingOpen && <p className="helper-text">Schließe zuerst dein offenes Training ab, bevor du ein neues beginnst.</p>}
         </div>}
       </div>
-    </div>}
-  </section>
+      </div>
+    </EntryWindow>}
+  </>
 }

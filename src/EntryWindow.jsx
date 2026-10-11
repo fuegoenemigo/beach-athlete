@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import './EntryWindow.css'
 
-export default function EntryWindow({ title, subtitle, onClose, children }) {
+export default function EntryWindow({ title, subtitle, onClose, children, compact = false }) {
   const titleRef = useRef(null)
   const onCloseRef = useRef(onClose)
   useEffect(() => { onCloseRef.current = onClose }, [onClose])
@@ -35,7 +35,7 @@ export default function EntryWindow({ title, subtitle, onClose, children }) {
     }
   }, [])
 
-  return createPortal(<div className="entry-window" role="dialog" aria-modal="true"
+  return createPortal(<div className={`entry-window${compact ? ' entry-window-compact' : ''}`} role="dialog" aria-modal="true"
     aria-labelledby="entry-window-title">
     <div className="entry-window-panel">
       <header className="entry-window-header">
