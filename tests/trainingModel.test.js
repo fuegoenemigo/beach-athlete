@@ -9,6 +9,7 @@ import {
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
 import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
   enrichExercise, searchTrainingPlans } from '../src/volleyballTraining.js'
+import { INSTRUCTIONS, instructionForExercise } from '../src/exerciseInstructions.js'
 
 const library = [{ name: 'Bankdrücken', category: 'Krafttraining',
   muscleGroup: 'Brust', type: 'strength' }]
@@ -146,6 +147,23 @@ test('plan search finds names, exercise groups, and exercise names across catego
   assert.ok(searchTrainingPlans(plans, 'kniebeugen explosiv')
     .some((plan) => plan.id === 'gym:plan-jump-basics'))
   assert.deepEqual(searchTrainingPlans(plans, 'unbekannter begriff'), [])
+})
+
+test('every built-in exercise and plan reference has a concrete instruction', () => {
+  assert.equal(Object.keys(INSTRUCTIONS).length, DEFAULT_EXERCISES.length)
+  for (const exercise of DEFAULT_EXERCISES) {
+    assert.ok(instructionForExercise(exercise)?.length > 35, exercise.id)
+    assert.equal(instructionForExercise({ libraryId: exercise.id, name: exercise.name }),
+      INSTRUCTIONS[exercise.id])
+  }
+  for (const plan of [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS]) {
+    for (const item of plan.exercises) assert.ok(instructionForExercise(item), item.libraryId)
+  }
+  assert.match(INSTRUCTIONS['volleyball:rdl'], /Hüfte/)
+  assert.match(INSTRUCTIONS['gym:cat-cow'], /Vierfüßlerstand/)
+  assert.match(INSTRUCTIONS['gym:thoracic-rotation'], /Matte/)
+  assert.equal(instructionForExercise({ id: 'personal:one', name: 'Eigene Übung',
+    category: 'Krafttraining' }), undefined)
 })
 
 test('loaded carries can store distance, time, and weight in one set', () => {

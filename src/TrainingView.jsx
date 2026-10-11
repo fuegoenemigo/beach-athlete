@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import GuidedTrainingPanel from './GuidedTrainingPanel.jsx'
+import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
 import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
@@ -433,6 +434,15 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         <p className="training-plan-description">{pendingPlan.description}</p>
         <p className="history-meta">{(pendingPlan.categories ?? [pendingPlan.category]).join(' + ')}
           {' · '}{pendingPlan.exercises.length} Übungen</p>
+        <h3 className="training-preview-heading">Übungen in diesem Plan</h3>
+        <ol className="training-plan-preview">
+          {pendingPlan.exercises.map((item, index) => <li className="training-exercise-row"
+            key={`${item.libraryId}-${index}`}>
+            <span className="training-exercise-main"><strong>{index + 1}. {item.name}</strong>
+              {item.target && <small>{item.target}</small>}</span>
+            <ExerciseInfo exercise={item} />
+          </li>)}
+        </ol>
         <button type="button" className="text-button" onClick={() => setPendingPlan(null)}>
           Andere Vorlage oder freie Einheit wählen
         </button>

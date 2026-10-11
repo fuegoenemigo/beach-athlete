@@ -1,4 +1,5 @@
 import { RatingStepper } from './VolleyballInputs.jsx'
+import ExerciseInfo from './ExerciseInfo.jsx'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   exerciseMeasurement, formatTrainingEntry, previousExercise, isConfirmedSet,
@@ -112,10 +113,13 @@ export default function GuidedTrainingPanel({
               setCustomGroup(library.find((item) => item.category === category)?.muscleGroup || 'Allgemein') }}>
             {category}</button>)}
         </div>}
-        {nextPlannedExercise && <button type="button" className="training-choice training-next-planned"
-          onClick={() => onOpenExercise(nextPlannedExercise)}>
-          Nächste Übung: {nextPlannedExercise.name} <span>›</span>
-        </button>}
+        {nextPlannedExercise && <div className="training-exercise-row training-next-planned">
+          <button type="button" className="training-choice"
+            onClick={() => onOpenExercise(nextPlannedExercise)}>
+            Nächste Übung: {nextPlannedExercise.name} <span>›</span>
+          </button>
+          <ExerciseInfo exercise={nextPlannedExercise} />
+        </div>}
         {session.exercises.length > 0 && <div className="training-done-list">
           <h3>Diese Einheit</h3>
           {session.exercises.map((item) => {
@@ -145,8 +149,11 @@ export default function GuidedTrainingPanel({
           <div className="training-choice-list">{available
             .filter((item) => !needsGroup || (item.muscleGroup || 'Allgemein') === group)
             .sort((a, b) => a.name.localeCompare(b.name, 'de-DE'))
-            .map((item) => <button type="button" className="training-choice" key={item.id}
-              onClick={() => onAddExercise(item)}>{item.name}<span>›</span></button>)}</div>
+            .map((item) => <div className="training-exercise-row" key={item.id}>
+              <button type="button" className="training-choice"
+                onClick={() => onAddExercise(item)}>{item.name}<span>›</span></button>
+              <ExerciseInfo exercise={item} />
+            </div>)}</div>
         </>}
         <details className="training-custom"><summary>Eigene Übung anlegen</summary>
           <label className="field-label" htmlFor="custom-name">Übungsname</label>
@@ -178,7 +185,10 @@ export default function GuidedTrainingPanel({
     </>}
 
     {step === 'set' && exercise && <>
-      <h2>{exercise.name}</h2>
+      <div className="training-exercise-row training-exercise-heading">
+        <h2>{exercise.name}</h2>
+        <ExerciseInfo key={exercise.id} exercise={exercise} defaultOpen />
+      </div>
       <p className="history-meta">{exercise.category === 'Krafttraining'
         ? exercise.muscleGroup || 'Ohne Muskelgruppe' : exercise.category || session.category}</p>
       {exercise.target && <p className="training-target">Vorschlag: {exercise.target}</p>}
