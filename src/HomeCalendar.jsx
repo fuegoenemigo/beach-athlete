@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import ActivityDetails from './ActivityDetails.jsx'
 import { activityEntries, activityTitle, localDate } from './activityHistory.js'
-import { calendarActivities } from './calendarActivities.js'
+import { calendarDayActivity } from './calendarActivities.js'
 import { trainingDayPerformances } from './calendarPerformance.js'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-const performanceLabels = { decline: 'Rückgang', unchanged: 'Unverändert', slight: 'Leichte Steigerung', strong: 'Deutliche Steigerung' }
+const performanceLabels = { decline: 'Rückgang', unchanged: 'Gleich', improved: 'Leicht besser' }
+const performanceSymbols = { decline: '📉', unchanged: '−', improved: '📈' }
 const percent = (value) => `${value > 0 ? '+' : ''}${value.toFixed(1).replace('.', ',')} %`
 const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -23,6 +24,17 @@ function shiftMonth(month, offset) {
   const [year, monthNumber] = month.split('-').map(Number)
   const date = new Date(year, monthNumber - 1 + offset, 1)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+function SteelDumbbell() {
+  return <svg className="home-steel-dumbbell" viewBox="0 0 32 22" role="img" aria-label="Krafttraining">
+    <rect x="3" y="9" width="26" height="4" rx="2" fill="#dbe2e7" />
+    <rect x="1" y="7" width="4" height="8" rx="1.2" fill="#9baab4" />
+    <rect x="5" y="4" width="6" height="14" rx="1.5" fill="#c6d0d7" />
+    <rect x="21" y="4" width="6" height="14" rx="1.5" fill="#c6d0d7" />
+    <rect x="27" y="7" width="4" height="8" rx="1.2" fill="#9baab4" />
+    <path d="M6 5h4m12 0h4" stroke="#f5f8fa" strokeWidth="1" strokeLinecap="round" />
+  </svg>
 }
 
 export default function HomeCalendar({ sessions, volleyballDays, expanded = false }) {
@@ -55,31 +67,30 @@ export default function HomeCalendar({ sessions, volleyballDays, expanded = fals
       {monthCells(month).map((date, index) => {
         if (!date) return <span key={`empty-${index}`} />
         const dayEntries = byDate.get(date) ?? []
-        const symbols = calendarActivities(dayEntries)
-        const shown = symbols.slice(0, symbols.length > 2 ? 1 : 2)
+        const activity = calendarDayActivity(dayEntries)
         const performance = trainingPerformance.get(date)
-        return <button className={`home-calendar-day${dayEntries.length ? ' has-activity' : ''}${performance?.status && performance.status !== 'unrated' ? ` performance-${performance.status}` : ''}${date === localDate() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`}
+        return <button className={`home-calendar-day${dayEntries.length ? ' has-activity' : ''}${date === localDate() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`}
           type="button" key={date} aria-pressed={date === selectedDate}
-          aria-label={`${formatDate(date)}${dayEntries.length ? `, ${dayEntries.length} ${dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}: ${symbols.map((item) => item.label).join(', ')}` : ''}${performanceLabels[performance?.status] ? `, ${performanceLabels[performance.status]}` : ''}`}
+          aria-label={`${formatDate(date)}${dayEntries.length ? `, ${dayEntries.length} ${dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}: ${activity?.label ?? 'Aktivität'}` : ''}${performanceLabels[performance?.status] ? `, ${performanceLabels[performance.status]}` : ''}`}
           onClick={() => { setSelectedDate(date); setOpenEntry(null) }}>
           <span className="home-calendar-number">{Number(date.slice(-2))}</span>
-          <span className="home-calendar-symbols" aria-hidden="true">
-            {shown.map((item) => <span key={item.emoji}>{item.emoji}</span>)}
-            {symbols.length > shown.length && <small>+{symbols.length - shown.length}</small>}
+          <span className="home-calendar-activity" aria-hidden="true">
+            {activity?.icon === 'barbell' ? <SteelDumbbell /> : activity?.emoji}
           </span>
+          <span className={`home-calendar-performance${performance?.status && performance.status !== 'unrated' ? ` is-${performance.status}` : ''}`}
+            aria-hidden="true">{performanceSymbols[performance?.status] ?? ''}</span>
         </button>
       })}
     </div>
-    <div className="home-calendar-legend" aria-label="Farbwertung für vergleichbare Trainings">
-      <span><i className="performance-decline" /> Rückgang</span>
-      <span><i className="performance-unchanged" /> Gleich</span>
-      <span><i className="performance-slight" /> Leicht besser</span>
-      <span><i className="performance-strong" /> Deutlich besser</span>
+    <div className="home-calendar-legend" aria-label="Leistungszeichen für vergleichbare Trainings">
+      <span>📉 Rückgang</span>
+      <span><i className="performance-minus">−</i> Gleich</span>
+      <span>📈 Leicht besser</span>
     </div>
-    <p className="home-calendar-hint">Die Farbe bewertet vergleichbare Trainingsübungen; Volleyballtage ohne Training bleiben vorerst neutral.</p>
+    <p className="home-calendar-hint">Das große Symbol zeigt den Vergleich mit früheren Trainings. Volleyballtage ohne Training bleiben vorerst ohne Wertung.</p>
     <details className="home-calendar-method">
-      <summary>Wie entsteht die Farbe?</summary>
-      <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Aus den prozentualen Änderungen entsteht der Tagesdurchschnitt. Unter −1 % ist er rot, zwischen −1 % und +1 % gelb, über +1 % grün und ab +10 % blau.</p>
+      <summary>Wie entsteht die Wertung?</summary>
+      <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Aus den prozentualen Änderungen entsteht der Tagesdurchschnitt. Unter −1 % erscheint 📉, zwischen −1 % und +1 % ein graues Minus und über +1 % 📈.</p>
       <p>Bei Kraftübungen zählt der beste geschätzte Kraftwert aus Gewicht und Wiederholungen. Bei Sprüngen zählt die gemessene Höhe, bei Core-Halteübungen die Dauer und bei Ausdauer mit gleicher Distanz das Tempo. Fehlt ein vergleichbarer Messwert, bleibt der Tag neutral.</p>
     </details>
     {selectedDate && <div className="home-day-details">

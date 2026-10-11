@@ -16,17 +16,17 @@ test('calendar compares the same exercise ID to its last older date without a ti
   ]
   const scores = trainingDayPerformances(sessions)
   assert.equal(scores.get('2025-01-01').status, 'unrated')
-  assert.equal(scores.get('2026-10-11').status, 'strong')
+  assert.equal(scores.get('2026-10-11').status, 'improved')
   assert.equal(scores.get('2026-10-11').comparisons.length, 2)
   assert.ok(Math.abs(scores.get('2026-10-11').changePercent - 10) < 0.001)
 })
 
-test('blue starts at ten percent average improvement', () => {
+test('positive improvement uses one status regardless of magnitude', () => {
   const scores = trainingDayPerformances([
     session('old', '2026-10-10', [strength('bench', 50)]),
     session('new', '2026-10-11', [strength('bench', 54)]),
   ])
-  assert.equal(scores.get('2026-10-11').status, 'slight')
+  assert.equal(scores.get('2026-10-11').status, 'improved')
 })
 
 test('a day averages only comparable IDs and ignores an open training', () => {
@@ -83,5 +83,5 @@ test('endurance pace is comparable only at the same distance', () => {
     session('same-distance', '2026-10-12', [run(2000, 500)]),
   ])
   assert.equal(scores.get('2026-10-11').status, 'unrated')
-  assert.equal(scores.get('2026-10-12').status, 'strong')
+  assert.equal(scores.get('2026-10-12').status, 'improved')
 })

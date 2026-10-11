@@ -46,7 +46,7 @@ function completedExercises(session) {
       isConfirmedSet(entry, exerciseMeasurement(exercise))) || hasLegacyValues(exercise)))
 }
 
-function evaluateDay(exercises, previousById, strongThreshold) {
+function evaluateDay(exercises, previousById) {
   const comparisons = []
   for (const exercise of exercises.values()) {
     const current = bestMetric(exercise)
@@ -61,11 +61,11 @@ function evaluateDay(exercises, previousById, strongThreshold) {
   const changePercent = comparisons.reduce((sum, item) => sum + item.changePercent, 0) / comparisons.length
   const roundedChange = Math.round(changePercent * 100) / 100
   const status = roundedChange < -1 ? 'decline' : roundedChange <= 1 ? 'unchanged'
-    : roundedChange < strongThreshold ? 'slight' : 'strong'
+    : 'improved'
   return { status, changePercent, comparisons, total: exercises.size }
 }
 
-export function trainingDayPerformances(sessions, strongThreshold = 10) {
+export function trainingDayPerformances(sessions) {
   const ordered = sessions.filter((session) => !isOpenTraining(session))
     .sort((a, b) => a.date.localeCompare(b.date)
       || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
@@ -77,7 +77,7 @@ export function trainingDayPerformances(sessions, strongThreshold = 10) {
   const results = new Map()
   const previousById = new Map()
   for (const [date, exercises] of byDate) {
-    results.set(date, evaluateDay(exercises, previousById, strongThreshold))
+    results.set(date, evaluateDay(exercises, previousById))
     for (const exercise of exercises.values()) previousById.set(exercise.libraryId, { exercise, date })
   }
   return results

@@ -1,7 +1,7 @@
 import { canonicalCategory, exerciseMeasurement, hasLegacyValues, isConfirmedSet } from './trainingModel.js'
 
 const categorySymbols = {
-  Krafttraining: { emoji: '🏋️', label: 'Krafttraining' },
+  Krafttraining: { icon: 'barbell', label: 'Krafttraining' },
   'Sprungkraft und Agilität': { emoji: '⚡', label: 'Sprungkraft und Agilität' },
   Ausdauer: { emoji: '🏃', label: 'Ausdauer' },
   'Core und Mobility': { emoji: '🧘', label: 'Core und Mobility' },
@@ -19,17 +19,18 @@ function trainedCategories(session) {
     canonicalCategory(exercise.category ?? session.category, session.subcategory)))]
 }
 
-export function calendarActivities(entries) {
-  const symbols = new Map()
-  for (const entry of entries) {
-    if (entry.type === 'beach' || entry.type === 'indoor') {
-      symbols.set('🏐', { emoji: '🏐', label: 'Volleyball' })
-    } else if (entry.type === 'training') {
-      for (const category of trainedCategories(entry.item)) {
-        const symbol = categorySymbols[category]
-        if (symbol) symbols.set(symbol.emoji, symbol)
-      }
-    }
+export function calendarDayActivity(entries) {
+  const training = entries.find((entry) => entry.type === 'training')
+  if (training) {
+    const categories = trainedCategories(training.item)
+    const primary = canonicalCategory(training.item.category, training.item.subcategory)
+    return categorySymbols[categories.includes(primary) ? primary : categories[0]]
+      ?? { emoji: '💪', label: 'Training' }
   }
-  return [...symbols.values()]
+  const volleyball = entries.filter((entry) => entry.type === 'beach' || entry.type === 'indoor')
+  if (volleyball.some((entry) => entry.item.gameType === 'tournament'))
+    return { emoji: '🏆', label: 'Volleyball-Turnier' }
+  if (volleyball.some((entry) => entry.item.gameType === 'testMatch'))
+    return { emoji: '🤝', label: 'Testspiel' }
+  return volleyball.length ? { emoji: '🏐', label: 'Volleyball' } : null
 }
