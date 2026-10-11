@@ -32,6 +32,7 @@ export const MEASUREMENT_TYPES = [
   ['reps', 'Wiederholungen'],
   ['duration', 'Dauer'],
   ['distance', 'Distanz und Dauer'],
+  ['carry', 'Distanz, Dauer und Gewicht'],
   ['jump', 'Sprunghöhe und Wiederholungen'],
 ]
 
@@ -70,7 +71,8 @@ export function createTrainingSet(type = 'strength') {
   if (type === 'strength') return { ...base, reps: '', weightKg: '' }
   if (type === 'reps') return { ...base, reps: '', weightKg: '' }
   if (type === 'jump') return { ...base, reps: '', heightCm: '', weightKg: '' }
-  if (type === 'distance') return { ...base, distanceValue: '', distanceUnit: 'm',
+  if (type === 'distance' || type === 'carry') return { ...base, distanceValue: '', distanceUnit: 'm',
+    ...(type === 'carry' ? { weightKg: '' } : {}),
     durationValue: '', durationUnit: 's' }
   return { ...base, durationValue: '', durationUnit: 's' }
 }
@@ -80,7 +82,8 @@ export function hasMeasuredValue(entry, type) {
     && Number.isFinite(Number(value)) && Number(value) > 0
   if (type === 'strength' || type === 'reps') return positive(entry.reps)
   if (type === 'jump') return positive(entry.reps) || positive(entry.heightCm)
-  if (type === 'distance') return positive(entry.distanceValue) || positive(entry.durationValue)
+  if (type === 'distance' || type === 'carry')
+    return positive(entry.distanceValue) || positive(entry.durationValue)
   return positive(entry.durationValue)
 }
 
@@ -173,8 +176,9 @@ export function formatTrainingEntry(entry, type, exercise = {}) {
     entry.heightCm ? `${entry.heightCm} cm` : '',
     load,
   ].filter(Boolean).join(' · ')
-  if (type === 'distance') return [
+  if (type === 'distance' || type === 'carry') return [
     entry.distanceValue ? `${entry.distanceValue} ${entry.distanceUnit || 'm'}` : '', duration,
+    type === 'carry' ? load : '',
   ].filter(Boolean).join(' · ')
   return duration
 }

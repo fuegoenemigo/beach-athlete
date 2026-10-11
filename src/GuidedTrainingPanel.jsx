@@ -26,7 +26,7 @@ function NumberField({ label, value, onChange, step = 'any' }) {
 function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
   const number = (label, field, step) => <NumberField label={label} value={entry[field]}
     step={step} onChange={(value) => onChange({ [field]: value })} />
-  const timed = ['duration', 'distance'].includes(type)
+  const timed = ['duration', 'distance', 'carry'].includes(type)
   const bodyweight = exercise.loadMode === 'bodyweight'
   const bodyweightKg = entry.bodyweightKg || athleteProfile.bodyweightKg
   return <>
@@ -35,11 +35,11 @@ function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
       {['strength', 'jump', 'reps'].includes(type) && bodyweight && <p className="training-bodyweight">
         Eigengewicht: {bodyweightKg ? `${bodyweightKg} kg` : 'noch nicht im Profil hinterlegt'}
       </p>}
-      {(type === 'strength' || type === 'jump' || (type === 'reps' && bodyweight))
+      {(type === 'strength' || type === 'jump' || type === 'carry' || (type === 'reps' && bodyweight))
         && number(bodyweight ? 'Zusätzliches Gewicht (kg, optional)' : 'Gewicht (kg, optional)', 'weightKg')}
       {type === 'jump' && number('Sprunghöhe (cm, optional)', 'heightCm')}
-      {type === 'distance' && number('Distanz', 'distanceValue')}
-      {type === 'distance' && <label className="training-field">Einheit
+      {['distance', 'carry'].includes(type) && number('Distanz', 'distanceValue')}
+      {['distance', 'carry'].includes(type) && <label className="training-field">Einheit
         <select className="field" value={entry.distanceUnit ?? 'm'}
           onChange={(event) => onChange({ distanceUnit: event.target.value })}>
           <option value="m">Meter</option><option value="km">Kilometer</option>
@@ -77,8 +77,9 @@ export default function GuidedTrainingPanel({
     .map((entry) => formatTrainingEntry(entry,
       exerciseMeasurement({ ...previous.item, category: session.category }), previous.item)).filter(Boolean)
   const available = library.filter((item) => item.category === exerciseCategory)
-  const groups = [...new Set(available.map((item) => item.muscleGroup || 'Ohne Muskelgruppe'))]
+  const groups = [...new Set(available.map((item) => item.muscleGroup || 'Allgemein'))]
     .sort((a, b) => a.localeCompare(b, 'de-DE'))
+  const needsGroup = groups.length > 1
   const planOptions = plans.filter((plan) =>
     canonicalCategory(plan.category, plan.name) === session.category)
   const nextPlannedExercise = session.planId && session.exercises.find((item) => !item.done
@@ -106,7 +107,9 @@ export default function GuidedTrainingPanel({
         {(session.categories ?? [session.category]).length > 1 && <div className="training-category-tabs">
           {(session.categories ?? [session.category]).map((category) => <button type="button"
             key={category} className={exerciseCategory === category ? 'training-choice selected' : 'training-choice'}
-            onClick={() => { setExerciseCategory(category); setGroup(''); setCustomType(defaultMeasurement(category)) }}>
+            onClick={() => { setExerciseCategory(category); setGroup('');
+              setCustomType(defaultMeasurement(category))
+              setCustomGroup(library.find((item) => item.category === category)?.muscleGroup || 'Allgemein') }}>
             {category}</button>)}
         </div>}
         {nextPlannedExercise && <button type="button" className="training-choice training-next-planned"
@@ -129,19 +132,19 @@ export default function GuidedTrainingPanel({
           {planOptions.map((plan) => <button type="button" className="training-choice" key={plan.id}
             onClick={() => onApplyPlan(plan)}>{plan.name} · {plan.exercises.length} Übungen</button>)}
         </details>}
-        {exerciseCategory === 'Krafttraining' && <>
-          <h3>Muskelgruppe wählen</h3>
+        {needsGroup && <>
+          <h3>{exerciseCategory === 'Krafttraining' ? 'Muskelgruppe wählen' : 'Schwerpunkt wählen'}</h3>
           <div className="training-choice-grid">{groups.map((muscle) =>
             <button type="button" key={muscle}
               className={group === muscle ? 'training-choice selected' : 'training-choice'}
-              onClick={() => { setGroup(muscle); setCustomGroup(muscle === 'Ohne Muskelgruppe' ? 'Ganzkörper' : muscle) }}>
+              onClick={() => { setGroup(muscle); setCustomGroup(muscle) }}>
               {muscle}</button>)}</div>
         </>}
-        {(exerciseCategory !== 'Krafttraining' || group) && <>
-          <h3>{exerciseCategory === 'Krafttraining' ? `Übungen: ${group}` : 'Übung wählen'}</h3>
+        {(!needsGroup || group) && <>
+          <h3>{group && needsGroup ? `Übungen: ${group}` : 'Übung wählen'}</h3>
           <div className="training-choice-list">{available
-            .filter((item) => exerciseCategory !== 'Krafttraining'
-              || (item.muscleGroup || 'Ohne Muskelgruppe') === group)
+            .filter((item) => !needsGroup || (item.muscleGroup || 'Allgemein') === group)
+            .sort((a, b) => a.name.localeCompare(b.name, 'de-DE'))
             .map((item) => <button type="button" className="training-choice" key={item.id}
               onClick={() => onAddExercise(item)}>{item.name}<span>›</span></button>)}</div>
         </>}
@@ -154,12 +157,16 @@ export default function GuidedTrainingPanel({
             onChange={(event) => setCustomType(event.target.value)}>
             {MEASUREMENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
-          {exerciseCategory === 'Krafttraining' && <>
-            <label className="field-label" htmlFor="custom-group">Muskelgruppe</label>
+          <>
+            <label className="field-label" htmlFor="custom-group">
+              {exerciseCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'}
+            </label>
             <select id="custom-group" className="field" value={customGroup}
               onChange={(event) => setCustomGroup(event.target.value)}>
-              {MUSCLE_GROUPS.map((muscle) => <option key={muscle}>{muscle}</option>)}
-            </select></>}
+              {[...new Set([...groups, customGroup,
+                ...(exerciseCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
+                .map((muscle) => <option key={muscle}>{muscle}</option>)}
+            </select></>
           <button type="button" className="secondary-button" onClick={onCreateCustom}>Anlegen und ersten Satz öffnen</button>
         </details>
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}

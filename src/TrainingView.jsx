@@ -2,7 +2,8 @@ import { useState } from 'react'
 import GuidedTrainingPanel from './GuidedTrainingPanel.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
-import { DEFAULT_EXERCISES, VOLLEYBALL_PLANS, enrichExercise } from './volleyballTraining.js'
+import { DEFAULT_EXERCISES, STANDARD_PLANS, VOLLEYBALL_PLANS,
+  enrichExercise } from './volleyballTraining.js'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   defaultMeasurement, exerciseIdentity, exerciseMeasurement,
@@ -21,10 +22,9 @@ const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de
 function groupsFor(library, category) {
   const items = library.filter((item) => item.category === category)
     .sort((a, b) => a.name.localeCompare(b.name, 'de-DE'))
-  if (category !== 'Krafttraining') return [['Übungen', items]]
-  return [...new Set(items.map((item) => item.muscleGroup || 'Ohne Muskelgruppe'))]
+  return [...new Set(items.map((item) => item.muscleGroup || 'Allgemein'))]
     .sort((a, b) => a.localeCompare(b, 'de-DE'))
-    .map((group) => [group, items.filter((item) => (item.muscleGroup || 'Ohne Muskelgruppe') === group)])
+    .map((group) => [group, items.filter((item) => (item.muscleGroup || 'Allgemein') === group)])
 }
 
 function ExercisePicker({ id, library, category, value, onChange }) {
@@ -72,8 +72,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const visibleLibrary = [...managedLibrary, ...DEFAULT_EXERCISES.filter((item) =>
     !managedLibrary.some((existing) => existing.category === item.category
       && existing.name === item.name))]
-  const visiblePlans = [...trainingPlans, ...VOLLEYBALL_PLANS.filter((plan) =>
-    !trainingPlans.some((saved) => saved.id === plan.id))]
+  const visiblePlans = [...STANDARD_PLANS, ...VOLLEYBALL_PLANS, ...trainingPlans]
+  const libraryGroups = groupsFor(visibleLibrary, libraryCategory).map(([group]) => group)
   const sortedSessions = [...sessions].sort((a, b) =>
     b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
 
@@ -124,6 +124,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setFlowMessage('')
     setSelectedGroup('')
     setSelectedExerciseCategory(exercises[0]?.category ?? category)
+    setCustomGroup(groupsFor(visibleLibrary, exercises[0]?.category ?? category)[0]?.[0] ?? 'Allgemein')
     setCustomType(defaultMeasurement(category))
     setNotice('')
   }
@@ -214,6 +215,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setFlowMessage('')
     setSelectedGroup('')
     setSelectedExerciseCategory(category)
+    setCustomGroup(groupsFor(visibleLibrary, category)[0]?.[0] ?? 'Allgemein')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
   function recategorizeSession(category) {
@@ -221,6 +223,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       exercises: activeSession.exercises.map((exercise) => ({ ...exercise,
         ...(exercise.category ? { category } : {}) })) })
     setCustomType(defaultMeasurement(category))
+    setCustomGroup(groupsFor(visibleLibrary, category)[0]?.[0] ?? 'Allgemein')
   }
   function createCustomExercise() {
     const name = customName.trim()
@@ -230,7 +233,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       setFlowMessage('Diese Übung gibt es in der Kategorie bereits.'); return
     }
     const item = { id: crypto.randomUUID(), name, category: selectedExerciseCategory,
-      type: customType, ...(selectedExerciseCategory === 'Krafttraining' ? { muscleGroup: customGroup } : {}) }
+      type: customType, muscleGroup: customGroup }
     setExerciseLibrary((previous) => [...previous, item])
     const exercise = createLoggedExercise(item)
     exercise.entries = [{ ...createTrainingSet(exercise.type), completed: false }]
@@ -326,8 +329,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       setNotice('Diese Übung gibt es in der Kategorie bereits.'); return
     }
     setExerciseLibrary((previous) => [...previous, { id: crypto.randomUUID(), name,
-      category: libraryCategory, type: libraryType,
-      ...(libraryCategory === 'Krafttraining' ? { muscleGroup: libraryGroup } : {}) }])
+      category: libraryCategory, type: libraryType, muscleGroup: libraryGroup }])
     setLibraryName('')
     setNotice('Übung zur Bibliothek hinzugefügt.')
   }
@@ -383,7 +385,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     }
     setExerciseLibrary((previous) => previous.map((entry, i) => i === index
       ? { ...entry, id: exerciseIdentity(item), category,
-        ...(category === 'Krafttraining' ? { muscleGroup: item.muscleGroup || 'Ganzkörper' } : {}) }
+        muscleGroup: category === 'Krafttraining' ? item.muscleGroup || 'Ganzkörper'
+          : groupsFor(visibleLibrary, category)[0]?.[0] ?? 'Allgemein' }
       : entry))
     setNotice('Ältere Übung der neuen Hauptkategorie zugeordnet.')
   }
@@ -468,10 +471,22 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       onRecategorize={recategorizeSession} onClose={closeTraining}
       onCancel={cancelTraining} />
     </EntryWindow>}
-    {!activeSession && <section className="diary-panel training-plans">
-      <div className="section-heading"><div><p className="eyebrow">WIEDERVERWENDBAR</p><h2>Trainingsvorlagen</h2></div></div>
+    {!activeSession && <details className="diary-panel training-plans">
+      <summary className="section-heading training-plans-summary">
+        <span><span className="eyebrow">WIEDERVERWENDBAR</span><strong>Trainingsvorlagen</strong></span>
+        <span className="training-plans-summary-action">Öffnen / schließen <span aria-hidden="true">⌄</span></span>
+      </summary>
       {!planDraft && <>
-        <p className="helper-text">Starte einen vorgeschlagenen Volleyball-Trainingstag oder erstelle eine eigene Vorlage. Passe Umfang und Belastung an deine Spieltage an.</p>
+        <p className="helper-text">Starte eine Vorlage oder erstelle deinen eigenen Trainingstag. Für den Einstieg sind Ganzkörper-Einheiten meist einfacher als ein Split.</p>
+        <h3 className="training-group-heading">Fitnessstudio · Einstieg</h3>
+        {STANDARD_PLANS.map((plan) => <div className="training-plan-row" key={plan.id}>
+          <div><strong>{plan.name}</strong>
+            <span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span>
+            <span className="training-plan-description">{plan.description}</span></div>
+          <button type="button" className="secondary-button" onClick={() => openNewTraining(plan)}>Starten</button>
+          <button type="button" className="text-button" onClick={() => beginPlan({ ...plan,
+            id: crypto.randomUUID(), name: `${plan.name} · Eigene Variante` })}>Kopie anpassen</button>
+        </div>)}
         <h3 className="training-group-heading">Volleyball-Vorschläge</h3>
         {VOLLEYBALL_PLANS.map((plan) => <div className="training-plan-row" key={plan.id}>
           <div><strong>{plan.name}</strong>
@@ -526,7 +541,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           <button type="button" className="secondary-button" onClick={() => setPlanDraft(null)}>Abbrechen</button>
         </div>
       </div>}
-    </section>}
+    </details>}
 
     <section className="diary-panel">
       <div className="section-heading"><div><p className="eyebrow">DEIN VERLAUF</p><h2>Trainingseinheiten</h2></div>
@@ -567,10 +582,12 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
 
     <details className="diary-panel training-library">
       <summary>Übungsbibliothek verwalten</summary>
-      <p className="helper-text">Jede Übung gehört zu einer Hauptkategorie und bei Krafttraining zu einer Muskelgruppe.</p>
+      <p className="helper-text">Jede Übung gehört zu einer Hauptkategorie und einer Muskelgruppe oder einem Schwerpunkt.</p>
       <label className="field-label" htmlFor="library-category">Hauptkategorie</label>
       <select id="library-category" className="field" value={libraryCategory}
-        onChange={(event) => { setLibraryCategory(event.target.value); setLibraryType(defaultMeasurement(event.target.value)) }}>
+        onChange={(event) => { const category = event.target.value
+          setLibraryCategory(category); setLibraryType(defaultMeasurement(category))
+          setLibraryGroup(groupsFor(visibleLibrary, category)[0]?.[0] ?? 'Allgemein') }}>
         {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
       </select>
       <label className="field-label" htmlFor="library-name">Neue Übung</label>
@@ -581,16 +598,19 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         onChange={(event) => setLibraryType(event.target.value)}>
         {MEASUREMENT_TYPES.map(([type, label]) => <option key={type} value={type}>{label}</option>)}
       </select>
-      {libraryCategory === 'Krafttraining' && <>
-        <label className="field-label" htmlFor="library-group">Muskelgruppe</label>
-        <select id="library-group" className="field" value={libraryGroup}
-          onChange={(event) => setLibraryGroup(event.target.value)}>
-          {MUSCLE_GROUPS.map((group) => <option key={group}>{group}</option>)}
-        </select></>}
+      <label className="field-label" htmlFor="library-group">
+        {libraryCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'}
+      </label>
+      <select id="library-group" className="field" value={libraryGroup}
+        onChange={(event) => setLibraryGroup(event.target.value)}>
+        {[...new Set([...libraryGroups, libraryGroup,
+          ...(libraryCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
+          .map((group) => <option key={group}>{group}</option>)}
+      </select>
       <button type="button" className="secondary-button" onClick={addLibraryItem}>＋ Zur Bibliothek</button>
       <div className="training-library-list">
         {groupsFor(visibleLibrary, libraryCategory).map(([group, items]) => <div key={group}>
-          {libraryCategory === 'Krafttraining' && <h3 className="training-group-heading">{group}</h3>}
+          <h3 className="training-group-heading">{group}</h3>
           {items.map((item) => {
             const index = item.sourceIndex
             return <div className="training-library-item" key={exerciseIdentity(item)}>
@@ -603,12 +623,14 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
                 <button type="button" className="text-button" onClick={() => setRenamingIndex(null)}>Abbrechen</button>
               </> : <>
                 <span>{item.name}</span>
-                {libraryCategory === 'Krafttraining' && <select className="field training-group-select"
-                  aria-label={`Muskelgruppe für ${item.name}`} value={item.muscleGroup || ''}
+                <select className="field training-group-select"
+                  aria-label={`${libraryCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'} für ${item.name}`}
+                  value={item.muscleGroup || 'Allgemein'}
                   onChange={(event) => changeLibraryGroup(index, event.target.value)}>
-                  <option value="" disabled>Muskelgruppe wählen</option>
-                  {MUSCLE_GROUPS.map((muscle) => <option key={muscle}>{muscle}</option>)}
-                </select>}
+                  {[...new Set([...libraryGroups, item.muscleGroup || 'Allgemein',
+                    ...(libraryCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
+                    .map((muscle) => <option key={muscle}>{muscle}</option>)}
+                </select>
                 <button type="button" className="text-button" onClick={() => { setRenamingIndex(index); setRenameValue(item.name) }}>Umbenennen</button>
                 <button type="button" className="text-button" onClick={() => {
                   if (!window.confirm(`„${item.name}“ aus der Bibliothek entfernen? Bestehende Einheiten bleiben erhalten.`)) return

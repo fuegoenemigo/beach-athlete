@@ -7,7 +7,8 @@ import {
   finishTrainingExerciseEntries,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
-import { DEFAULT_EXERCISES, VOLLEYBALL_PLANS, enrichExercise } from '../src/volleyballTraining.js'
+import { DEFAULT_EXERCISES, STANDARD_PLANS, VOLLEYBALL_PLANS,
+  enrichExercise } from '../src/volleyballTraining.js'
 
 const library = [{ name: 'Bankdrücken', category: 'Krafttraining',
   muscleGroup: 'Brust', type: 'strength' }]
@@ -106,8 +107,17 @@ test('confirming a set opens the next and ending an exercise drops only the empt
 
 test('volleyball plans use available exercises and preserve both categories in a mixed day', () => {
   const available = new Map(DEFAULT_EXERCISES.map((item) => [item.id, item]))
-  for (const plan of VOLLEYBALL_PLANS) {
+  assert.equal(available.size, DEFAULT_EXERCISES.length)
+  assert.equal(STANDARD_PLANS.length, 5)
+  assert.equal(isAthleteData({ ...base(), trainingPlans: [...STANDARD_PLANS, ...VOLLEYBALL_PLANS] }), true)
+  assert.ok(DEFAULT_EXERCISES.some((item) => item.name === 'Back Extensions'
+    && item.muscleGroup === 'Rücken'))
+  assert.ok(DEFAULT_EXERCISES.some((item) => item.name === 'Explosive Kniebeugen (Squat Jumps)'
+    && item.category === 'Sprungkraft und Agilität'))
+  for (const plan of [...STANDARD_PLANS, ...VOLLEYBALL_PLANS]) {
     assert.ok(plan.exercises.length > 0)
+    assert.ok(plan.exercises.every((reference) => reference.category === plan.category
+      || plan.categories?.includes(reference.category)))
     for (const reference of plan.exercises) {
       assert.equal(available.get(reference.libraryId)?.category, reference.category)
       assert.ok(reference.target)
@@ -121,6 +131,13 @@ test('volleyball plans use available exercises and preserve both categories in a
   assert.equal(isAthleteData({ ...base(), athleteProfile: { bodyweightKg: '75' },
     sessions: [{ id: 'mixed', date: '2026-10-11', category: mixed.category,
       categories: mixed.categories, exercises }] }), true)
+})
+
+test('loaded carries can store distance, time, and weight in one set', () => {
+  const set = { ...createTrainingSet('carry'), distanceValue: '40', durationValue: '32',
+    weightKg: '24' }
+  assert.equal(hasMeasuredValue(set, 'carry'), true)
+  assert.equal(formatTrainingEntry(set, 'carry'), '40 m · 32 Sek. · 24 kg')
 })
 
 test('bodyweight and additional load stay separate in a confirmed set', () => {
