@@ -129,6 +129,15 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     if (!navigationTarget) return
     let scrollFrame
     const frame = window.requestAnimationFrame(() => {
+      if (navigationTarget.mode === 'create') {
+        setPendingPlan(null)
+        setPlanSearch('')
+        setSportDateError('')
+        setSelectedDate(navigationTarget.date)
+        setCustomDate(true)
+        setNewSessionOpen(true)
+        return
+      }
       setShowHistory(true)
       setExpandedSessionId(navigationTarget.id)
       scrollFrame = window.requestAnimationFrame(() => {
@@ -610,6 +619,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       </div>
       </>}
       </>}
+      <p className="helper-text">Trainingsdatum: <strong>{customDate && !selectedDate
+        ? 'Bitte wählen' : formatDate(customDate ? selectedDate : today())}</strong></p>
       <details className="training-date-option"><summary>Anderes Datum erfassen</summary>
         <label className="field-label" htmlFor="training-date">Trainingsdatum</label>
         <input id="training-date" className="field" type="date"

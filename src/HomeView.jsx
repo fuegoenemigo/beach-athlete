@@ -17,7 +17,7 @@ const FEATURES = {
 }
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile,
-  sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity }) {
+  sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
   const [selectedFeature, setSelectedFeature] = useState(initialView)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
 
@@ -69,7 +69,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
       <button className="home-security-link" type="button" onClick={() => openFeature('security')}>
         <span aria-hidden="true">🔑</span> Daten &amp; Sicherheit
       </button>
-      <HomeCalendar sessions={sessions} volleyballDays={volleyballDays} onOpenActivity={onOpenActivity} />
+      <HomeCalendar sessions={sessions} volleyballDays={volleyballDays}
+        onOpenActivity={onOpenActivity} onCreateEntry={onCreateEntry} />
 
       <button className="home-widget home-statistics" type="button"
         onClick={() => openFeature('statistics')} aria-label="Statistiken öffnen">

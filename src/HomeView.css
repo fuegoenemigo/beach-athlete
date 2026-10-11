@@ -164,6 +164,11 @@
 .home-performance-breakdown li small { color: #aab8ac; font-size: 0.7rem; }
 .home-performance-breakdown li strong { white-space: nowrap; }
 .home-day-entry { margin-top: 8px; }
+.home-new-entry { margin-top: 14px; }
+.home-entry-choices { display: grid; gap: 9px; margin-top: 10px; }
+.home-entry-choices > p { margin: 0; color: #c5d1c7; font-size: 0.83rem; }
+.home-entry-choices button { width: 100%; text-align: left; }
+.home-entry-choices button:disabled { opacity: 0.5; }
 .home-activity-link { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; color: #c9e9d0; text-decoration: underline; text-underline-offset: 3px; }
 .home-activity-link:hover { color: #f3f5f3; }
 .home-activity-link:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }

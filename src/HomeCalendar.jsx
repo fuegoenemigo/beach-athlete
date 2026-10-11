@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { activityEntries, activityTitle, localDate } from './activityHistory.js'
 import { calendarDayActivity, isRecoveryDay, RECOVERY_DAY } from './calendarActivities.js'
 import { trainingDayPerformances } from './calendarPerformance.js'
+import { isOpenTraining } from './trainingModel.js'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const performanceLabels = { decline: 'Rückgang', unchanged: 'Gleich', improved: 'Leicht besser' }
@@ -36,9 +37,10 @@ function SteelDumbbell() {
   </svg>
 }
 
-export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity, expanded = false }) {
+export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity, onCreateEntry, expanded = false }) {
   const [month, setMonth] = useState(() => localDate().slice(0, 7))
   const [selectedDate, setSelectedDate] = useState(null)
+  const [showEntryChoices, setShowEntryChoices] = useState(false)
   const entries = activityEntries(sessions, volleyballDays)
   const trainingPerformance = trainingDayPerformances(sessions)
   const byDate = new Map()
@@ -50,6 +52,8 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
   const dayEntries = byDate.get(selectedDate) ?? []
   const selectedRecovery = isRecoveryDay(selectedDate, dayEntries)
   const selectedPerformance = trainingPerformance.get(selectedDate)
+  const volleyballDateTaken = volleyballDays.some((day) => day.date === selectedDate)
+  const trainingOpen = sessions.some(isOpenTraining)
 
   return <section className={`home-widget home-calendar${expanded ? ' home-calendar-expanded' : ''}`} aria-label="Sportkalender">
     <div className="home-widget-header"><div>
@@ -57,9 +61,9 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
       <span className="home-widget-title">Sportkalender</span>
     </div></div>
     <div className="home-month-navigation">
-      <button type="button" aria-label="Vorheriger Monat" onClick={() => { setMonth(shiftMonth(month, -1)); setSelectedDate(null) }}>‹</button>
+      <button type="button" aria-label="Vorheriger Monat" onClick={() => { setMonth(shiftMonth(month, -1)); setSelectedDate(null); setShowEntryChoices(false) }}>‹</button>
       <strong>{monthLabel}</strong>
-      <button type="button" aria-label="Nächster Monat" onClick={() => { setMonth(shiftMonth(month, 1)); setSelectedDate(null) }}>›</button>
+      <button type="button" aria-label="Nächster Monat" onClick={() => { setMonth(shiftMonth(month, 1)); setSelectedDate(null); setShowEntryChoices(false) }}>›</button>
     </div>
     <div className="home-calendar-grid">
       {WEEKDAYS.map((day) => <span className="home-weekday" key={day}>{day}</span>)}
@@ -71,18 +75,18 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
         const performance = trainingPerformance.get(date)
         return <button className={`home-calendar-day${dayEntries.length ? ' has-activity' : ''}${recovery ? ' is-recovery' : ''}${date === localDate() ? ' is-today' : ''}${date === selectedDate ? ' is-selected' : ''}`}
           type="button" key={date} aria-pressed={date === selectedDate}
-          aria-label={`${formatDate(date)}${recovery ? `, ${RECOVERY_DAY.label}` : dayEntries.length ? `, ${dayEntries.length} ${dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}: ${activity?.label ?? 'Aktivität'}` : ''}${performanceLabels[performance?.status] ? `, ${performanceLabels[performance.status]}` : ''}`}
-          onClick={() => setSelectedDate(date)}>
+          aria-label={`${formatDate(date)}${recovery ? `, ${RECOVERY_DAY.label}` : dayEntries.length ? `, ${dayEntries.length} ${dayEntries.length === 1 ? 'Eintrag' : 'Einträge'}: ${activity?.label ?? 'Aktivität'}` : ''}${!recovery && performanceLabels[performance?.status] ? `, ${performanceLabels[performance.status]}` : ''}`}
+          onClick={() => { setSelectedDate(date); setShowEntryChoices(false) }}>
           <span className="home-calendar-number">{Number(date.slice(-2))}</span>
           <span className="home-calendar-activity" aria-hidden="true">
-            {activity?.icon === 'barbell' ? <SteelDumbbell /> : activity?.emoji}
+            {recovery ? RECOVERY_DAY.emoji : activity?.icon === 'barbell' ? <SteelDumbbell /> : activity?.emoji}
           </span>
-          <span className={`home-calendar-performance${performance?.status && performance.status !== 'unrated' ? ` is-${performance.status}` : ''}`}
-            aria-hidden="true">{recovery ? RECOVERY_DAY.emoji : performanceSymbols[performance?.status] ?? ''}</span>
+          {!recovery && <span className={`home-calendar-performance${performance?.status && performance.status !== 'unrated' ? ` is-${performance.status}` : ''}`}
+            aria-hidden="true">{performanceSymbols[performance?.status] ?? ''}</span>}
         </button>
       })}
     </div>
-    <div className="home-calendar-legend" aria-label="Leistungszeichen für vergleichbare Trainings">
+    <div className="home-calendar-legend" aria-label="Kalendersymbole">
       <span>📉 Rückgang</span>
       <span><i className="performance-minus">−</i> Gleich</span>
       <span>📈 Leicht besser</span>
@@ -96,11 +100,11 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
     </details>
     {selectedDate && <div className="home-day-details">
       <h3>{formatDate(selectedDate)}</h3>
-      {selectedPerformance && <p className="home-day-performance">
+      {!selectedRecovery && selectedPerformance && <p className="home-day-performance">
         {selectedPerformance.status === 'unrated' ? 'Noch keine vergleichbare frühere Übung für eine Tageswertung.'
           : `${performanceLabels[selectedPerformance.status]} · Durchschnitt ${percent(selectedPerformance.changePercent)} aus ${selectedPerformance.comparisons.length} von ${selectedPerformance.total} Übungen.`}
       </p>}
-      {selectedPerformance?.comparisons.length > 0 && <ul className="home-performance-breakdown">
+      {!selectedRecovery && selectedPerformance?.comparisons.length > 0 && <ul className="home-performance-breakdown">
         {selectedPerformance.comparisons.map((comparison) => <li key={comparison.libraryId}>
           <span>{comparison.name}<small>gegen {formatDate(comparison.previousDate)}</small></span>
           <strong>{percent(comparison.changePercent)}</strong>
@@ -114,6 +118,21 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
           <strong>{activityTitle(entry)}</strong><span aria-hidden="true">↗</span>
         </a>
       </article>)}
+      <div className="home-new-entry">
+        <button type="button" className="secondary-button" aria-expanded={showEntryChoices}
+          onClick={() => setShowEntryChoices((open) => !open)}>＋ Neuer Eintrag</button>
+        {showEntryChoices && <div className="home-entry-choices" role="group" aria-label="Art des neuen Eintrags">
+          <p>Was möchtest du für diesen Tag erfassen?</p>
+          <button type="button" className="secondary-button" disabled={volleyballDateTaken}
+            onClick={() => onCreateEntry('beach', selectedDate)}>🏖️ Beachvolleyball</button>
+          <button type="button" className="secondary-button" disabled={volleyballDateTaken}
+            onClick={() => onCreateEntry('indoor', selectedDate)}>🏟️ Hallenvolleyball</button>
+          <button type="button" className="secondary-button" disabled={trainingOpen}
+            onClick={() => onCreateEntry('training', selectedDate)}>💪 Training</button>
+          {volleyballDateTaken && <p className="helper-text">An diesem Datum gibt es bereits einen Beach- oder Hallenspieltag.</p>}
+          {trainingOpen && <p className="helper-text">Schließe zuerst dein offenes Training ab, bevor du ein neues beginnst.</p>}
+        </div>}
+      </div>
     </div>}
   </section>
 }

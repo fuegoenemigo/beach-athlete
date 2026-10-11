@@ -269,6 +269,14 @@ function App() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  function createCalendarEntry(type, date) {
+    activityNavigationId.current += 1;
+    setActivityTarget({ type, date, mode: "create", navigationId: activityNavigationId.current });
+    setActiveArea(type);
+    setNotice("");
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
   return (
     <main className="app" onClickCapture={() => { if (notice) setNotice(""); }}>
       <header className="app-header">
@@ -355,7 +363,7 @@ function App() {
       {activeArea === "home" && <HomeView key={homeViewKey}
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
         sessions={sessions} volleyballDays={volleyballDays} initialView={homeInitialView}
-        archiveTarget={archiveTarget} onOpenActivity={openActivity}>
+        archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}>
         <DataSecurity cloudState={cloudState}
           onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}
           onRetry={() => cloudRef.current?.retry()}

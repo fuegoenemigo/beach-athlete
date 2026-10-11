@@ -67,6 +67,26 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     if (!navigationTarget) return;
     let scrollFrame;
     const frame = window.requestAnimationFrame(() => {
+      if (navigationTarget.mode === "create") {
+        setDate(navigationTarget.date);
+        setMonth(navigationTarget.date.slice(0, 7));
+        setGameType("");
+        setFitness("5");
+        setFatigue("5");
+        setNotes("");
+        setEditingGame(false);
+        setOpponent("");
+        setOpponentLocked(false);
+        setGameSets([]);
+        setSetDraft(freshSet());
+        setTournamentName("");
+        setTournamentLocation("");
+        setTournamentPlace("");
+        setShowTournamentFieldErrors(false);
+        setActiveDayId(null);
+        setShowForm(true);
+        return;
+      }
       setShowSavedDays(true);
       setExpandedDayId(navigationTarget.id);
       scrollFrame = window.requestAnimationFrame(() => {
