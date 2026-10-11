@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import GuidedTrainingPanel from './GuidedTrainingPanel.jsx'
+import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   defaultMeasurement, exerciseIdentity, exerciseMeasurement,
@@ -39,6 +40,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [customDate, setCustomDate] = useState(false)
   const [newCategory, setNewCategory] = useState('Krafttraining')
   const [activeSessionId, setActiveSessionId] = useState(null)
+  const [expandedSessionId, setExpandedSessionId] = useState(null)
   const [flowStep, setFlowStep] = useState('exercise')
   const [flowMessage, setFlowMessage] = useState('')
   const [activeExerciseId, setActiveExerciseId] = useState(null)
@@ -134,7 +136,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     })
     if (exercises.length) {
       const first = exercises[0]
-      updateSession({ planId: plan.id, exercises: exercises.map((exercise, index) =>
+      updateSession({ planId: plan.id, planName: plan.name, exercises: exercises.map((exercise, index) =>
         index === 0 ? { ...exercise, entries: [{ ...createTrainingSet(exercise.type), completed: false }] }
           : exercise) })
       setActiveExerciseId(first.id)
@@ -448,20 +450,37 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       <div className="section-heading"><div><p className="eyebrow">DEIN VERLAUF</p><h2>Trainingseinheiten</h2></div>
         <span className="count-badge">{sessions.length}</span></div>
       {!sortedSessions.length ? <p className="helper-text">Noch keine Trainingseinheiten gespeichert.</p>
-        : <div className="history-list">{sortedSessions.map((session) => <article className="history-item" key={session.id}>
-          <button type="button" className="history-main" onClick={() => openHistorySession(session)}>
-            <span className="history-date">{formatDate(session.date)}</span>
-            <strong>{canonicalCategory(session.category, session.subcategory) || 'Training'}</strong>
-            <span className="history-meta">{session.exercises.length} Übungen
-              {session.durationMinutes ? ` · ${session.durationMinutes} Min.` : ''}
-              {session.status === 'ongoing' ? ' · In Bearbeitung' : ''}</span>
-          </button>
-          <button type="button" className="icon-button delete-button" onClick={() => {
-            if (!window.confirm(`Training „${session.title || session.category || 'Einheit'}“ wirklich löschen?`)) return
-            setSessions((previous) => previous.filter((item) => item.id !== session.id))
-            if (activeSessionId === session.id) setActiveSessionId(null)
-          }} aria-label={`${session.title || 'Training'} löschen`}>×</button>
-        </article>)}</div>}
+        : <div className="history-list">{sortedSessions.map((session) => {
+          const planName = session.planName || trainingPlans.find((plan) => plan.id === session.planId)?.name
+          const expanded = expandedSessionId === session.id
+          return <article className="history-item training-history-item" key={session.id}>
+            <div className="training-history-header">
+              <button type="button" className="history-main" aria-expanded={expanded}
+                onClick={() => setExpandedSessionId(expanded ? null : session.id)}>
+                <span className="history-date">{formatDate(session.date)}</span>
+                <strong>{canonicalCategory(session.category, session.subcategory) || 'Training'}</strong>
+                {planName && <span className="training-history-plan">Vorlage: {planName}</span>}
+                <span className="history-meta">{session.exercises.length} Übungen
+                  {session.status === 'ongoing' ? ' · In Bearbeitung' : ''}</span>
+              </button>
+              <span className="training-history-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
+            </div>
+            {expanded && <>
+              <TrainingHistoryDetails session={session} />
+              <div className="training-history-actions">
+                <button type="button" className="secondary-button" onClick={() => openHistorySession(session)}>
+                  {session.status === 'ongoing' ? 'Training fortsetzen' : 'Training bearbeiten'}
+                </button>
+                <button type="button" className="text-button" onClick={() => {
+                  if (!window.confirm(`Training vom ${formatDate(session.date)} wirklich löschen?`)) return
+                  setSessions((previous) => previous.filter((item) => item.id !== session.id))
+                  setExpandedSessionId(null)
+                  if (activeSessionId === session.id) setActiveSessionId(null)
+                }}>Training löschen</button>
+              </div>
+            </>}
+          </article>
+        })}</div>}
     </section>
 
     <details className="diary-panel training-library">

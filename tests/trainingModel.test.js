@@ -25,6 +25,7 @@ test('a plan and separate measured sets stay valid for cloud sync', () => {
     { ...createTrainingSet(), reps: '6', weightKg: '65' },
   ]
   data.sessions.push({ id: 'session', date: '2026-10-10', category: 'Krafttraining',
+    planId: 'upper-body', planName: 'Oberkörper',
     exercises: [exercise] })
   assert.equal(isAthleteData(data), true)
   assert.equal(exercise.entries[0].weightKg, '60')

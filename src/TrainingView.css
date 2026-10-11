@@ -1,11 +1,13 @@
 .training-view {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
 }
 
 .training-view .diary-intro,
 .training-view .diary-panel {
   margin: 0;
+  min-width: 0;
 }
 
 .training-flow-steps {
@@ -41,7 +43,108 @@
 
 .training-date-option {
   margin: 14px 0;
+  min-width: 0;
+  width: 100%;
   color: var(--muted);
+}
+
+.training-date-option input[type="date"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.training-history-item {
+  display: block;
+}
+
+.training-history-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.training-history-header .history-main {
+  width: 100%;
+  cursor: pointer;
+}
+
+.training-history-chevron {
+  color: var(--muted);
+  font-size: 1.4rem;
+}
+
+.training-history-plan {
+  color: var(--green);
+  font-size: 0.84rem;
+}
+
+.training-history-details {
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.training-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.training-history-group {
+  margin-top: 16px;
+}
+
+.training-history-group h4 {
+  margin: 0 0 8px;
+  color: var(--green);
+  font-size: 0.94rem;
+}
+
+.training-history-exercise {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.training-history-exercise strong {
+  font-size: 0.9rem;
+}
+
+.training-history-exercise ol {
+  margin: 8px 0 0;
+  padding-left: 22px;
+  color: #dbe2dc;
+  font-size: 0.84rem;
+}
+
+.training-history-exercise li {
+  margin-top: 5px;
+}
+
+.training-history-set-note {
+  display: block;
+  color: var(--muted);
+}
+
+.training-history-note,
+.training-history-legacy {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.training-history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.training-history-actions button {
+  margin: 0;
 }
 
 .training-date-option summary {

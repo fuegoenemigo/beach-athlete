@@ -1,0 +1,45 @@
+import { exerciseMeasurement, formatTrainingEntry, hasLegacyValues, isConfirmedSet } from './trainingModel.js'
+
+const legacyLabels = {
+  sets: 'Sätze', reps: 'Wiederholungen', weight: 'Gewicht',
+  duration: 'Dauer', distance: 'Distanz', result: 'Ergebnis',
+}
+
+export default function TrainingHistoryDetails({ session }) {
+  const groups = new Map()
+  for (const exercise of session.exercises ?? []) {
+    const group = session.category === 'Krafttraining'
+      ? exercise.muscleGroup || 'Ohne Muskelgruppe' : 'Übungen'
+    if (!groups.has(group)) groups.set(group, [])
+    groups.get(group).push(exercise)
+  }
+
+  return <div className="training-history-details">
+    {(session.durationMinutes || session.intensity) && <p className="training-history-meta">
+      {session.durationMinutes && <span>Dauer: {session.durationMinutes} Min.</span>}
+      {session.intensity && <span>Anstrengung: {session.intensity}/10</span>}
+    </p>}
+    {session.notes && <p className="training-history-note">{session.notes}</p>}
+    {groups.size === 0 && <p className="helper-text">Noch keine Übungen erfasst.</p>}
+    {[...groups].map(([group, exercises]) => <section className="training-history-group" key={group}>
+      <h4>{group}</h4>
+      {exercises.map((exercise, index) => {
+        const type = exerciseMeasurement({ ...exercise, category: session.category })
+        const entries = (exercise.entries ?? []).filter((entry) => isConfirmedSet(entry, type))
+        const legacy = hasLegacyValues(exercise)
+        return <div className="training-history-exercise" key={exercise.id ?? `${group}-${index}`}>
+          <strong>{exercise.name || 'Übung'}</strong>
+          {entries.length > 0 && <ol>{entries.map((entry, setIndex) => <li key={entry.id ?? setIndex}>
+            <span>Satz {setIndex + 1}: {formatTrainingEntry(entry, type) || 'Ohne Messwert'}</span>
+            {entry.notes && <span className="training-history-set-note">{entry.notes}</span>}
+          </li>)}</ol>}
+          {legacy && <p className="training-history-legacy">{Object.entries(legacyLabels)
+            .filter(([field]) => exercise[field] !== '' && exercise[field] != null)
+            .map(([field, label]) => `${label}: ${exercise[field]}`).join(' · ')}</p>}
+          {!entries.length && !legacy && <p className="history-meta">Keine Satzwerte erfasst</p>}
+          {exercise.notes && <p className="training-history-note">{exercise.notes}</p>}
+        </div>
+      })}
+    </section>)}
+  </div>
+}
