@@ -1,4 +1,5 @@
-import { exerciseMeasurement, hasLegacyValues, isConfirmedSet, isOpenTraining } from './trainingModel.js'
+import { exerciseMeasurement, hasLegacyValues, isConfirmedSet, isOpenTraining,
+  isSportTrainingCategory } from './trainingModel.js'
 
 const positive = (value) => value !== '' && value != null && Number(value) > 0
 const seconds = (value, unit) => Number(value) * (unit === 'min' ? 60 : 1)
@@ -67,7 +68,8 @@ function evaluateDay(exercises, previousById) {
 
 export function trainingDayPerformances(sessions) {
   const ordered = sessions.filter((session) => !isOpenTraining(session)
-    && session.category !== 'Regeneration')
+    && session.category !== 'Regeneration'
+    && !(isSportTrainingCategory(session.category) && session.startTime && session.endTime))
     .sort((a, b) => a.date.localeCompare(b.date)
       || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
   const byDate = new Map()

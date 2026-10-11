@@ -3,7 +3,18 @@ import assert from 'node:assert/strict'
 import { isTrainingPlan, TRAINING_CATEGORIES } from '../src/trainingModel.js'
 import { isAthleteData } from '../src/syncPolicy.js'
 import { BUILT_IN_PLANS, groupedTrainingPlans, removeTrainingPlan,
-  restoreBuiltInPlans, visibleTrainingPlans } from '../src/trainingPlanLibrary.js'
+  restoreBuiltInPlans, visibleTrainingPlans, plansForCategory } from '../src/trainingPlanLibrary.js'
+
+test('a training choice shows only matching plans and includes mixed plans in both categories', () => {
+  const plans = [
+    { id: 'strength', category: 'Krafttraining' },
+    { id: 'endurance', category: 'Ausdauer' },
+    { id: 'mixed', category: 'Krafttraining', categories: ['Krafttraining', 'Core und Mobility'] },
+  ]
+  assert.deepEqual(plansForCategory(plans, 'Krafttraining').map((plan) => plan.id), ['strength', 'mixed'])
+  assert.deepEqual(plansForCategory(plans, 'Core und Mobility').map((plan) => plan.id), ['mixed'])
+  assert.deepEqual(plansForCategory(plans, 'Ausdauer').map((plan) => plan.id), ['endurance'])
+})
 
 test('built-in edits replace their original and custom plans join the right category', () => {
   const original = BUILT_IN_PLANS[0]

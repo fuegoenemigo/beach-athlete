@@ -88,7 +88,7 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
       <span>📈 Leicht besser</span>
       <span>🌿 Regeneration</span>
     </div>
-    <p className="home-calendar-hint">Das große Symbol zeigt den Vergleich mit früheren Trainings. Tage ohne Eintrag bis heute gelten automatisch als Regeneration. Volleyballtage ohne Training bleiben vorerst ohne Wertung.</p>
+    <p className="home-calendar-hint">Das große Symbol zeigt den Vergleich mit früheren Trainings. Tage ohne Eintrag bis heute gelten automatisch als Regeneration. Volleyballspiele und Volleyballtraining bleiben vorerst ohne Wertung.</p>
     <details className="home-calendar-method">
       <summary>Wie entsteht die Wertung?</summary>
       <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Aus den prozentualen Änderungen entsteht der Tagesdurchschnitt. Unter −1 % erscheint 📉, zwischen −1 % und +1 % ein graues Minus und über +1 % 📈.</p>

@@ -5,6 +5,7 @@ import {
   previousExercise, formatTrainingEntry, canonicalCategory,
   hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
+  createSportTrainingSession,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
 import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
@@ -15,6 +16,19 @@ const library = [{ name: 'Bankdrücken', category: 'Krafttraining',
   muscleGroup: 'Brust', type: 'strength' }]
 const base = () => ({ sessions: [], exerciseLibrary: structuredClone(library),
   volleyballDays: [], trainingPlans: [] })
+
+test('beach and hall training save only times and no exercises', () => {
+  for (const category of ['Beach-Training', 'Hallentraining']) {
+    const entry = createSportTrainingSession({ id: category, date: '2026-10-11', category,
+      startTime: '18:15', endTime: '19:45', timestamp: '2026-10-11T19:45:00Z' })
+    assert.equal(entry.durationMinutes, '90')
+    assert.equal(entry.status, 'completed')
+    assert.deepEqual(entry.exercises, [])
+    assert.equal(isAthleteData({ sessions: [entry], exerciseLibrary: [], volleyballDays: [] }), true)
+  }
+  assert.equal(createSportTrainingSession({ id: 'invalid', date: '2026-10-11',
+    category: 'Beach-Training', startTime: '19:45', endTime: '18:15' }), null)
+})
 
 test('a plan and separate measured sets stay valid for cloud sync', () => {
   const data = base()

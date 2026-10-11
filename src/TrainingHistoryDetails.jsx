@@ -1,4 +1,5 @@
-import { exerciseMeasurement, formatTrainingEntry, hasLegacyValues, isConfirmedSet } from './trainingModel.js'
+import { exerciseMeasurement, formatTrainingEntry, hasLegacyValues, isConfirmedSet,
+  isSportTrainingCategory } from './trainingModel.js'
 
 const legacyLabels = {
   sets: 'Sätze', reps: 'Wiederholungen', weight: 'Gewicht',
@@ -6,6 +7,11 @@ const legacyLabels = {
 }
 
 export default function TrainingHistoryDetails({ session }) {
+  if (isSportTrainingCategory(session.category) && session.startTime && session.endTime) {
+    return <div className="training-history-details">
+      <p className="training-history-meta">Beginn: {session.startTime} Uhr · Ende: {session.endTime} Uhr</p>
+    </div>
+  }
   const groups = new Map()
   for (const exercise of session.exercises ?? []) {
     const category = exercise.category ?? session.category

@@ -16,6 +16,12 @@ test('old regeneration records do not create a training performance', () => {
   assert.equal(scores.get('2026-10-11').status, 'unrated')
 })
 
+test('time-only volleyball training marks activity without a performance score', () => {
+  const sport = { ...session('beach', '2026-10-10', []), category: 'Beach-Training',
+    startTime: '18:00', endTime: '19:30', durationMinutes: '90' }
+  assert.equal(trainingDayPerformances([sport]).has('2026-10-10'), false)
+})
+
 test('calendar compares the same exercise ID to its last older date without a time limit', () => {
   const sessions = [
     session('old', '2025-01-01', [strength('bench', 50), strength('other-bench', 90), core(60)]),

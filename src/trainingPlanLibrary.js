@@ -17,6 +17,10 @@ export function visibleTrainingPlans(personalPlans) {
     && !plan.categories?.includes('Regeneration'))
 }
 
+export function plansForCategory(plans, category) {
+  return plans.filter((plan) => (plan.categories ?? [plan.category]).includes(category))
+}
+
 export function groupedTrainingPlans(plans) {
   const groups = new Map()
   for (const plan of plans) {
