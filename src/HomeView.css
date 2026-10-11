@@ -73,8 +73,13 @@
 }
 
 .home-calendar {
-  min-height: 33svh;
+  min-height: 39svh;
+  border-color: #3c4841;
+  background: linear-gradient(145deg, #1d2320, #121815 74%);
 }
+.home-calendar:hover { transform: none; }
+.home-calendar .home-widget-kicker { color: #c5d1c7; }
+.home-calendar .home-month-navigation button { color: #e1eae0; border-color: #566158; background: #202822; }
 
 .home-security-link {
   justify-self: start;
@@ -120,35 +125,53 @@
 }
 
 .home-calendar-day {
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-around;
   min-width: 0;
-  min-height: 26px;
+  min-height: 52px;
+  padding: 3px 1px;
   border-radius: 8px;
   color: #d7e1d8;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   border: 1px solid transparent;
   background: transparent;
   cursor: pointer;
 }
 
-.home-calendar-day.is-selected { border-color: var(--green); }
-.home-calendar-day.is-today .home-calendar-marker { box-shadow: 0 0 0 1px #172415; }
-.home-calendar-markers { display: flex; gap: 2px; min-height: 5px; }
-.home-calendar-marker { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: #a9b9ac; }
-.home-calendar-marker.beach { background: #e6c76e; }
-.home-calendar-marker.indoor { background: #7babe7; }
-.home-calendar-marker.training { background: #8ccd79; }
-.home-calendar-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; color: #b9c4bb; font-size: 0.72rem; }
-.home-calendar-legend span { display: flex; align-items: center; gap: 4px; }
+.home-calendar-day.has-activity { background: #2a332b; }
+.home-calendar-day.performance-decline { color: #ffe6e7; border-color: #a45860; background: #653238; }
+.home-calendar-day.performance-unchanged { color: #fff0cf; border-color: #ba9b53; background: #695629; }
+.home-calendar-day.performance-slight { color: #e7ffed; border-color: #70bb89; background: #2c6242; }
+.home-calendar-day.performance-strong { color: #e5f5ff; border-color: #73b4e5; background: #285b86; }
+.home-calendar-day.is-selected { border-color: #e0eadf; }
+.home-calendar-number { line-height: 1; font-weight: 750; }
+.home-calendar-symbols { display: flex; align-items: center; justify-content: center; gap: 0; width: 100%; min-height: 19px; white-space: nowrap; font-size: 0.79rem; line-height: 1; }
+.home-calendar-symbols small { font-size: 0.63rem; font-weight: 800; }
+.home-calendar-legend { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 14px; color: #bac7bd; font-size: 0.7rem; }
+.home-calendar-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.home-calendar-legend i { width: 8px; height: 8px; border-radius: 2px; }
+.home-calendar-legend .performance-decline { background: #b86770; }
+.home-calendar-legend .performance-unchanged { background: #d4b666; }
+.home-calendar-legend .performance-slight { background: #70bb89; }
+.home-calendar-legend .performance-strong { background: #73b4e5; }
+.home-calendar-hint { margin: 13px 0 0; color: #aab8ac; font-size: 0.77rem; line-height: 1.4; }
+.home-calendar-method { margin-top: 10px; color: #b8c6ba; font-size: 0.78rem; line-height: 1.5; }
+.home-calendar-method summary { cursor: pointer; color: #dce8dc; font-weight: 700; }
+.home-calendar-method p { margin: 8px 0 0; }
 .home-day-details { margin-top: 16px; padding-top: 15px; border-top: 1px solid #344638; }
 .home-day-details h3 { margin: 0 0 12px; font-size: 1rem; text-transform: capitalize; }
+.home-day-performance { margin: 0 0 12px; color: #d6e1d7; font-size: 0.85rem; line-height: 1.4; }
+.home-performance-breakdown { display: grid; gap: 5px; margin: 0 0 15px; padding: 0; list-style: none; }
+.home-performance-breakdown li { display: flex; justify-content: space-between; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 8px; background: #242e26; font-size: 0.8rem; }
+.home-performance-breakdown li span { display: grid; gap: 2px; }
+.home-performance-breakdown li small { color: #aab8ac; font-size: 0.7rem; }
+.home-performance-breakdown li strong { white-space: nowrap; }
 .home-day-entry { margin-top: 8px; }
 
 .home-calendar-day.is-today {
-  color: #172415;
-  background: var(--green);
-  font-weight: 850;
+  box-shadow: inset 0 0 0 1px #d8e2d7;
 }
 
 .home-statistics {
@@ -312,7 +335,7 @@
 @media (max-width: 520px) {
   .home-widget { padding: 17px; }
   .home-card-art { min-height: 300px; }
-  .home-calendar-day { min-height: 25px; }
+  .home-calendar-day { min-height: 47px; }
 }
 
 .home-profile-card {
