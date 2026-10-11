@@ -48,13 +48,22 @@ export function isAthleteData(data) {
   return data && Array.isArray(data.sessions)
     && Array.isArray(data.exerciseLibrary)
     && Array.isArray(data.volleyballDays)
+    && (data.athleteProfile === undefined || (data.athleteProfile
+      && typeof data.athleteProfile === 'object' && !Array.isArray(data.athleteProfile)
+      && (data.athleteProfile.bodyweightKg === '' || data.athleteProfile.bodyweightKg == null
+        || (Number.isFinite(Number(data.athleteProfile.bodyweightKg))
+          && Number(data.athleteProfile.bodyweightKg) > 0))))
     && (data.trainingPlans === undefined || (Array.isArray(data.trainingPlans)
       && data.trainingPlans.every(isTrainingPlan)))
     && data.sessions.every((item) => item && typeof item === 'object'
       && typeof item.id === 'string' && typeof item.date === 'string'
+      && (item.categories === undefined || (Array.isArray(item.categories)
+        && item.categories.includes(item.category)
+        && item.categories.every((category) => typeof category === 'string')))
       && Array.isArray(item.exercises) && item.exercises.every((exercise) =>
         isLoggedTrainingExercise(exercise)
-        && (exercise.category === undefined || exercise.category === item.category)))
+        && (exercise.category === undefined || exercise.category === item.category
+          || (Array.isArray(item.categories) && item.categories.includes(exercise.category)))))
     && data.exerciseLibrary.every((item) => item && typeof item === 'object'
       && typeof item.name === 'string' && typeof item.category === 'string')
     && data.volleyballDays.every((item) => item && typeof item === 'object'
@@ -73,12 +82,14 @@ export function dataHash(data) {
     exerciseLibrary: data.exerciseLibrary,
     volleyballDays: data.volleyballDays,
     trainingPlans: data.trainingPlans ?? [],
+    athleteProfile: data.athleteProfile ?? { bodyweightKg: '' },
   })
 }
 
 export function hasPersonalData(data, defaultLibrary) {
   return data.sessions.length > 0 || data.volleyballDays.length > 0
     || (data.trainingPlans?.length ?? 0) > 0
+    || Boolean(data.athleteProfile?.bodyweightKg)
     || JSON.stringify(data.exerciseLibrary) !== JSON.stringify(defaultLibrary)
 }
 

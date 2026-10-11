@@ -1,0 +1,62 @@
+.entry-window {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: #050a07e8;
+}
+
+.entry-window-panel {
+  width: min(100%, 760px);
+  height: 100dvh;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #49634a;
+  background: var(--bg);
+  box-shadow: 0 0 65px #000b;
+}
+
+.entry-window-header {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 76px;
+  padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 14px;
+  border-bottom: 1px solid var(--border);
+  background: #141e16;
+}
+
+.entry-window-header .eyebrow { margin-bottom: 4px; }
+.entry-window-header h2 { margin: 0; font-size: 1.15rem; }
+.entry-window-header h2:focus { outline: none; }
+
+.entry-window-close {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: #f3f5f3;
+  background: #253028;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.entry-window-content {
+  min-width: 0;
+  padding: 20px 20px calc(32px + env(safe-area-inset-bottom, 0px));
+}
+
+.entry-window-content > .diary-panel { margin: 0; }
+
+@media (min-width: 800px) {
+  .entry-window { padding: 20px; }
+  .entry-window-panel { height: min(90dvh, 900px); border-radius: 20px; }
+}

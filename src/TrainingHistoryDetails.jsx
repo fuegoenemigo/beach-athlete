@@ -8,8 +8,9 @@ const legacyLabels = {
 export default function TrainingHistoryDetails({ session }) {
   const groups = new Map()
   for (const exercise of session.exercises ?? []) {
-    const group = session.category === 'Krafttraining'
-      ? exercise.muscleGroup || 'Ohne Muskelgruppe' : 'Übungen'
+    const category = exercise.category ?? session.category
+    const group = category === 'Krafttraining'
+      ? `Krafttraining · ${exercise.muscleGroup || 'Ohne Muskelgruppe'}` : category
     if (!groups.has(group)) groups.set(group, [])
     groups.get(group).push(exercise)
   }
@@ -30,7 +31,7 @@ export default function TrainingHistoryDetails({ session }) {
         return <div className="training-history-exercise" key={exercise.id ?? `${group}-${index}`}>
           <strong>{exercise.name || 'Übung'}</strong>
           {entries.length > 0 && <ol>{entries.map((entry, setIndex) => <li key={entry.id ?? setIndex}>
-            <span>Satz {setIndex + 1}: {formatTrainingEntry(entry, type) || 'Ohne Messwert'}</span>
+            <span>Satz {setIndex + 1}: {formatTrainingEntry(entry, type, exercise) || 'Ohne Messwert'}</span>
             {entry.notes && <span className="training-history-set-note">{entry.notes}</span>}
           </li>)}</ol>}
           {legacy && <p className="training-history-legacy">{Object.entries(legacyLabels)

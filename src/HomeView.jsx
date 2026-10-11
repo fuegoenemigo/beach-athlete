@@ -31,7 +31,7 @@ function getMonthCells(date) {
   ]
 }
 
-export default function HomeView({ children }) {
+export default function HomeView({ children, athleteProfile, setAthleteProfile }) {
   const [selectedFeature, setSelectedFeature] = useState(null)
   const currentDate = new Date()
   const monthLabel = new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(currentDate)
@@ -118,6 +118,20 @@ export default function HomeView({ children }) {
         </span>
         <span className="home-widget-note">Attribute und Bewertung gestalten wir gemeinsam.</span>
       </button>
+      <section className="home-profile-card" aria-labelledby="home-profile-title">
+        <p className="eyebrow">DEIN PROFIL</p>
+        <h2 id="home-profile-title">Körpergewicht</h2>
+        <p>Für Übungen mit Eigengewicht zeigen wir diesen Wert zusätzlich zum verwendeten Gewicht an. Weitere Profildaten folgen später.</p>
+        <label className="field-label" htmlFor="profile-bodyweight">Körpergewicht (kg)</label>
+        <input id="profile-bodyweight" className="field" type="number" inputMode="decimal"
+          min="1" step="0.1" placeholder="Noch nicht hinterlegt"
+          value={athleteProfile.bodyweightKg ?? ''}
+          onChange={(event) => {
+            const value = event.target.value
+            if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0))
+              setAthleteProfile((profile) => ({ ...profile, bodyweightKg: value }))
+          }} />
+      </section>
       {children}
     </div>
   )

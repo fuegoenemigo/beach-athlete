@@ -8,36 +8,9 @@ import DataSecurity from "./DataSecurity.jsx";
 import TrainingView from "./TrainingView.jsx";
 import HomeView from "./HomeView.jsx";
 import VolleyballView from "./VolleyballView.jsx";
+import { DEFAULT_EXERCISES } from "./volleyballTraining.js";
 
 
-
-const EXERCISES = [
-  { name: "Bankdrücken", type: "strength", category: "Krafttraining", muscleGroup: "Brust" },
-  { name: "Schrägbankdrücken", type: "strength", category: "Krafttraining", muscleGroup: "Brust" },
-  { name: "Kniebeugen", type: "strength", category: "Krafttraining", muscleGroup: "Beine" },
-  { name: "Kreuzheben", type: "strength", category: "Krafttraining", muscleGroup: "Rücken" },
-  { name: "Klimmzüge", type: "strength", category: "Krafttraining", muscleGroup: "Rücken" },
-  { name: "Rudern", type: "strength", category: "Krafttraining", muscleGroup: "Rücken" },
-  { name: "Schulterdrücken", type: "strength", category: "Krafttraining", muscleGroup: "Schultern" },
-  { name: "Ausfallschritte", type: "strength", category: "Krafttraining", muscleGroup: "Beine" },
-  { name: "Wadenheben", type: "strength", category: "Krafttraining", muscleGroup: "Beine" },
-  { name: "Liegestütze", type: "strength", category: "Krafttraining", muscleGroup: "Brust" },
-
-  { name: "Plank", type: "duration", category: "Core und Mobility", muscleGroup: "Core" },
-  { name: "Side Plank", type: "duration", category: "Core und Mobility", muscleGroup: "Core" },
-  { name: "L-Sit", type: "duration", category: "Core und Mobility", muscleGroup: "Core" },
-
-  { name: "Box Jumps", type: "reps", category: "Sprungkraft und Agilität", muscleGroup: "Sprungkraft" },
-  { name: "Countermovement Jump", type: "jump", category: "Sprungkraft und Agilität", muscleGroup: "Sprungkraft" },
-  { name: "Seitliche Sprünge", type: "reps", category: "Sprungkraft und Agilität", muscleGroup: "Sprungkraft" },
-
-  { name: "Sprint", type: "distance", category: "Sprungkraft und Agilität", muscleGroup: "Schnelligkeit" },
-  { name: "Mobilitätsroutine", type: "duration", category: "Core und Mobility", muscleGroup: "Ganzkörper" },
-
-  { name: "Beachvolleyball-Training", type: "duration", category: "Beach-Training" },
-  { name: "Hallenvolleyball-Training", type: "duration", category: "Hallentraining" },
-  { name: "Radfahren", type: "distance", category: "Ausdauer", muscleGroup: "Ausdauer" },
-];
 
 const damagedStorageKeys = new Set();
 
@@ -55,7 +28,7 @@ function loadStoredArray(key, fallback, validate) {
 }
 
 function loadExerciseLibrary() {
-  return loadStoredArray("beach-athlete-exercises", EXERCISES,
+  return loadStoredArray("beach-athlete-exercises", DEFAULT_EXERCISES,
     (items) => isAthleteData({ sessions: [], exerciseLibrary: items, volleyballDays: [] }));
 }
 
@@ -73,6 +46,18 @@ function loadTrainingPlans() {
 function loadVolleyballDays() {
   return loadStoredArray("beach-athlete-volleyball", [],
     (items) => isAthleteData({ sessions: [], exerciseLibrary: [], volleyballDays: items }));
+}
+
+function loadAthleteProfile() {
+  try {
+    const stored = JSON.parse(localStorage.getItem("beach-athlete-profile"));
+    if (stored && typeof stored === "object" && !Array.isArray(stored)
+      && (stored.bodyweightKg === "" || stored.bodyweightKg == null
+        || (Number.isFinite(Number(stored.bodyweightKg)) && Number(stored.bodyweightKg) > 0))) {
+      return { bodyweightKg: stored.bodyweightKg ?? "" };
+    }
+  } catch { /* Keep the training log available even if this optional field is damaged. */ }
+  return { bodyweightKg: "" };
 }
 
 function saveLocally(key, value, onError) {
@@ -102,6 +87,7 @@ function App() {
   const [homeViewKey, setHomeViewKey] = useState(0);
   const [exerciseLibrary, setExerciseLibrary] = useState(loadExerciseLibrary);
   const [trainingPlans, setTrainingPlans] = useState(loadTrainingPlans);
+  const [athleteProfile, setAthleteProfile] = useState(loadAthleteProfile);
   const [notice, setNotice] = useState("");
   const [criticalNotice, setCriticalNotice] = useState("");
   const [updateAvailable, setUpdateAvailable] = useState(isUpdateAvailable);
@@ -120,8 +106,9 @@ function App() {
         setExerciseLibrary(data.exerciseLibrary);
         setTrainingPlans(data.trainingPlans);
         setVolleyballDays(data.volleyballDays);
+        setAthleteProfile(data.athleteProfile ?? { bodyweightKg: "" });
       },
-      defaultLibrary: EXERCISES,
+      defaultLibrary: DEFAULT_EXERCISES,
     });
     cloudRef.current = cloud;
     cloud.start();
@@ -132,8 +119,8 @@ function App() {
   }, [storageDamaged]);
 
   useEffect(() => {
-    cloudRef.current?.updateData({ sessions, exerciseLibrary, volleyballDays, trainingPlans });
-  }, [sessions, exerciseLibrary, volleyballDays, trainingPlans]);
+    cloudRef.current?.updateData({ sessions, exerciseLibrary, volleyballDays, trainingPlans, athleteProfile });
+  }, [sessions, exerciseLibrary, volleyballDays, trainingPlans, athleteProfile]);
 
   useEffect(() => {
     const showUpdate = () => setUpdateAvailable(true);
@@ -158,6 +145,10 @@ function App() {
   }, [trainingPlans, storageDamaged]);
 
   useEffect(() => {
+    if (!storageDamaged) saveLocally("beach-athlete-profile", athleteProfile, setCriticalNotice);
+  }, [athleteProfile, storageDamaged]);
+
+  useEffect(() => {
     if (!notice) return;
     const timer = window.setTimeout(() => setNotice(""), 4500);
     return () => window.clearTimeout(timer);
@@ -169,6 +160,7 @@ function App() {
       sessions,
       exerciseLibrary,
       trainingPlans,
+      athleteProfile,
       volleyballDays,
       exportedAt: new Date().toISOString(),
     };
@@ -180,7 +172,7 @@ function App() {
   function exportRawData() {
     try {
       const rawLocalStorage = Object.fromEntries(
-        ["beach-athlete-diary", "beach-athlete-exercises", "beach-athlete-volleyball", "beach-athlete-training-plans"]
+        ["beach-athlete-diary", "beach-athlete-exercises", "beach-athlete-volleyball", "beach-athlete-training-plans", "beach-athlete-profile"]
           .map((key) => [key, localStorage.getItem(key)])
       );
       downloadJson(`beach-athlete-rohdaten-${today()}.json`, { rawLocalStorage });
@@ -209,6 +201,7 @@ function App() {
         sessions: backup.sessions,
         exerciseLibrary: backup.exerciseLibrary,
         trainingPlans: backup.trainingPlans ?? [],
+        athleteProfile: backup.athleteProfile ?? { bodyweightKg: "" },
         volleyballDays: backup.volleyballDays ?? [],
       };
       if (!isAthleteData(imported)) {
@@ -225,6 +218,7 @@ function App() {
       setExerciseLibrary(imported.exerciseLibrary);
       setTrainingPlans(imported.trainingPlans);
       setVolleyballDays(imported.volleyballDays);
+      setAthleteProfile(imported.athleteProfile);
       setNotice("Daten wurden erfolgreich wiederhergestellt.");
     } catch {
       setNotice(
@@ -329,7 +323,8 @@ function App() {
       {criticalNotice && <p className="notice-message" role="alert">{criticalNotice}</p>}
       {notice && <p className="notice-message transient-notice" role="status">{notice}</p>}
 
-      {activeArea === "home" && <HomeView key={homeViewKey}>
+      {activeArea === "home" && <HomeView key={homeViewKey}
+        athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}>
         <DataSecurity cloudState={cloudState}
           onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}
           onRetry={() => cloudRef.current?.retry()}
@@ -341,6 +336,7 @@ function App() {
         <TrainingView sessions={sessions} setSessions={setSessions}
           exerciseLibrary={exerciseLibrary} setExerciseLibrary={setExerciseLibrary}
           trainingPlans={trainingPlans} setTrainingPlans={setTrainingPlans}
+          athleteProfile={athleteProfile}
           setNotice={setNotice} />
       </div>
 

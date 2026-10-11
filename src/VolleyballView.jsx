@@ -6,6 +6,7 @@ import { gameStatus, isRecordableGame } from "./gameRules.js";
 import { beachSetOpponent } from "./beachOpponents.js";
 import { RatingStepper, SetResultHeading, StrengthStepper } from "./VolleyballInputs.jsx";
 import { isRating, strengthLabels, strengthOptions } from "./volleyballValues.js";
+import EntryWindow from "./EntryWindow.jsx";
 
 const today = () => new Date().toLocaleDateString("sv-SE");
 const freshSet = () => ({ fitness: "5", opponentStrength: "equal", intensity: "5", technique: "5", won: "true" });
@@ -297,7 +298,9 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
         : "Erfasse Hallenspiele mit bis zu fünf Sätzen und Turniere über den ganzen Tag."}</p>
       {!showForm && <button type="button" className="primary-button" onClick={startDay}>＋ Spieltag erfassen</button>}
 
-      {showForm && <div className="volleyball-form">
+      {showForm && <EntryWindow title={activeDay ? `${label} · Spieltag fortsetzen` : `${label} · Spieltag erfassen`}
+        subtitle="SPIELTAG-EINGABE" onClose={cancelForm}>
+        <div className="volleyball-form">
         {!activeDay && <>
           <span className="field-label">Datum</span>
           <div className="beach-calendar">
@@ -486,7 +489,8 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
         <button type="button" className="secondary-button" onClick={cancelForm}>
           {activeDay ? "Für später schließen" : "Abbrechen"}
         </button>
-      </div>}
+        </div>
+      </EntryWindow>}
 
       <div className="volleyball-day-list">
         <h3>Meine Spieltage</h3>

@@ -278,3 +278,13 @@
   .home-card-art { min-height: 300px; }
   .home-calendar-day { min-height: 25px; }
 }
+
+.home-profile-card {
+  padding: 22px;
+  border: 1px solid #344638;
+  border-radius: 18px;
+  background: #141915;
+}
+
+.home-profile-card h2 { margin: 0 0 8px; font-size: 1.25rem; }
+.home-profile-card p:not(.eyebrow) { color: var(--muted); line-height: 1.5; }

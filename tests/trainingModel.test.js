@@ -7,6 +7,7 @@ import {
   finishTrainingExerciseEntries,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
+import { DEFAULT_EXERCISES, VOLLEYBALL_PLANS, enrichExercise } from '../src/volleyballTraining.js'
 
 const library = [{ name: 'Bankdrücken', category: 'Krafttraining',
   muscleGroup: 'Brust', type: 'strength' }]
@@ -101,4 +102,40 @@ test('confirming a set opens the next and ending an exercise drops only the empt
   assert.equal(finishTrainingExerciseEntries([
     advanced[0], { ...advanced[1], reps: '6' },
   ], 'strength'), null)
+})
+
+test('volleyball plans use available exercises and preserve both categories in a mixed day', () => {
+  const available = new Map(DEFAULT_EXERCISES.map((item) => [item.id, item]))
+  for (const plan of VOLLEYBALL_PLANS) {
+    assert.ok(plan.exercises.length > 0)
+    for (const reference of plan.exercises) {
+      assert.equal(available.get(reference.libraryId)?.category, reference.category)
+      assert.ok(reference.target)
+    }
+  }
+  const mixed = VOLLEYBALL_PLANS.find((plan) => plan.categories?.length > 1)
+  assert.ok(mixed)
+  const exercises = mixed.exercises.map((reference) => ({
+    ...createLoggedExercise(available.get(reference.libraryId)), entries: [],
+  }))
+  assert.equal(isAthleteData({ ...base(), athleteProfile: { bodyweightKg: '75' },
+    sessions: [{ id: 'mixed', date: '2026-10-11', category: mixed.category,
+      categories: mixed.categories, exercises }] }), true)
+})
+
+test('bodyweight and additional load stay separate in a confirmed set', () => {
+  assert.equal(enrichExercise({ name: 'Kniebeugen', category: 'Krafttraining',
+    type: 'strength' }).loadMode, 'bodyweight')
+  const draft = { ...createTrainingSet('strength'), reps: '8', weightKg: '30', completed: false }
+  const [confirmed, next] = confirmAndAdvanceSet([draft], 'strength', '75')
+  assert.equal(confirmed.bodyweightKg, '75')
+  assert.equal(confirmed.weightKg, '30')
+  assert.equal(next.bodyweightKg, undefined)
+  assert.equal(formatTrainingEntry(confirmed, 'strength', { loadMode: 'bodyweight' }),
+    '8 Wdh. · Eigengewicht 75 kg + 30 kg zusätzlich')
+})
+
+test('older cloud records with no profile retain the same normalized hash', () => {
+  assert.equal(dataHash(base()), dataHash({ ...base(), athleteProfile: { bodyweightKg: '' } }))
+  assert.equal(isAthleteData({ ...base(), athleteProfile: { bodyweightKg: '-1' } }), false)
 })

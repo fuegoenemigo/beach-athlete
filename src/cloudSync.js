@@ -153,6 +153,7 @@ export class CloudSync {
       exerciseLibrary: remote.exerciseLibrary,
       volleyballDays: remote.volleyballDays,
       trainingPlans: remote.trainingPlans ?? [],
+      athleteProfile: remote.athleteProfile ?? { bodyweightKg: '' },
     }
     this.data = data
     this.remember(remote.revision, dataHash(data))
@@ -222,6 +223,7 @@ export class CloudSync {
       exerciseLibrary: this.data.exerciseLibrary,
       volleyballDays: this.data.volleyballDays,
       trainingPlans: this.data.trainingPlans ?? [],
+      athleteProfile: this.data.athleteProfile ?? { bodyweightKg: '' },
     }
     if (!isAthleteData(payload)) {
       this.publish('error', 'Lokale Daten haben ein ungültiges Format. Bitte sichere sie als Datei.')

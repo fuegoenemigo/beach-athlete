@@ -59,6 +59,8 @@ export function createLoggedExercise(item) {
     id: crypto.randomUUID(), libraryId: exerciseIdentity(item), name: item.name,
     category: item.category, type: exerciseMeasurement(item),
     ...(item.muscleGroup ? { muscleGroup: item.muscleGroup } : {}),
+    ...(item.loadMode ? { loadMode: item.loadMode } : {}),
+    ...(item.target ? { target: item.target } : {}),
     entries: [], notes: '',
   }
 }
@@ -66,8 +68,8 @@ export function createLoggedExercise(item) {
 export function createTrainingSet(type = 'strength') {
   const base = { id: crypto.randomUUID() }
   if (type === 'strength') return { ...base, reps: '', weightKg: '' }
-  if (type === 'reps') return { ...base, reps: '' }
-  if (type === 'jump') return { ...base, reps: '', heightCm: '' }
+  if (type === 'reps') return { ...base, reps: '', weightKg: '' }
+  if (type === 'jump') return { ...base, reps: '', heightCm: '', weightKg: '' }
   if (type === 'distance') return { ...base, distanceValue: '', distanceUnit: 'm',
     durationValue: '', durationUnit: 's' }
   return { ...base, durationValue: '', durationUnit: 's' }
@@ -87,11 +89,12 @@ export function isConfirmedSet(entry, type) {
     || (entry.completed === undefined && hasMeasuredValue(entry, type))
 }
 
-export function confirmAndAdvanceSet(entries, type) {
+export function confirmAndAdvanceSet(entries, type, bodyweightKg = '') {
   const draft = entries.find((entry) => entry.completed === false)
   if (!draft || !hasMeasuredValue(draft, type)) return null
   return [...entries.map((entry) => entry.id === draft.id
-    ? { ...entry, completed: true, confirmedAt: new Date().toISOString() } : entry),
+    ? { ...entry, completed: true, confirmedAt: new Date().toISOString(),
+      ...(bodyweightKg ? { bodyweightKg } : {}) } : entry),
   { ...createTrainingSet(type), completed: false }]
 }
 
@@ -109,9 +112,14 @@ export function hasLegacyValues(exercise) {
 export function isTrainingPlan(plan) {
   return plan && typeof plan.id === 'string' && typeof plan.name === 'string'
     && plan.name.trim() && [...TRAINING_CATEGORIES, ...LEGACY_TRAINING_CATEGORIES].includes(plan.category)
+    && (plan.categories === undefined || (Array.isArray(plan.categories)
+      && plan.categories.includes(plan.category)
+      && plan.categories.every((category) => TRAINING_CATEGORIES.includes(category))))
     && Array.isArray(plan.exercises)
     && plan.exercises.every((item) => item && typeof item.libraryId === 'string'
-      && typeof item.name === 'string')
+      && typeof item.name === 'string'
+      && (item.category === undefined || item.category === plan.category
+        || plan.categories?.includes(item.category)))
 }
 
 const nonnegative = (value) => value === '' || value == null
@@ -124,40 +132,46 @@ export function isLoggedTrainingExercise(exercise) {
       && exercise.entries.every((entry) => entry && typeof entry.id === 'string'
         && (entry.durationUnit === undefined || ['s', 'min'].includes(entry.durationUnit))
         && (entry.distanceUnit === undefined || ['m', 'km'].includes(entry.distanceUnit))
-        && ['reps', 'weightKg', 'durationValue', 'distanceValue', 'heightCm']
+        && ['reps', 'weightKg', 'bodyweightKg', 'durationValue', 'distanceValue', 'heightCm']
           .every((field) => nonnegative(entry[field])))))
 }
 
 export function previousExercise(sessions, currentSession, exercise) {
   return sessions.filter((session) => session.id !== currentSession.id
-    && canonicalCategory(session.category, session.subcategory)
-      === canonicalCategory(currentSession.category, currentSession.subcategory)
     && (session.date < currentSession.date
       || (session.date === currentSession.date
         && (session.createdAt ?? '') < (currentSession.createdAt ?? ''))))
     .sort((a, b) => b.date.localeCompare(a.date)
       || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
     .flatMap((session) => session.exercises.map((item) => ({ session, item })))
-    .find(({ item }) => Array.isArray(item.entries)
+    .find(({ session, item }) => Array.isArray(item.entries)
       && item.entries.some((entry) => isConfirmedSet(entry, exerciseMeasurement({
         ...item, category: currentSession.category,
       })))
+      && canonicalCategory(item.category ?? session.category, session.subcategory)
+        === canonicalCategory(exercise.category ?? currentSession.category, currentSession.subcategory)
       && (item.libraryId && exercise.libraryId
         ? item.libraryId === exercise.libraryId
         : item.name === exercise.name)) ?? null
 }
 
-export function formatTrainingEntry(entry, type) {
+export function formatTrainingEntry(entry, type, exercise = {}) {
   const duration = entry.durationValue
     ? `${entry.durationValue} ${entry.durationUnit === 'min' ? 'Min.' : 'Sek.'}` : ''
+  const load = exercise.loadMode === 'bodyweight'
+    ? [entry.bodyweightKg ? `Eigengewicht ${entry.bodyweightKg} kg` : '',
+      entry.weightKg ? `+ ${entry.weightKg} kg zusätzlich` : ''].filter(Boolean).join(' ')
+    : entry.weightKg ? `${entry.weightKg} kg` : ''
   if (type === 'strength') return [
     entry.reps ? `${entry.reps} Wdh.` : '',
-    entry.weightKg ? `${entry.weightKg} kg` : '',
+    load,
   ].filter(Boolean).join(' · ')
-  if (type === 'reps') return entry.reps ? `${entry.reps} Wdh.` : ''
+  if (type === 'reps') return [entry.reps ? `${entry.reps} Wdh.` : '', load]
+    .filter(Boolean).join(' · ')
   if (type === 'jump') return [
     entry.reps ? `${entry.reps} Wdh.` : '',
     entry.heightCm ? `${entry.heightCm} cm` : '',
+    load,
   ].filter(Boolean).join(' · ')
   if (type === 'distance') return [
     entry.distanceValue ? `${entry.distanceValue} ${entry.distanceUnit || 'm'}` : '', duration,

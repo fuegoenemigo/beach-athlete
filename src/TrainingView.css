@@ -162,6 +162,39 @@
   gap: 9px;
 }
 
+.training-category-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.training-target,
+.training-plan-description {
+  color: #c1d0c3;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.training-bodyweight {
+  align-self: end;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #506452;
+  border-radius: 11px;
+  color: var(--green);
+  background: #203023;
+  font-size: 0.83rem;
+}
+
+.training-cancel-action {
+  display: block;
+  margin: 18px auto 0;
+  color: #ffb2a8;
+}
+
+.training-plan-row .secondary-button { margin-top: 0; }
+
 .training-choice-list {
   display: grid;
   gap: 8px;

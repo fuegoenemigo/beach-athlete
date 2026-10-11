@@ -2,7 +2,7 @@ import { RatingStepper } from './VolleyballInputs.jsx'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   exerciseMeasurement, formatTrainingEntry, previousExercise, isConfirmedSet,
-  hasLegacyValues, canonicalCategory,
+  hasLegacyValues, canonicalCategory, defaultMeasurement,
 } from './trainingModel.js'
 
 const legacyLabels = {
@@ -23,15 +23,21 @@ function NumberField({ label, value, onChange, step = 'any' }) {
   </label>
 }
 
-function SetFields({ entry, type, onChange }) {
+function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
   const number = (label, field, step) => <NumberField label={label} value={entry[field]}
     step={step} onChange={(value) => onChange({ [field]: value })} />
   const timed = ['duration', 'distance'].includes(type)
+  const bodyweight = exercise.loadMode === 'bodyweight'
+  const bodyweightKg = entry.bodyweightKg || athleteProfile.bodyweightKg
   return <>
     <div className="training-activity-fields">
       {['strength', 'reps', 'jump'].includes(type) && number('Wiederholungen', 'reps', '1')}
-      {type === 'strength' && number('Gewicht (kg, optional bei Eigengewicht)', 'weightKg')}
-      {type === 'jump' && number('Sprunghöhe (cm)', 'heightCm')}
+      {['strength', 'jump', 'reps'].includes(type) && bodyweight && <p className="training-bodyweight">
+        Eigengewicht: {bodyweightKg ? `${bodyweightKg} kg` : 'noch nicht im Profil hinterlegt'}
+      </p>}
+      {(type === 'strength' || type === 'jump' || (type === 'reps' && bodyweight))
+        && number(bodyweight ? 'Zusätzliches Gewicht (kg, optional)' : 'Gewicht (kg, optional)', 'weightKg')}
+      {type === 'jump' && number('Sprunghöhe (cm, optional)', 'heightCm')}
       {type === 'distance' && number('Distanz', 'distanceValue')}
       {type === 'distance' && <label className="training-field">Einheit
         <select className="field" value={entry.distanceUnit ?? 'm'}
@@ -52,12 +58,13 @@ function SetFields({ entry, type, onChange }) {
 }
 
 export default function GuidedTrainingPanel({
-  session, sessions, library, plans, step, setStep, activeExerciseId, group, setGroup,
+  session, sessions, library, plans, athleteProfile, exerciseCategory, setExerciseCategory,
+  step, setStep, activeExerciseId, group, setGroup,
   editingSetId, setEditingSetId, flowMessage, newCategory, setNewCategory,
   customName, setCustomName, customType, setCustomType, customGroup, setCustomGroup,
   onAddExercise, onOpenExercise, onApplyPlan, onCreateCustom, onUpdateSession,
   onUpdateExercise, onRemoveExercise, onConfirmSet, onFinishExercise,
-  onSave, onClose, onRecategorize,
+  onSave, onClose, onRecategorize, onCancel,
 }) {
   const exercise = session.exercises.find((item) => item.id === activeExerciseId)
   const type = exercise && exerciseMeasurement({ ...exercise, category: session.category })
@@ -68,8 +75,8 @@ export default function GuidedTrainingPanel({
   const previousSets = previous?.item.entries?.filter((entry) => isConfirmedSet(entry,
     exerciseMeasurement({ ...previous.item, category: session.category })))
     .map((entry) => formatTrainingEntry(entry,
-      exerciseMeasurement({ ...previous.item, category: session.category }))).filter(Boolean)
-  const available = library.filter((item) => item.category === session.category)
+      exerciseMeasurement({ ...previous.item, category: session.category }), previous.item)).filter(Boolean)
+  const available = library.filter((item) => item.category === exerciseCategory)
   const groups = [...new Set(available.map((item) => item.muscleGroup || 'Ohne Muskelgruppe'))]
     .sort((a, b) => a.localeCompare(b, 'de-DE'))
   const planOptions = plans.filter((plan) =>
@@ -96,6 +103,12 @@ export default function GuidedTrainingPanel({
         </select>
         <button type="button" className="secondary-button" onClick={() => onRecategorize(newCategory)}>Kategorie übernehmen</button>
       </div> : <>
+        {(session.categories ?? [session.category]).length > 1 && <div className="training-category-tabs">
+          {(session.categories ?? [session.category]).map((category) => <button type="button"
+            key={category} className={exerciseCategory === category ? 'training-choice selected' : 'training-choice'}
+            onClick={() => { setExerciseCategory(category); setGroup(''); setCustomType(defaultMeasurement(category)) }}>
+            {category}</button>)}
+        </div>}
         {nextPlannedExercise && <button type="button" className="training-choice training-next-planned"
           onClick={() => onOpenExercise(nextPlannedExercise)}>
           Nächste Übung: {nextPlannedExercise.name} <span>›</span>
@@ -116,7 +129,7 @@ export default function GuidedTrainingPanel({
           {planOptions.map((plan) => <button type="button" className="training-choice" key={plan.id}
             onClick={() => onApplyPlan(plan)}>{plan.name} · {plan.exercises.length} Übungen</button>)}
         </details>}
-        {session.category === 'Krafttraining' && <>
+        {exerciseCategory === 'Krafttraining' && <>
           <h3>Muskelgruppe wählen</h3>
           <div className="training-choice-grid">{groups.map((muscle) =>
             <button type="button" key={muscle}
@@ -124,10 +137,10 @@ export default function GuidedTrainingPanel({
               onClick={() => { setGroup(muscle); setCustomGroup(muscle === 'Ohne Muskelgruppe' ? 'Ganzkörper' : muscle) }}>
               {muscle}</button>)}</div>
         </>}
-        {(session.category !== 'Krafttraining' || group) && <>
-          <h3>{session.category === 'Krafttraining' ? `Übungen: ${group}` : 'Übung wählen'}</h3>
+        {(exerciseCategory !== 'Krafttraining' || group) && <>
+          <h3>{exerciseCategory === 'Krafttraining' ? `Übungen: ${group}` : 'Übung wählen'}</h3>
           <div className="training-choice-list">{available
-            .filter((item) => session.category !== 'Krafttraining'
+            .filter((item) => exerciseCategory !== 'Krafttraining'
               || (item.muscleGroup || 'Ohne Muskelgruppe') === group)
             .map((item) => <button type="button" className="training-choice" key={item.id}
               onClick={() => onAddExercise(item)}>{item.name}<span>›</span></button>)}</div>
@@ -141,7 +154,7 @@ export default function GuidedTrainingPanel({
             onChange={(event) => setCustomType(event.target.value)}>
             {MEASUREMENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
-          {session.category === 'Krafttraining' && <>
+          {exerciseCategory === 'Krafttraining' && <>
             <label className="field-label" htmlFor="custom-group">Muskelgruppe</label>
             <select id="custom-group" className="field" value={customGroup}
               onChange={(event) => setCustomGroup(event.target.value)}>
@@ -159,8 +172,9 @@ export default function GuidedTrainingPanel({
 
     {step === 'set' && exercise && <>
       <h2>{exercise.name}</h2>
-      <p className="history-meta">{session.category === 'Krafttraining'
-        ? exercise.muscleGroup || 'Ohne Muskelgruppe' : session.category}</p>
+      <p className="history-meta">{exercise.category === 'Krafttraining'
+        ? exercise.muscleGroup || 'Ohne Muskelgruppe' : exercise.category || session.category}</p>
+      {exercise.target && <p className="training-target">Vorschlag: {exercise.target}</p>}
       {previousSets?.length > 0 && <p className="training-previous">
         Zuletzt am {formatDate(previous.session.date)}: {previousSets.join(' · ')}
       </p>}
@@ -178,10 +192,11 @@ export default function GuidedTrainingPanel({
         {confirmed.map((entry, index) => <div className="training-completed-set" key={entry.id}>
           <button type="button" className="training-done-row"
             onClick={() => setEditingSetId(editingSetId === entry.id ? null : entry.id)}>
-            <span>✓ Satz {index + 1}: {formatTrainingEntry(entry, type)}</span>
+            <span>✓ Satz {index + 1}: {formatTrainingEntry(entry, type, exercise)}</span>
             <span>{editingSetId === entry.id ? 'Schließen' : 'Bearbeiten'}</span>
           </button>
           {editingSetId === entry.id && <SetFields entry={entry} type={type}
+            exercise={exercise} athleteProfile={athleteProfile}
             onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
               item.id === entry.id ? { ...item, ...changes } : item) })} />}
           {editingSetId === entry.id && <button type="button" className="text-button"
@@ -192,7 +207,7 @@ export default function GuidedTrainingPanel({
       {draft && <div className="training-current-set">
         <p className="eyebrow">SATZ {confirmed.length + 1}</p>
         <h3>Werte eintragen</h3>
-        <SetFields entry={draft} type={type}
+        <SetFields entry={draft} type={type} exercise={exercise} athleteProfile={athleteProfile}
           onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
             item.id === draft.id ? { ...item, ...changes } : item) })} />
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}
@@ -236,5 +251,7 @@ export default function GuidedTrainingPanel({
         <button type="button" className="secondary-button" onClick={() => setStep('exercise')}>Zur Übungsauswahl</button>
       </div>
     </>}
+    {session.status !== 'completed' && <button type="button" className="text-button training-cancel-action"
+      onClick={onCancel}>Training abbrechen</button>}
   </section>
 }
