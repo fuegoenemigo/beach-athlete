@@ -294,7 +294,8 @@ export const VOLLEYBALL_PLANS = [
   {
     id: 'volleyball:plan-endurance', name: 'Volleyball-Ausdauer · Wiederholte Sprints',
     category: 'Ausdauer', description: 'Einstieg: 2 Serien à 6 × 30 m, etwa 20 s Pause zwischen Läufen und 5 Min. zwischen Serien. Bei Bedarf reduzieren.',
-    exercises: [ref('repeat-sprint', 'Pro Satz ein 30-m-Sprint: Distanz und Laufzeit erfassen')],
+    exercises: [ref('gym:walking', '10 Min. zügig gehen zum Aufwärmen'),
+      ref('repeat-sprint', 'Pro Satz ein 30-m-Sprint: Distanz und Laufzeit erfassen')],
   },
   {
     id: 'volleyball:plan-core', name: 'Volleyball-Core · Rumpf & Schulter',
