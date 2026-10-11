@@ -12,7 +12,7 @@ import {
   defaultMeasurement, exerciseIdentity, exerciseMeasurement,
   createLoggedExercise, createTrainingSet, hasLegacyValues,
   canonicalCategory,
-  hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
+  hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
 } from './trainingModel.js'
@@ -193,7 +193,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         ?? { ...reference, id: reference.libraryId, category: reference.category ?? plan.category }
       const exercise = createLoggedExercise({ ...item, target: reference.target ?? item.target })
       return index === 0 ? { ...exercise,
-        entries: [{ ...createTrainingSet(exercise.type), completed: false }] } : exercise
+        entries: [{ ...createTrainingSet(exercise.type,
+          exercise.intervalWorkMinutes ? 'min' : 's'), completed: false }] } : exercise
     })
   }
   function openNewTraining(plan = null) {
@@ -255,7 +256,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   }
   function addExercise(item) {
     const exercise = createLoggedExercise(item)
-    exercise.entries = [{ ...createTrainingSet(exercise.type), completed: false }]
+    exercise.entries = [{ ...createTrainingSet(exercise.type,
+      exercise.intervalWorkMinutes ? 'min' : 's'), completed: false }]
     updateSession({ exercises: [...activeSession.exercises, exercise] })
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
@@ -267,7 +269,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     if (!(exercise.entries ?? []).some((entry) => entry.completed === false)) {
       updateExercise(exercise.id, { entries: [...(exercise.entries ?? []),
-        { ...createTrainingSet(type), completed: false }] })
+        { ...createTrainingSet(type, exercise.intervalWorkMinutes ? 'min' : 's'),
+          completed: false }] })
     }
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
@@ -295,6 +298,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     if (!exercise) return
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     const entries = exercise.entries ?? []
+    const draft = entries.find((entry) => entry.completed === false)
+    if (draft && !hasRequiredIntervalDuration(exercise, draft)) {
+      setFlowMessage('Bitte gib die tatsächlich geschaffte Dauer dieses Intervalls ein.'); return
+    }
     const advanced = confirmAndAdvanceSet(entries, type,
       exercise.loadMode === 'bodyweight' ? athleteProfile.bodyweightKg : '')
     if (!advanced) {
@@ -379,6 +386,11 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   }
   function saveTraining() {
     if (!activeSession.date) { setFlowMessage('Bitte wähle ein Trainingsdatum.'); return }
+    if (activeSession.exercises.some((exercise) => (exercise.entries ?? [])
+      .some((entry) => isConfirmedSet(entry, exerciseMeasurement(exercise))
+        && !hasRequiredIntervalDuration(exercise, entry)))) {
+      setFlowMessage('Bei einem Intervall fehlt die tatsächlich geschaffte Dauer.'); return
+    }
     if (activeSession.exercises.some((exercise) => {
       const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
       return (exercise.entries ?? []).some((entry) => entry.completed === true
@@ -579,6 +591,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       <section className="diary-panel training-start-window">
       {pendingPlan ? <>
         <p className="training-plan-description">{pendingPlan.description}</p>
+        {pendingPlan.evidence && <a className="training-plan-evidence" href={pendingPlan.evidence.url}
+          target="_blank" rel="noopener noreferrer">Trainingsgrundlage: {pendingPlan.evidence.label} ↗</a>}
         <p className="history-meta">{(pendingPlan.categories ?? [pendingPlan.category]).join(' + ')}
           {' · '}{pendingPlan.exercises.length} Übungen</p>
         <h3 className="training-preview-heading">Übungen in diesem Plan</h3>
@@ -690,7 +704,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
               {plans.map((plan) => <div className="training-plan-row" key={plan.id}>
                 <div><strong>{plan.name}</strong>
                   <span className="history-meta">{(plan.categories ?? [plan.category]).join(' + ')} · {plan.exercises.length} Übungen{!isBuiltInPlan(plan) ? ' · Eigene Vorlage' : ''}</span>
-                  {plan.description && <span className="training-plan-description">{plan.description}</span>}</div>
+                  {plan.description && <span className="training-plan-description">{plan.description}</span>}
+                  {plan.evidence && <a className="training-plan-evidence" href={plan.evidence.url}
+                    target="_blank" rel="noopener noreferrer">Trainingsgrundlage: {plan.evidence.label} ↗</a>}</div>
                 <button type="button" className="secondary-button" disabled={openSessions.length > 0}
                   onClick={() => openNewTraining(plan)}>Starten</button>
                 <button type="button" className="secondary-button" onClick={() => beginPlan(plan)}>Anpassen</button>

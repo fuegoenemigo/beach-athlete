@@ -85,6 +85,12 @@ const GYM_EXERCISES = [
   gym('jump-rope', 'Seilspringen', 'Ausdauer', 'duration', 'Intervalle'),
   gym('run-intervals', 'Laufintervalle', 'Ausdauer', 'distance', 'Intervalle'),
   gym('bike-intervals', 'Fahrrad-Intervalle', 'Ausdauer', 'distance', 'Intervalle'),
+  gym('treadmill-interval-1m', 'Laufband-Intervall · 1 Minute', 'Ausdauer', 'distance', 'Intervalle', { intervalWorkMinutes: 1 }),
+  gym('treadmill-interval-2m', 'Laufband-Intervall · 2 Minuten', 'Ausdauer', 'distance', 'Intervalle', { intervalWorkMinutes: 2 }),
+  gym('treadmill-interval-4m', 'Laufband-Intervall · 4 Minuten', 'Ausdauer', 'distance', 'Intervalle', { intervalWorkMinutes: 4 }),
+  gym('bike-interval-1m', 'Fahrrad-Intervall · 1 Minute', 'Ausdauer', 'distance', 'Intervalle', { intervalWorkMinutes: 1 }),
+  gym('bike-interval-2m', 'Fahrrad-Intervall · 2 Minuten', 'Ausdauer', 'distance', 'Intervalle', { intervalWorkMinutes: 2 }),
+  gym('bike-interval-4m', 'Fahrrad-Intervall · 4 Minuten', 'Ausdauer', 'distance', 'Intervalle', { intervalWorkMinutes: 4 }),
   // Explosivkraft, Sprünge und Richtungswechsel.
   gym('jump-squat', 'Explosive Kniebeugen (Squat Jumps)', 'Sprungkraft und Agilität', 'jump', 'Explosivkraft', { loadMode: 'bodyweight' }),
   gym('loaded-jump-squat', 'Explosive Kniebeugen mit Langhantel', 'Sprungkraft und Agilität', 'strength', 'Explosivkraft'),
@@ -139,7 +145,8 @@ const byId = new Map(DEFAULT_EXERCISES.map((item) => [item.id, item]))
 const ref = (id, target) => {
   const item = byId.get(id.includes(':') ? id : `volleyball:${id}`)
   return { libraryId: item.id, name: item.name, category: item.category,
-    type: item.type, muscleGroup: item.muscleGroup, loadMode: item.loadMode, target }
+    type: item.type, muscleGroup: item.muscleGroup, loadMode: item.loadMode,
+    intervalWorkMinutes: item.intervalWorkMinutes, target }
 }
 
 export const STANDARD_PLANS = [
@@ -257,6 +264,120 @@ export const FOCUS_PLANS = [
       ref('gym:jump-squat', '3 × 3–5 explosive Sprünge'),
       ref('box-jump', '2 × 3–5 Sprünge mit sicherer Landung'),
       ref('gym:agility-ladder', '2–3 ruhige Durchgänge')],
+  },
+]
+
+// The shorter interval prescriptions are conservative app progressions, not protocols
+// claimed to have been tested as complete sessions in the linked studies.
+const intervalSource = {
+  label: 'ACSM · Grundlagen des Intervalltrainings',
+  url: 'https://acsm.org/high-intensity-interval-training-fitness/',
+}
+const fourByFourSource = {
+  label: 'Helgerud et al. · 4 × 4 Minuten',
+  url: 'https://pubmed.ncbi.nlm.nih.gov/17414804/',
+}
+const cyclingFourByFourSource = {
+  label: 'Studie · 4 × 4 Minuten auf dem Fahrradergometer',
+  url: 'https://pubmed.ncbi.nlm.nih.gov/32679757/',
+}
+const coreSource = {
+  label: 'Review · Core-Training und sportliche Leistung',
+  url: 'https://pubmed.ncbi.nlm.nih.gov/37867742/',
+}
+const mobilitySource = {
+  label: 'ACSM · Empfehlungen zur Beweglichkeit',
+  url: 'https://acsm.org/exercise-for-the-prevention-and-treatment-of-hypertension/',
+}
+const aerobicSource = {
+  label: 'WHO · Empfehlungen zur Ausdaueraktivität',
+  url: 'https://www.who.int/europe/news-room/fact-sheets/item/physical-activity',
+}
+const jumpSource = {
+  label: 'Meta-Analyse · Sprungtraining im Volleyball',
+  url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC7429440/',
+}
+const agilitySource = {
+  label: 'Review · Sprungtraining im Mannschaftssport',
+  url: 'https://pubmed.ncbi.nlm.nih.gov/28149427/',
+}
+
+const intervalPlan = (id, name, exerciseId, count, workMinutes, restMinutes, level) => ({
+  id: `gym:plan-${id}`, name, category: 'Ausdauer',
+  description: `10 Min. locker aufwärmen, dann ${count} × ${workMinutes} Min. zügig bis anstrengend mit ${restMinutes} Min. sehr lockerer aktiver Pause zwischen den Belastungen; 5 Min. auslaufen. ${level} Als Zusatz zum Volleyball zunächst höchstens 1× pro Woche. Trage je Belastungsabschnitt die tatsächlich geschaffte Zeit und optional die Strecke ein.${workMinutes < 4 ? ' Diese Stufe ist eine vorsichtige Progression, kein exakt geprüftes Studienprotokoll.' : ''}`,
+  evidence: workMinutes < 4 ? intervalSource
+    : exerciseId.startsWith('gym:bike-') ? cyclingFourByFourSource : fourByFourSource,
+  exercises: [ref(exerciseId, `${count} Sätze = ${count} Belastungsabschnitte à ${workMinutes} Min.; je Satz tatsächliche Dauer und optional Distanz eintragen. ${restMinutes} Min. locker zwischen den Sätzen.`)],
+})
+
+export const ADDITIONAL_PLANS = [
+  intervalPlan('treadmill-interval-beginner', 'Laufband-Intervalle · Einstieg',
+    'gym:treadmill-interval-1m', 6, 1, 2, 'Starte kontrolliert, nicht als maximalen Sprint.'),
+  intervalPlan('treadmill-interval-intermediate', 'Laufband-Intervalle · Mittelstufe',
+    'gym:treadmill-interval-2m', 5, 2, 2, 'Tempo so wählen, dass die Abschnitte ähnlich schnell bleiben.'),
+  intervalPlan('treadmill-interval-advanced', 'Laufband-Intervalle · Fortgeschritten',
+    'gym:treadmill-interval-4m', 4, 4, 3, 'Orientierung: etwa 85–95 % der maximalen Herzfrequenz; kein Sprint.'),
+  intervalPlan('bike-interval-beginner', 'Fahrrad-Intervalle · Einstieg',
+    'gym:bike-interval-1m', 6, 1, 2, 'Am Ergometer oder Fahrrad kontrolliert fahren, nicht maximal sprinten.'),
+  intervalPlan('bike-interval-intermediate', 'Fahrrad-Intervalle · Mittelstufe',
+    'gym:bike-interval-2m', 5, 2, 2, 'Widerstand so wählen, dass alle Abschnitte ähnlich anstrengend bleiben.'),
+  intervalPlan('bike-interval-advanced', 'Fahrrad-Intervalle · Fortgeschritten',
+    'gym:bike-interval-4m', 4, 4, 3, 'Orientierung: etwa 85–95 % der maximalen Herzfrequenz; nicht maximal sprinten.'),
+  {
+    id: 'gym:plan-treadmill-base', name: 'Ausdauer-Grundlage · Laufband',
+    category: 'Ausdauer', evidence: aerobicSource,
+    description: '5 Min. locker beginnen, 20–30 Min. in einem Tempo laufen oder gehen, bei dem Sprechen möglich bleibt, 5 Min. locker auslaufen. Dauer und Strecke dokumentieren.',
+    exercises: [ref('gym:treadmill', '1 Satz: tatsächliche Dauer und Strecke des gleichmäßigen Abschnitts')],
+  },
+  {
+    id: 'gym:plan-bike-base', name: 'Ausdauer-Grundlage · Fahrrad',
+    category: 'Ausdauer', evidence: aerobicSource,
+    description: '5 Min. locker einrollen, 25–40 Min. gleichmäßig und gesprächsfähig fahren, 5 Min. locker ausrollen. Dauer und Strecke dokumentieren; am Ergometer für Vergleiche dasselbe Gerät nutzen.',
+    exercises: [ref('bike', '1 Satz: tatsächliche Dauer und optional Distanz des gleichmäßigen Abschnitts')],
+  },
+  {
+    id: 'gym:plan-core-beginner', name: 'Core · Stabiler Einstieg',
+    category: 'Core und Mobility', evidence: coreSource,
+    description: 'Ruhige Rumpfkontrolle auf der Matte. Zwei Durchgänge pro Übung; zuerst saubere Haltung, dann längere Haltezeit oder mehr Wiederholungen.',
+    exercises: [ref('gym:dead-bug', '2 × 6–8 je Seite'),
+      ref('gym:bird-dog', '2 × 6–8 je Seite'),
+      ref('plank', '2 × 20–30 s'),
+      ref('side-plank', '2 × 15–25 s je Seite')],
+  },
+  {
+    id: 'gym:plan-core-advanced', name: 'Core · Kraft und Anti-Rotation',
+    category: 'Core und Mobility', evidence: coreSource,
+    description: 'Anspruchsvollerer Rumpftag mit kontrollierter Anti-Rotation und Haltearbeit. Pausen nach Bedarf, Technik vor Umfang.',
+    exercises: [ref('pallof', '3 × 8–12 je Seite'),
+      ref('gym:ab-wheel', '2 × 5–8 kontrollierte Wiederholungen'),
+      ref('gym:hollow-hold', '2 × 20–30 s'),
+      ref('side-plank', '2 × 25–40 s je Seite')],
+  },
+  {
+    id: 'gym:plan-mobility-short', name: 'Mobility · Kurze Gelenkroutine',
+    category: 'Core und Mobility', evidence: mobilitySource,
+    description: 'Sanfte Bewegungen und Dehnungen für Hüfte, Sprunggelenk, Brustwirbelsäule und Schulter, etwa 2–3× pro Woche. Dehnpositionen 2 × 20–30 s je Seite angenehm halten.',
+    exercises: [ref('gym:cat-cow', '2 × 30 s ruhige Bewegung'),
+      ref('gym:thoracic-rotation', '2 × 30 s je Seite'),
+      ref('ankle-mobility', '2 × 30 s je Seite'),
+      ref('gym:hip-flexor-stretch', '2 × 20–30 s je Seite'),
+      ref('gym:shoulder-mobility', '2 × 30 s')],
+  },
+  {
+    id: 'gym:plan-jump-landing', name: 'Sprungkraft · Landung und Anlauf',
+    category: 'Sprungkraft und Agilität', evidence: jumpSource,
+    description: 'Nach 5–10 Min. Aufwärmen wenige hochwertige Sprünge mit 60–90 s Pause zwischen Sätzen. Etwa 25–35 Bodenkontakte, 1–2× pro Woche; bei vielen Volleyball-Sprüngen den Umfang reduzieren.',
+    exercises: [ref('gym:pogo', '2 × 8 leichte Kontakte'),
+      ref('cmj', '3 × 3 Sprünge; Höhe optional messen'),
+      ref('approach-jump', '2 × 3 Anlaufsprünge; weich landen')],
+  },
+  {
+    id: 'gym:plan-agility-direction', name: 'Agilität · Richtungswechsel',
+    category: 'Sprungkraft und Agilität', evidence: agilitySource,
+    description: 'Nach 5–10 Min. Aufwärmen kurze, technisch saubere Richtungswechsel mit vollständiger Erholung; kein Ausdauer-Zirkel. Bei nachlassender Qualität beenden.',
+    exercises: [ref('gym:cone-slalom', '4 Läufe über dieselbe markierte Strecke; Zeit und Distanz erfassen'),
+      ref('shuttle', '4 Läufe über dieselbe markierte Strecke; Zeit und Distanz erfassen'),
+      ref('lateral-bound', '2 × 5 je Seite, Landung stabilisieren')],
   },
 ]
 

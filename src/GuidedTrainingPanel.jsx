@@ -29,6 +29,7 @@ function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
     step={step} onChange={(value) => onChange({ [field]: value })} />
   const timed = ['duration', 'distance', 'carry'].includes(type)
   const bodyweight = exercise.loadMode === 'bodyweight'
+  const interval = Boolean(exercise.intervalWorkMinutes)
   const bodyweightKg = entry.bodyweightKg || athleteProfile.bodyweightKg
   return <>
     <div className="training-activity-fields">
@@ -39,13 +40,13 @@ function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
       {(type === 'strength' || type === 'jump' || type === 'carry' || (type === 'reps' && bodyweight))
         && number(bodyweight ? 'Zusätzliches Gewicht (kg, optional)' : 'Gewicht (kg, optional)', 'weightKg')}
       {type === 'jump' && number('Sprunghöhe (cm, optional)', 'heightCm')}
-      {['distance', 'carry'].includes(type) && number('Distanz', 'distanceValue')}
+      {['distance', 'carry'].includes(type) && number(interval ? 'Distanz (optional)' : 'Distanz', 'distanceValue')}
       {['distance', 'carry'].includes(type) && <label className="training-field">Einheit
         <select className="field" value={entry.distanceUnit ?? 'm'}
           onChange={(event) => onChange({ distanceUnit: event.target.value })}>
           <option value="m">Meter</option><option value="km">Kilometer</option>
         </select></label>}
-      {timed && number('Dauer', 'durationValue')}
+      {timed && number(interval ? 'Tatsächlich geschaffte Belastungsdauer' : 'Dauer', 'durationValue')}
       {timed && <label className="training-field">Einheit
         <select className="field" value={entry.durationUnit ?? 's'}
           onChange={(event) => onChange({ durationUnit: event.target.value })}>

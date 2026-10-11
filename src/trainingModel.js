@@ -83,20 +83,21 @@ export function createLoggedExercise(item) {
     category: item.category, type: exerciseMeasurement(item),
     ...(item.muscleGroup ? { muscleGroup: item.muscleGroup } : {}),
     ...(item.loadMode ? { loadMode: item.loadMode } : {}),
+    ...(item.intervalWorkMinutes ? { intervalWorkMinutes: item.intervalWorkMinutes } : {}),
     ...(item.target ? { target: item.target } : {}),
     entries: [], notes: '',
   }
 }
 
-export function createTrainingSet(type = 'strength') {
+export function createTrainingSet(type = 'strength', durationUnit = 's') {
   const base = { id: crypto.randomUUID() }
   if (type === 'strength') return { ...base, reps: '', weightKg: '' }
   if (type === 'reps') return { ...base, reps: '', weightKg: '' }
   if (type === 'jump') return { ...base, reps: '', heightCm: '', weightKg: '' }
   if (type === 'distance' || type === 'carry') return { ...base, distanceValue: '', distanceUnit: 'm',
     ...(type === 'carry' ? { weightKg: '' } : {}),
-    durationValue: '', durationUnit: 's' }
-  return { ...base, durationValue: '', durationUnit: 's' }
+    durationValue: '', durationUnit }
+  return { ...base, durationValue: '', durationUnit }
 }
 
 export function hasMeasuredValue(entry, type) {
@@ -107,6 +108,12 @@ export function hasMeasuredValue(entry, type) {
   if (type === 'distance' || type === 'carry')
     return positive(entry.distanceValue) || positive(entry.durationValue)
   return positive(entry.durationValue)
+}
+
+export function hasRequiredIntervalDuration(exercise, entry) {
+  return !exercise.intervalWorkMinutes || (entry.durationValue !== ''
+    && entry.durationValue != null && Number.isFinite(Number(entry.durationValue))
+    && Number(entry.durationValue) > 0)
 }
 
 export function isConfirmedSet(entry, type) {
@@ -120,7 +127,7 @@ export function confirmAndAdvanceSet(entries, type, bodyweightKg = '') {
   return [...entries.map((entry) => entry.id === draft.id
     ? { ...entry, completed: true, confirmedAt: new Date().toISOString(),
       ...(bodyweightKg ? { bodyweightKg } : {}) } : entry),
-  { ...createTrainingSet(type), completed: false }]
+  { ...createTrainingSet(type, draft.durationUnit ?? 's'), completed: false }]
 }
 
 export function finishTrainingExerciseEntries(entries, type) {

@@ -3,12 +3,12 @@ import assert from 'node:assert/strict'
 import {
   createLoggedExercise, createTrainingSet, exerciseIdentity, hasLegacyValues,
   previousExercise, previousSetFor, formatTrainingEntry, canonicalCategory,
-  hasMeasuredValue, isConfirmedSet, confirmAndAdvanceSet,
+  hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   createSportTrainingSession, isSportTrainingAttendance,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
-import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
+import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, ADDITIONAL_PLANS, VOLLEYBALL_PLANS,
   enrichExercise, searchTrainingPlans } from '../src/volleyballTraining.js'
 import { INSTRUCTIONS, instructionForExercise } from '../src/exerciseInstructions.js'
 
@@ -180,12 +180,14 @@ test('volleyball plans use available exercises and preserve both categories in a
   assert.equal(STANDARD_PLANS.length, 5)
   assert.equal(FOCUS_PLANS.length, 6)
   assert.equal(isAthleteData({ ...base(), trainingPlans: [...STANDARD_PLANS, ...FOCUS_PLANS,
+    ...ADDITIONAL_PLANS,
     ...VOLLEYBALL_PLANS] }), true)
   assert.ok(DEFAULT_EXERCISES.some((item) => item.name === 'Back Extensions'
     && item.muscleGroup === 'Rücken'))
   assert.ok(DEFAULT_EXERCISES.some((item) => item.name === 'Explosive Kniebeugen (Squat Jumps)'
     && item.category === 'Sprungkraft und Agilität'))
-  for (const plan of [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS]) {
+  for (const plan of [...STANDARD_PLANS, ...FOCUS_PLANS, ...ADDITIONAL_PLANS,
+    ...VOLLEYBALL_PLANS]) {
     assert.ok(plan.exercises.length > 0)
     assert.ok(plan.exercises.every((reference) => reference.category === plan.category
       || plan.categories?.includes(reference.category)))
@@ -205,7 +207,7 @@ test('volleyball plans use available exercises and preserve both categories in a
 })
 
 test('plan search finds names, exercise groups, and exercise names across categories', () => {
-  const plans = [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS]
+  const plans = [...STANDARD_PLANS, ...FOCUS_PLANS, ...ADDITIONAL_PLANS, ...VOLLEYBALL_PLANS]
   assert.equal(searchTrainingPlans(plans, '').length, plans.length)
   assert.ok(searchTrainingPlans(plans, 'rücken stärken')
     .some((plan) => plan.id === 'gym:plan-back'))
@@ -224,7 +226,8 @@ test('every built-in exercise and plan reference has a concrete instruction', ()
     assert.equal(instructionForExercise({ libraryId: exercise.id, name: exercise.name }),
       INSTRUCTIONS[exercise.id])
   }
-  for (const plan of [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS]) {
+  for (const plan of [...STANDARD_PLANS, ...FOCUS_PLANS, ...ADDITIONAL_PLANS,
+    ...VOLLEYBALL_PLANS]) {
     for (const item of plan.exercises) assert.ok(instructionForExercise(item), item.libraryId)
   }
   assert.match(INSTRUCTIONS['volleyball:rdl'], /Hüfte/)
@@ -232,6 +235,35 @@ test('every built-in exercise and plan reference has a concrete instruction', ()
   assert.match(INSTRUCTIONS['gym:thoracic-rotation'], /Matte/)
   assert.equal(instructionForExercise({ id: 'personal:one', name: 'Eigene Übung',
     category: 'Krafttraining' }), undefined)
+})
+
+test('additional plans cover non-strength categories and record interval work per set', () => {
+  assert.equal(ADDITIONAL_PLANS.length, 13)
+  assert.deepEqual([...new Set(ADDITIONAL_PLANS.map((plan) => plan.category))].sort(),
+    ['Ausdauer', 'Core und Mobility', 'Sprungkraft und Agilität'])
+  assert.equal(new Set(ADDITIONAL_PLANS.map((plan) => plan.id)).size, 13)
+  assert.ok(ADDITIONAL_PLANS.every((plan) => plan.evidence?.url.startsWith('https://')))
+  const intervals = ADDITIONAL_PLANS.filter((plan) => /interval-(beginner|intermediate|advanced)/.test(plan.id))
+  assert.equal(intervals.length, 6)
+  assert.equal(new Set(intervals.map((plan) => plan.exercises[0].libraryId)).size, 6)
+  for (const plan of intervals) {
+    const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+      item.id === plan.exercises[0].libraryId))
+    assert.equal(exercise.type, 'distance')
+    assert.ok(exercise.intervalWorkMinutes > 0)
+    const set = { ...createTrainingSet('distance'), durationValue: '50', distanceValue: '200' }
+    assert.equal(hasRequiredIntervalDuration(exercise, set), true)
+    assert.equal(hasRequiredIntervalDuration(exercise, { ...set, durationValue: '' }), false)
+    assert.equal(formatTrainingEntry(set, 'distance'), '200 m · 50 Sek.')
+    const firstInterval = { ...createTrainingSet('distance', 'min'), durationValue: '0.8',
+      completed: false }
+    const nextInterval = confirmAndAdvanceSet([firstInterval], 'distance')
+    assert.equal(nextInterval[0].durationUnit, 'min')
+    assert.equal(nextInterval[1].durationUnit, 'min')
+    assert.equal(isAthleteData({ ...base(), sessions: [{ id: 'interval',
+      date: '2026-10-11', category: 'Ausdauer', exercises: [{ ...exercise,
+        entries: [{ ...set, completed: true }] }] }] }), true)
+  }
 })
 
 test('loaded carries can store distance, time, and weight in one set', () => {

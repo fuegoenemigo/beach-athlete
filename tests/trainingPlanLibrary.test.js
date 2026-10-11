@@ -27,6 +27,15 @@ test('built-in edits replace their original and custom plans join the right cate
     .plans.some((plan) => plan.id === custom.id))
 })
 
+test('new built-in endurance and mobility plans appear alongside existing personal plans', () => {
+  const personal = { id: 'own-plan', name: 'Mein Plan', category: 'Ausdauer', exercises: [] }
+  const visible = visibleTrainingPlans([personal])
+  assert.ok(visible.some((plan) => plan.id === 'gym:plan-bike-interval-beginner'))
+  assert.ok(visible.some((plan) => plan.id === 'gym:plan-treadmill-interval-advanced'))
+  assert.ok(visible.some((plan) => plan.id === 'gym:plan-mobility-short'))
+  assert.ok(visible.some((plan) => plan.id === personal.id))
+})
+
 test('deleting a built-in hides it in valid synced data and restoration returns it', () => {
   const original = BUILT_IN_PLANS[0]
   const hidden = removeTrainingPlan([], { ...original, category: 'Noch nicht gespeichert' })

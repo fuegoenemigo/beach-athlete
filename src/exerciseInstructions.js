@@ -111,6 +111,12 @@ const INSTRUCTIONS = {
   'gym:jump-rope': 'Mit Springseil aufrecht stehen und mit kleinen Sprüngen über das Seil hüpfen; Dauer erfassen.',
   'gym:run-intervals': 'Auf Bahn oder Laufband zwischen schnelleren Laufabschnitten und lockerer Erholung wechseln; Strecke und Zeit je Abschnitt erfassen.',
   'gym:bike-intervals': 'Auf Fahrrad oder Ergometer schnellere Belastungsabschnitte mit lockerem Pedalieren abwechseln; Dauer und Distanz erfassen.',
+  'gym:treadmill-interval-1m': 'Auf dem Laufband 1 Minute zügig laufen; danach locker gehen oder traben. Jeder schnelle Abschnitt ist ein eigener Satz: tatsächliche Dauer und optional die Strecke dieses Abschnitts eintragen.',
+  'gym:treadmill-interval-2m': 'Auf dem Laufband 2 Minuten zügig laufen; danach locker gehen oder traben. Jeden Belastungsabschnitt als Satz mit tatsächlicher Dauer und optional Strecke erfassen.',
+  'gym:treadmill-interval-4m': 'Auf dem Laufband 4 Minuten kontrolliert anstrengend laufen, nicht voll sprinten; danach locker gehen oder traben. Jeden Belastungsabschnitt einzeln mit Dauer und optional Strecke erfassen.',
+  'gym:bike-interval-1m': 'Auf dem Fahrrad oder Ergometer 1 Minute zügig treten; danach locker weiterfahren. Jeden Belastungsabschnitt als Satz mit tatsächlicher Dauer und optional Gerätedistanz erfassen.',
+  'gym:bike-interval-2m': 'Auf dem Fahrrad oder Ergometer 2 Minuten zügig treten; danach locker weiterfahren. Jeden Belastungsabschnitt als Satz mit tatsächlicher Dauer und optional Gerätedistanz erfassen.',
+  'gym:bike-interval-4m': 'Auf dem Fahrrad oder Ergometer 4 Minuten kontrolliert anstrengend treten; danach locker weiterfahren. Jeden Belastungsabschnitt mit tatsächlicher Dauer und optional Gerätedistanz erfassen.',
 
   'gym:jump-squat': 'Ohne Zusatzgewicht in eine halbe Kniebeuge gehen, explosiv senkrecht abspringen und weich mit gebeugten Knien landen.',
   'gym:loaded-jump-squat': 'Nur mit beherrschter Sprungtechnik: eine leichte Langhantel auf den Schultern halten, aus einer flachen Kniebeuge springen und weich landen.',

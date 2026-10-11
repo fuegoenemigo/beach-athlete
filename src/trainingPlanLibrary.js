@@ -1,7 +1,7 @@
 import { TRAINING_CATEGORIES, canonicalCategory } from './trainingModel.js'
-import { STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS } from './volleyballTraining.js'
+import { STANDARD_PLANS, FOCUS_PLANS, ADDITIONAL_PLANS, VOLLEYBALL_PLANS } from './volleyballTraining.js'
 
-export const BUILT_IN_PLANS = [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS]
+export const BUILT_IN_PLANS = [...STANDARD_PLANS, ...FOCUS_PLANS, ...ADDITIONAL_PLANS, ...VOLLEYBALL_PLANS]
 const builtInIds = new Set(BUILT_IN_PLANS.map((plan) => plan.id))
 
 export function isBuiltInPlan(plan) {
