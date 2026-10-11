@@ -2,8 +2,8 @@ import { useState } from 'react'
 import GuidedTrainingPanel from './GuidedTrainingPanel.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
-import { DEFAULT_EXERCISES, STANDARD_PLANS, VOLLEYBALL_PLANS,
-  enrichExercise } from './volleyballTraining.js'
+import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
+  enrichExercise, searchTrainingPlans } from './volleyballTraining.js'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   defaultMeasurement, exerciseIdentity, exerciseMeasurement,
@@ -43,6 +43,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [newCategory, setNewCategory] = useState('Krafttraining')
   const [newSessionOpen, setNewSessionOpen] = useState(false)
   const [pendingPlan, setPendingPlan] = useState(null)
+  const [planSearch, setPlanSearch] = useState('')
   const [activeSessionId, setActiveSessionId] = useState(null)
   const [expandedSessionId, setExpandedSessionId] = useState(null)
   const [flowStep, setFlowStep] = useState('exercise')
@@ -72,7 +73,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const visibleLibrary = [...managedLibrary, ...DEFAULT_EXERCISES.filter((item) =>
     !managedLibrary.some((existing) => existing.category === item.category
       && existing.name === item.name))]
-  const visiblePlans = [...STANDARD_PLANS, ...VOLLEYBALL_PLANS, ...trainingPlans]
+  const visiblePlans = [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS, ...trainingPlans]
+  const matchingPlans = searchTrainingPlans(visiblePlans, planSearch)
   const libraryGroups = groupsFor(visibleLibrary, libraryCategory).map(([group]) => group)
   const sortedSessions = [...sessions].sort((a, b) =>
     b.date.localeCompare(a.date) || (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
@@ -99,6 +101,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   }
   function openNewTraining(plan = null) {
     setPendingPlan(plan)
+    setPlanSearch('')
     setCustomDate(false)
     setSelectedDate(today())
     setNewSessionOpen(true)
@@ -417,7 +420,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
 
     {!activeSession && <section className="diary-panel">
       <div className="section-heading"><div><p className="eyebrow">NEUE EINHEIT</p><h2>Training starten</h2></div></div>
-      <p className="helper-text">Erfasse eine freie Einheit oder starte unten eine Volleyball-Vorlage.</p>
+      <p className="helper-text">Erfasse eine freie Einheit oder suche beim Start nach einer passenden Vorlage.</p>
       <button type="button" className="primary-button" onClick={() => openNewTraining()}>
         ＋ Training hinzufügen
       </button>
@@ -430,12 +433,27 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         <p className="training-plan-description">{pendingPlan.description}</p>
         <p className="history-meta">{(pendingPlan.categories ?? [pendingPlan.category]).join(' + ')}
           {' · '}{pendingPlan.exercises.length} Übungen</p>
+        <button type="button" className="text-button" onClick={() => setPendingPlan(null)}>
+          Andere Vorlage oder freie Einheit wählen
+        </button>
       </> : <>
       <label className="field-label" htmlFor="training-category">Hauptkategorie</label>
       <select id="training-category" className="field" value={newCategory}
         onChange={(event) => setNewCategory(event.target.value)}>
         {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
       </select>
+      <label className="field-label" htmlFor="training-plan-search">Trainingsvorlage suchen (optional)</label>
+      <input id="training-plan-search" className="field" type="search" value={planSearch}
+        onChange={(event) => setPlanSearch(event.target.value)}
+        placeholder="z. B. Rücken, Core oder Sprungkraft" />
+      <p className="helper-text">Suche nach Planname, Muskelgruppe oder Übung. Tippe auf einen Treffer, um ihn zu verwenden.</p>
+      <div className="training-plan-search-results" aria-live="polite">
+        {matchingPlans.length ? matchingPlans.map((plan) => <button type="button"
+          className="training-choice" key={plan.id} onClick={() => setPendingPlan(plan)}>
+          <span><strong>{plan.name}</strong><small>{(plan.categories ?? [plan.category]).join(' + ')}
+            {' · '}{plan.exercises.length} Übungen</small></span><span aria-hidden="true">›</span>
+        </button>) : <p className="helper-text">Keine passende Vorlage gefunden. Du kannst ein freies Training starten.</p>}
+      </div>
       </>}
       <details className="training-date-option"><summary>Anderes Datum erfassen</summary>
         <label className="field-label" htmlFor="training-date">Trainingsdatum</label>
@@ -480,6 +498,15 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         <p className="helper-text">Starte eine Vorlage oder erstelle deinen eigenen Trainingstag. Für den Einstieg sind Ganzkörper-Einheiten meist einfacher als ein Split.</p>
         <h3 className="training-group-heading">Fitnessstudio · Einstieg</h3>
         {STANDARD_PLANS.map((plan) => <div className="training-plan-row" key={plan.id}>
+          <div><strong>{plan.name}</strong>
+            <span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span>
+            <span className="training-plan-description">{plan.description}</span></div>
+          <button type="button" className="secondary-button" onClick={() => openNewTraining(plan)}>Starten</button>
+          <button type="button" className="text-button" onClick={() => beginPlan({ ...plan,
+            id: crypto.randomUUID(), name: `${plan.name} · Eigene Variante` })}>Kopie anpassen</button>
+        </div>)}
+        <h3 className="training-group-heading">Fitnessstudio · Schwerpunkte</h3>
+        {FOCUS_PLANS.map((plan) => <div className="training-plan-row" key={plan.id}>
           <div><strong>{plan.name}</strong>
             <span className="history-meta">{plan.category} · {plan.exercises.length} Übungen</span>
             <span className="training-plan-description">{plan.description}</span></div>

@@ -219,6 +219,28 @@
   background: #273a27;
 }
 
+.training-plan-search-results {
+  display: grid;
+  gap: 8px;
+  max-height: 240px;
+  margin: 12px 0 18px;
+  overflow-y: auto;
+}
+
+.training-plan-search-results .training-choice {
+  align-items: center;
+}
+
+.training-plan-search-results .training-choice > span:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.training-plan-search-results small {
+  color: #c1d0c3;
+  font-size: 0.78rem;
+}
+
 .training-next-planned {
   margin: 12px 0 18px;
   border-color: #668f5a;

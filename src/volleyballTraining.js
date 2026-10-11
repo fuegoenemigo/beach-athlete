@@ -152,7 +152,8 @@ export const STANDARD_PLANS = [
       ref('gym:lat-pulldown', '2 × 8–12 Wiederholungen'),
       ref('gym:seated-row', '2 × 8–12 Wiederholungen'),
       ref('gym:dumbbell-press', '2 × 8–12 Wiederholungen'),
-      ref('gym:leg-curl', '2 × 10–12 Wiederholungen')],
+      ref('gym:leg-curl', '2 × 10–12 Wiederholungen'),
+      ref('gym:back-extension', '2 × 10–12 kontrollierte Wiederholungen')],
   },
   {
     id: 'gym:plan-full-body-free', name: 'Fitnessstudio · Ganzkörper B (Freihanteln)',
@@ -163,37 +164,99 @@ export const STANDARD_PLANS = [
       ref('gym:dumbbell-row', '2 × 8–12 je Seite'),
       ref('rdl', '2 × 8–10 Wiederholungen'),
       ref('press', '2 × 8–10 Wiederholungen'),
-      ref('gym:back-extension', '2 × 10–12 Wiederholungen')],
+      ref('gym:back-extension', '2 × 10–12 Wiederholungen'),
+      ref('gym:dead-bug', '2 × 8–10 je Seite')],
+    categories: ['Krafttraining', 'Core und Mobility'],
   },
   {
-    id: 'gym:plan-push', name: 'Fitnessstudio · Push (Brust/Schulter/Trizeps)',
+    id: 'gym:plan-push', name: 'Fitnessstudio · Push: Brust, Schulter, Trizeps',
     category: 'Krafttraining',
     description: 'Ein Push-Trainingstag. Als Anfänger alternativ die Ganzkörper-Vorlagen bevorzugen.',
     exercises: [ref('gym:chest-press', '2 × 8–12 Wiederholungen'),
       ref('gym:dumbbell-incline', '2 × 8–12 Wiederholungen'),
       ref('gym:dumbbell-press', '2 × 8–12 Wiederholungen'),
       ref('gym:lateral-raise', '2 × 10–15 Wiederholungen'),
-      ref('gym:triceps-pushdown', '2 × 10–15 Wiederholungen')],
+      ref('gym:triceps-pushdown', '2 × 10–15 Wiederholungen'),
+      ref('gym:overhead-triceps', '2 × 10–12 Wiederholungen')],
   },
   {
-    id: 'gym:plan-pull', name: 'Fitnessstudio · Pull (Rücken/Bizeps)',
+    id: 'gym:plan-pull', name: 'Fitnessstudio · Pull: Rücken und Bizeps',
     category: 'Krafttraining',
     description: 'Ein Pull-Trainingstag für Rücken, hintere Schulter und Bizeps.',
     exercises: [ref('gym:lat-pulldown', '2 × 8–12 Wiederholungen'),
       ref('gym:seated-row', '2 × 8–12 Wiederholungen'),
       ref('gym:back-extension', '2 × 10–12 Wiederholungen'),
       ref('gym:face-pull', '2 × 10–15 Wiederholungen'),
-      ref('gym:dumbbell-curl', '2 × 10–12 Wiederholungen')],
+      ref('gym:dumbbell-curl', '2 × 10–12 Wiederholungen'),
+      ref('gym:hammer-curl', '2 × 10–12 Wiederholungen')],
   },
   {
-    id: 'gym:plan-legs', name: 'Fitnessstudio · Legs (Beine/Po)',
+    id: 'gym:plan-legs', name: 'Fitnessstudio · Legs: Beine und Po',
     category: 'Krafttraining',
     description: 'Ein Beintag mit Kniebeuge-, Hüft- und Wadenarbeit. Bei vielen Volleyball-Sprüngen Umfang anpassen.',
     exercises: [ref('gym:leg-press', '2 × 8–12 Wiederholungen'),
       ref('rdl', '2 × 8–10 Wiederholungen'),
       ref('gym:leg-curl', '2 × 10–12 Wiederholungen'),
       ref('gym:step-up', '2 × 8–10 je Bein'),
-      ref('gym:seated-calf', '2 × 10–15 Wiederholungen')],
+      ref('gym:seated-calf', '2 × 10–15 Wiederholungen'),
+      ref('gym:hip-thrust', '2 × 8–12 Wiederholungen')],
+  },
+]
+
+export const FOCUS_PLANS = [
+  {
+    id: 'gym:plan-back', name: 'Rücken stärken · Zugübungen',
+    category: 'Krafttraining',
+    description: 'Zur Stärkung des Rückens: Latzug und Rudern für den oberen Rücken, Back Extensions für die Rückenstrecker. Mit kontrollierter Last beginnen.',
+    exercises: [ref('gym:lat-pulldown', '2 × 8–12 Wiederholungen'),
+      ref('gym:seated-row', '2 × 8–12 Wiederholungen'),
+      ref('gym:dumbbell-row', '2 × 8–12 je Seite'),
+      ref('gym:face-pull', '2 × 10–15 Wiederholungen'),
+      ref('gym:back-extension', '2 × 10–12 Wiederholungen')],
+  },
+  {
+    id: 'gym:plan-chest', name: 'Brust stärken · Drücken',
+    category: 'Krafttraining',
+    description: 'Eine flache und eine schräge Druckbewegung, ergänzt durch eine leichte Isolationsübung.',
+    exercises: [ref('gym:chest-press', '2 × 8–12 Wiederholungen'),
+      ref('gym:dumbbell-incline', '2 × 8–12 Wiederholungen'),
+      ref('gym:cable-fly', '2 × 10–15 Wiederholungen'),
+      ref('gym:triceps-pushdown', '2 × 10–15 Wiederholungen')],
+  },
+  {
+    id: 'gym:plan-core-stability', name: 'Core stabilisieren · Rumpf',
+    category: 'Core und Mobility',
+    description: 'Rumpfspannung mit einfachen Halte- und Gegenrotationsübungen trainieren.',
+    exercises: [ref('gym:dead-bug', '2 × 8–10 je Seite'),
+      ref('plank', '2 × 20–40 s'),
+      ref('side-plank', '2 × 20–30 s je Seite'),
+      ref('pallof', '2 × 8–12 je Seite'),
+      ref('gym:bird-dog', '2 × 8–10 je Seite')],
+  },
+  {
+    id: 'gym:plan-mobility', name: 'Beweglichkeit · Hüfte und Schulter',
+    category: 'Core und Mobility',
+    description: 'Ruhige Beweglichkeitsroutine für Hüfte, Sprunggelenk, Brustwirbelsäule und Schulter.',
+    exercises: [ref('gym:cat-cow', '2 × 45 s'),
+      ref('gym:thoracic-rotation', '2 × 45 s je Seite'),
+      ref('gym:hip-flexor-stretch', '2 × 45 s je Seite'),
+      ref('ankle-mobility', '2 × 45 s je Seite'),
+      ref('gym:shoulder-mobility', '2 × 45 s')],
+  },
+  {
+    id: 'gym:plan-endurance-base', name: 'Ausdauer aufbauen · Zügiges Gehen',
+    category: 'Ausdauer',
+    description: 'Ein einfacher Einstieg mit Gehen. Beginne locker und steigere die Dauer allmählich.',
+    exercises: [ref('gym:walking', '20–30 Min. lockeres bis zügiges Tempo')],
+  },
+  {
+    id: 'gym:plan-jump-basics', name: 'Sprungkraft aufbauen · Explosive Kniebeugen',
+    category: 'Sprungkraft und Agilität',
+    description: 'Wenige hochwertige Sprünge. Erst kontrolliert landen, dann Höhe und Tempo steigern; ausreichend Pausen lassen.',
+    exercises: [ref('gym:pogo', '2 × 8–10 leichte Kontakte'),
+      ref('gym:jump-squat', '3 × 3–5 explosive Sprünge'),
+      ref('box-jump', '2 × 3–5 Sprünge mit sicherer Landung'),
+      ref('gym:agility-ladder', '2–3 ruhige Durchgänge')],
   },
 ]
 
@@ -202,27 +265,30 @@ export const VOLLEYBALL_PLANS = [
     id: 'volleyball:plan-strength-lower', name: 'Volleyball-Kraft A · Beine & Sprungbasis',
     category: 'Krafttraining', description: 'Kräftigt Beine und Hüfte als Basis für Absprung und Landung. 1× pro Woche als Einstieg.',
     exercises: [ref('squat', '3 × 5–8 saubere Wiederholungen'), ref('rdl', '3 × 6–8 Wiederholungen'),
-      ref('split-squat', '2 × 6–8 je Bein'), ref('calf', '2 × 10–15 Wiederholungen')],
+      ref('split-squat', '2 × 6–8 je Bein'), ref('gym:hip-thrust', '2 × 8–10 Wiederholungen'),
+      ref('calf', '2 × 10–15 Wiederholungen')],
   },
   {
     id: 'volleyball:plan-strength-upper', name: 'Volleyball-Kraft B · Oberkörper',
     category: 'Krafttraining', description: 'Drücken und Ziehen ausgewogen kombinieren; Belastung für die Schlag-Schulter im Blick behalten.',
     exercises: [ref('bench', '3 × 6–8 Wiederholungen'), ref('row', '3 × 8–10 Wiederholungen'),
-      ref('pullup', '2 × 5–8 Wiederholungen'), ref('press', '2 × 6–8 Wiederholungen')],
+      ref('pullup', '2 × 5–8 Wiederholungen'), ref('press', '2 × 6–8 Wiederholungen'),
+      ref('gym:face-pull', '2 × 10–15 kontrollierte Wiederholungen')],
   },
   {
     id: 'volleyball:plan-jump', name: 'Volleyball-Sprung · Anlauf & Richtungswechsel',
     category: 'Sprungkraft und Agilität', description: 'Wenige hochwertige Sprünge mit vollen Pausen. Bei vielen Spiel- oder Trainingssprüngen Umfang reduzieren.',
-    exercises: [ref('cmj', '3 × 3–5 Sprünge; Höhe optional messen'),
+    exercises: [ref('gym:pogo', '2 × 8–10 leichte Kontakte'),
+      ref('cmj', '3 × 3–5 Sprünge; Höhe optional messen'),
       ref('approach-jump', '3 × 3–5 Anlaufsprünge'), ref('lateral-bound', '2 × 5 je Seite'),
       ref('shuttle', '3–4 Läufe; Distanz und Zeit erfassen')],
   },
   {
-    id: 'volleyball:plan-contrast', name: 'Volleyball-Kontrast · Kraft & Sprung',
+    id: 'volleyball:plan-contrast', name: 'Volleyball · Beinkraft und explosive Sprünge',
     category: 'Krafttraining', categories: ['Krafttraining', 'Sprungkraft und Agilität'],
     description: 'Kniebeugen und wenige explosive Sprünge kombinieren. Anspruchsvoller Tag: nur ausgeruht, mit langen Pausen und Abstand zu vielen Spielsprüngen.',
     exercises: [ref('squat', '2–3 × 4–6 Wiederholungen'),
-      ref('cmj', 'Nach den Kniebeugen 2–3 × 3–5 hochwertige Sprünge'),
+      ref('gym:jump-squat', 'Nach den Kniebeugen 2–3 × 3–5 explosive Sprünge'),
       ref('rdl', '2 × 6–8 Wiederholungen'), ref('approach-jump', '2 × 3–5 Anlaufsprünge')],
   },
   {
@@ -233,19 +299,36 @@ export const VOLLEYBALL_PLANS = [
   {
     id: 'volleyball:plan-core', name: 'Volleyball-Core · Rumpf & Schulter',
     category: 'Core und Mobility', description: 'Rumpfkontrolle, Schulterarbeit und Beweglichkeit als kurze Ergänzung.',
-    exercises: [ref('plank', '2 × 30–45 s'), ref('side-plank', '2 × 20–30 s je Seite'),
+    exercises: [ref('gym:dead-bug', '2 × 8–10 je Seite'), ref('plank', '2 × 30–45 s'),
+      ref('side-plank', '2 × 20–30 s je Seite'),
       ref('pallof', '2 × 8–12 je Seite'), ref('shoulder-rotation', '2 × 10–15 kontrolliert'),
-      ref('ankle-mobility', '2 × 45 s je Seite')],
+      ref('gym:thoracic-rotation', '2 × 45 s je Seite'), ref('ankle-mobility', '2 × 45 s je Seite')],
   },
   {
-    id: 'volleyball:plan-mixed', name: 'Volleyball-Mix · Kraft & Core/Mobility',
+    id: 'volleyball:plan-mixed', name: 'Volleyball · Kurzes Kraft- und Rumpftraining',
     category: 'Krafttraining', categories: ['Krafttraining', 'Core und Mobility'],
     description: 'Kürzerer Ganzkörpertag, wenn eine volle Krafteinheit nicht passt. Kraft und Rumpf bleiben getrennt auswertbar.',
     exercises: [ref('squat', '2 × 5–8 Wiederholungen'), ref('rdl', '2 × 6–8 Wiederholungen'),
+      ref('gym:seated-row', '2 × 8–12 Wiederholungen'),
       ref('pallof', '2 × 8–12 je Seite'), ref('side-plank', '2 × 20–30 s je Seite'),
       ref('hip-mobility', '2 × 45 s je Seite')],
   },
 ]
+
+const normalizeSearch = (value) => String(value ?? '').normalize('NFD')
+  .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('de-DE')
+
+export function searchTrainingPlans(plans, query) {
+  const words = normalizeSearch(query).trim().split(/\s+/).filter(Boolean)
+  if (!words.length) return plans
+  return plans.filter((plan) => {
+    const haystack = normalizeSearch([
+      plan.name, plan.description, plan.category, ...(plan.categories ?? []),
+      ...(plan.exercises ?? []).flatMap((item) => [item.name, item.muscleGroup, item.category]),
+    ].join(' '))
+    return words.every((word) => haystack.includes(word))
+  })
+}
 
 export function enrichExercise(item) {
   const builtin = DEFAULT_EXERCISES.find((candidate) => candidate.name === item.name

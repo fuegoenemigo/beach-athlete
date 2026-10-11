@@ -7,8 +7,8 @@ import {
   finishTrainingExerciseEntries,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
-import { DEFAULT_EXERCISES, STANDARD_PLANS, VOLLEYBALL_PLANS,
-  enrichExercise } from '../src/volleyballTraining.js'
+import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS,
+  enrichExercise, searchTrainingPlans } from '../src/volleyballTraining.js'
 
 const library = [{ name: 'Bankdrücken', category: 'Krafttraining',
   muscleGroup: 'Brust', type: 'strength' }]
@@ -109,12 +109,14 @@ test('volleyball plans use available exercises and preserve both categories in a
   const available = new Map(DEFAULT_EXERCISES.map((item) => [item.id, item]))
   assert.equal(available.size, DEFAULT_EXERCISES.length)
   assert.equal(STANDARD_PLANS.length, 5)
-  assert.equal(isAthleteData({ ...base(), trainingPlans: [...STANDARD_PLANS, ...VOLLEYBALL_PLANS] }), true)
+  assert.equal(FOCUS_PLANS.length, 6)
+  assert.equal(isAthleteData({ ...base(), trainingPlans: [...STANDARD_PLANS, ...FOCUS_PLANS,
+    ...VOLLEYBALL_PLANS] }), true)
   assert.ok(DEFAULT_EXERCISES.some((item) => item.name === 'Back Extensions'
     && item.muscleGroup === 'Rücken'))
   assert.ok(DEFAULT_EXERCISES.some((item) => item.name === 'Explosive Kniebeugen (Squat Jumps)'
     && item.category === 'Sprungkraft und Agilität'))
-  for (const plan of [...STANDARD_PLANS, ...VOLLEYBALL_PLANS]) {
+  for (const plan of [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS]) {
     assert.ok(plan.exercises.length > 0)
     assert.ok(plan.exercises.every((reference) => reference.category === plan.category
       || plan.categories?.includes(reference.category)))
@@ -131,6 +133,19 @@ test('volleyball plans use available exercises and preserve both categories in a
   assert.equal(isAthleteData({ ...base(), athleteProfile: { bodyweightKg: '75' },
     sessions: [{ id: 'mixed', date: '2026-10-11', category: mixed.category,
       categories: mixed.categories, exercises }] }), true)
+})
+
+test('plan search finds names, exercise groups, and exercise names across categories', () => {
+  const plans = [...STANDARD_PLANS, ...FOCUS_PLANS, ...VOLLEYBALL_PLANS]
+  assert.equal(searchTrainingPlans(plans, '').length, plans.length)
+  assert.ok(searchTrainingPlans(plans, 'rücken stärken')
+    .some((plan) => plan.id === 'gym:plan-back'))
+  assert.ok(searchTrainingPlans(plans, 'Stärkung Rücken')
+    .some((plan) => plan.id === 'gym:plan-back'))
+  assert.ok(searchTrainingPlans(plans, 'RÜCKEN').some((plan) => plan.id === 'gym:plan-pull'))
+  assert.ok(searchTrainingPlans(plans, 'kniebeugen explosiv')
+    .some((plan) => plan.id === 'gym:plan-jump-basics'))
+  assert.deepEqual(searchTrainingPlans(plans, 'unbekannter begriff'), [])
 })
 
 test('loaded carries can store distance, time, and weight in one set', () => {
