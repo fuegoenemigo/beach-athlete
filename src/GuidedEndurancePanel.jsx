@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { elapsedSeconds, formatTimer } from './trainingTimer.js'
 import { mainDurationSeconds, mainPhaseAt } from './enduranceFlow.js'
+import { ADDITIONAL_PLANS, FOCUS_PLANS } from './volleyballTraining.js'
 import { RatingStepper } from './VolleyballInputs.jsx'
 
 const freshClock = () => ({ startedAt: Date.now(), elapsedMs: 0, running: true })
@@ -9,6 +10,8 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
   onUpdateResult, onConfirmMain, onSave, onClose, onCancel, flowMessage }) {
   const flow = session.enduranceFlow
   const spec = flow.spec
+  const intensity = spec.intensity ?? [...FOCUS_PLANS, ...ADDITIONAL_PLANS]
+    .find((plan) => plan.id === session.planId)?.guidedEndurance?.intensity
   const [now, setNow] = useState(() => Date.now())
   const elapsed = elapsedSeconds(flow.clock, now)
   const main = mainPhaseAt(spec, elapsed)
@@ -81,6 +84,7 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
       <h2>Aufwärmen</h2>
       <p className="helper-text">Beginne locker. Orientierung: {formatTimer(spec.warmupSeconds)}.
         Beende das Aufwärmen, sobald du dich bereit fühlst. Die Dauer wird nicht gespeichert.</p>
+      {intensity?.warmup && <p className="endurance-intensity">Richtwert: {intensity.warmup}</p>}
       <output className="endurance-clock">{formatTimer(elapsed)}</output>
       <div className="endurance-actions">
         {!flow.clock && <button type="button" className="primary-button"
@@ -100,6 +104,12 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
         ? `${spec.repeat} Belastungsphasen à ${formatTimer(spec.workSeconds)} mit ${formatTimer(spec.recoverySeconds)} lockerer Bewegung dazwischen.`
         : `${formatTimer(spec.mainSeconds)} gleichmäßige Bewegung.`}
         {' '}Die App zeigt dir jede Phase und beendet die Hauptübung nach {formatTimer(mainDurationSeconds(spec))} automatisch.</p>
+      {intensity?.work && <div className="endurance-intensity-guide">
+        <p><strong>Belastung:</strong> {intensity.work}</p>
+        {spec.kind === 'interval' && intensity.recovery
+          && <p><strong>Erholung:</strong> {intensity.recovery}</p>}
+        <small>Startbereiche: Tempo oder Widerstand an dein Belastungsgefühl anpassen.</small>
+      </div>}
       <button type="button" className="primary-button"
         onClick={() => moveTo('main', freshClock())}>{mainName} starten</button>
     </>}
@@ -120,6 +130,8 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
         {spec.kind === 'interval' && <p className="endurance-phase-count">
           {main.kind === 'recovery' ? 'Erholung nach' : 'Belastung'} {main.interval} von {spec.repeat}
         </p>}
+        {intensity?.[main.kind === 'recovery' ? 'recovery' : 'work']
+          && <p className="endurance-intensity">Richtwert: {intensity[main.kind === 'recovery' ? 'recovery' : 'work']}</p>}
         <p className="helper-text">Noch in dieser Phase</p>
         <output className={`endurance-clock endurance-countdown${main.kind === 'recovery'
           ? ' endurance-rest-clock' : ''}`}>{formatTimer(Math.ceil(main.remaining))}</output>
@@ -149,6 +161,7 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
       <h2>Auslaufen</h2>
       <p className="helper-text">Bewege dich locker weiter. Orientierung: {formatTimer(spec.cooldownSeconds)}.
         Du kannst das Auslaufen selbst beenden; die Dauer wird nicht gespeichert.</p>
+      {intensity?.cooldown && <p className="endurance-intensity">Richtwert: {intensity.cooldown}</p>}
       <output className="endurance-clock">{formatTimer(elapsed)}</output>
       <div className="endurance-actions">
         {flow.clock?.running ? <button type="button" className="secondary-button"

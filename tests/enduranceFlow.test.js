@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { ADDITIONAL_PLANS, FOCUS_PLANS } from '../src/volleyballTraining.js'
-import { guidedEnduranceSpec, mainDurationSeconds, mainPhaseAt,
+import { guidedEnduranceSpec, guidedMainReference, mainDurationSeconds, mainPhaseAt,
   canConfirmMain, confirmGuidedMain } from '../src/enduranceFlow.js'
 import { createLoggedExercise } from '../src/trainingModel.js'
 import { isAthleteData } from '../src/syncPolicy.js'
@@ -13,10 +13,19 @@ test('guided endurance plans have a valid main exercise and a fixed protocol', (
   for (const plan of guidedPlans) {
     const spec = guidedEnduranceSpec(plan)
     assert.ok(spec, plan.id)
-    assert.equal(plan.exercises[1].libraryId, spec.mainLibraryId)
+    assert.equal(plan.exercises.length, 1)
+    assert.equal(guidedMainReference(plan).libraryId, spec.mainLibraryId)
     assert.ok(mainDurationSeconds(spec) > 0)
+    assert.ok(spec.intensity?.warmup)
+    assert.ok(spec.intensity?.work)
+    assert.ok(spec.intensity?.cooldown)
+    if (spec.kind === 'interval') assert.ok(spec.intensity.recovery)
   }
   assert.equal(guidedEnduranceSpec({ ...guidedPlans[0], exercises: [] }), null)
+  const legacy = guidedPlans[0]
+  assert.ok(guidedEnduranceSpec({ ...legacy, exercises: [
+    { libraryId: 'old:warmup' }, legacy.exercises[0], { libraryId: 'old:cooldown' },
+  ] }))
 })
 
 test('interval phases switch at their exact boundaries and omit the last recovery', () => {
@@ -39,7 +48,7 @@ test('interval phases switch at their exact boundaries and omit the last recover
 test('the full main workout is recorded once, only after time and user confirmation', () => {
   const plan = guidedPlans.find((item) => item.id === 'gym:plan-bike-interval-intermediate')
   const spec = guidedEnduranceSpec(plan)
-  const main = createLoggedExercise({ ...plan.exercises[1], id: spec.mainLibraryId })
+  const main = createLoggedExercise({ ...plan.exercises[0], id: spec.mainLibraryId })
   const start = 100000
   const session = { id: 'guided', date: '2026-10-11', category: 'Ausdauer',
     planId: plan.id, planName: plan.name, status: 'ongoing',
@@ -74,7 +83,7 @@ test('steady endurance also completes as one main workout without warmup or cool
   const spec = guidedEnduranceSpec(plan)
   assert.equal(mainPhaseAt(spec, 100).remaining, 1400)
   assert.equal(mainPhaseAt(spec, 1500).kind, 'done')
-  const exercise = createLoggedExercise({ ...plan.exercises[1], id: spec.mainLibraryId })
+  const exercise = createLoggedExercise({ ...plan.exercises[0], id: spec.mainLibraryId })
   const session = { id: 'steady', date: '2026-10-11', category: 'Ausdauer',
     exercises: [exercise], enduranceFlow: { spec, phase: 'main', mainConfirmed: false,
       clock: { startedAt: 0, elapsedMs: 0, running: true } } }

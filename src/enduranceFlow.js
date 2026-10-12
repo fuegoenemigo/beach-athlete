@@ -4,13 +4,20 @@ const positiveInteger = (value) => Number.isInteger(value) && value > 0
 
 export function guidedEnduranceSpec(plan) {
   const spec = plan?.guidedEndurance
-  if (!spec || plan.category !== 'Ausdauer' || plan.exercises?.length !== 3
-    || plan.exercises[1].libraryId !== spec.mainLibraryId
+  if (!spec || plan.category !== 'Ausdauer'
+    || ![1, 3].includes(plan.exercises?.length)
+    || guidedMainReference(plan)?.libraryId !== spec.mainLibraryId
     || !positiveInteger(spec.warmupSeconds) || !positiveInteger(spec.cooldownSeconds)) return null
   if (spec.kind === 'steady' && positiveInteger(spec.mainSeconds)) return spec
   if (spec.kind === 'interval' && positiveInteger(spec.repeat)
     && positiveInteger(spec.workSeconds) && positiveInteger(spec.recoverySeconds)) return spec
   return null
+}
+
+export function guidedMainReference(plan) {
+  if (!plan?.guidedEndurance) return null
+  return plan.exercises?.find((exercise) =>
+    exercise.libraryId === plan.guidedEndurance.mainLibraryId) ?? null
 }
 
 export function mainDurationSeconds(spec) {

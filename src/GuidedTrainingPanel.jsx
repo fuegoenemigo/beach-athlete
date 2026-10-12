@@ -147,8 +147,8 @@ export default function GuidedTrainingPanel({
         {!session.exercises.length && planOptions.length > 0 && <details className="training-custom">
           <summary>Trainingsvorlage verwenden</summary>
           {planOptions.map((plan) => <button type="button" className="training-choice" key={plan.id}
-            onClick={() => onApplyPlan(plan)}>{plan.name} · {plan.exercises.length}
-            {' '}{plan.guidedEndurance ? 'Phasen' : 'Übungen'}</button>)}
+            onClick={() => onApplyPlan(plan)}>{plan.name} · {plan.guidedEndurance
+              ? '1 Übung · 3 Phasen' : `${plan.exercises.length} Übungen`}</button>)}
         </details>}
         {needsGroup && <>
           <h3>{exerciseCategory === 'Krafttraining' ? 'Muskelgruppe wählen' : 'Schwerpunkt wählen'}</h3>

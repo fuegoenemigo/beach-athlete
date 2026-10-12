@@ -34,7 +34,7 @@ test('each set has its own timer and measured time still needs confirmation', ()
 
 test('interval plans carry their work and rest prescription into logged exercises', () => {
   const plan = ADDITIONAL_PLANS.find((item) => item.id === 'gym:plan-treadmill-interval-beginner')
-  const reference = plan.exercises[1]
+  const reference = plan.exercises[0]
   const logged = createLoggedExercise(reference)
   assert.equal(logged.targetDurationSeconds, 60)
   assert.equal(logged.intervalCount, 6)

@@ -353,6 +353,9 @@
   background: #1b251c;
 }
 
+.training-plan-preview > li small { display: block; margin-top: 5px; color: #c1d0c3; line-height: 1.4; }
+.training-guided-exercise { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+
 .training-exercise-main { display: grid; gap: 4px; align-self: center; }
 .training-exercise-main small { color: #c1d0c3; line-height: 1.4; }
 .training-exercise-heading { align-items: center; }
@@ -426,6 +429,10 @@
 .endurance-rest-clock { color: #a9cfff; border-color: #6d86a6; background: #192637; }
 .endurance-recovery { color: #a9cfff; }
 .endurance-phase-count { margin: 0; color: var(--green); font-weight: 700; }
+.endurance-intensity, .endurance-intensity-guide { padding: 11px 13px; border: 1px solid #506452;
+  border-radius: 11px; color: #d8e3d7; background: #203023; line-height: 1.45; }
+.endurance-intensity-guide p { margin: 0 0 6px; }
+.endurance-intensity-guide small { color: #c1d0c3; }
 .endurance-progress { width: 100%; height: 12px; accent-color: #80bd6a; }
 .endurance-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 .endurance-actions button { flex: 1 1 135px; margin: 0; }

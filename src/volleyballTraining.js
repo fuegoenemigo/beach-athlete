@@ -262,13 +262,14 @@ export const FOCUS_PLANS = [
     id: 'gym:plan-endurance-base', name: 'Ausdauer aufbauen · Zügiges Gehen',
     category: 'Ausdauer',
     guidedEndurance: { kind: 'steady', warmupSeconds: 300, mainSeconds: 1500,
-      cooldownSeconds: 300, mainLibraryId: 'gym:walking' },
+      cooldownSeconds: 300, mainLibraryId: 'gym:walking',
+      intensity: { warmup: 'Locker gehen · Belastung 2–3/10',
+        work: 'Zügig gehen · Belastung 5–6/10; Gespräch möglich',
+        cooldown: 'Langsam gehen · Belastung 2–3/10' } },
     evidence: { label: 'WHO · Empfehlungen zur Ausdaueraktivität',
       url: 'https://www.who.int/europe/news-room/fact-sheets/item/physical-activity' },
     description: 'Geführter Einstiegstag: etwa 5 Min. locker gehen, 25 Min. zügig und gesprächsfähig gehen, danach etwa 5 Min. auslaufen. Aufwärmen und Auslaufen kannst du selbst beenden; die Hauptübung endet nach 25 Min. Als Ausgangspunkt 2× pro Woche.',
-    exercises: [ref('gym:walking-warmup', 'Etwa 5 Min. locker gehen; frei beenden'),
-      ref('gym:walking', '25 Min. zügig gehen; geführte Hauptübung'),
-      ref('gym:walking-cooldown', 'Etwa 5 Min. locker gehen; frei beenden')],
+    exercises: [ref('gym:walking', '25 Min. zügig gehen; Aufwärmen und Auslaufen frei beenden')],
   },
   {
     id: 'gym:plan-jump-basics', name: 'Sprungkraft aufbauen · Explosive Kniebeugen',
@@ -320,25 +321,63 @@ const agilitySource = {
   url: 'https://pubmed.ncbi.nlm.nih.gov/28149427/',
 }
 
+// Gerätewerte sind beispielhafte Startbereiche. Das persönliche Belastungsgefühl
+// ist maßgeblich; insbesondere beim Ergometer sagt km/h wenig über den Widerstand.
+const intervalIntensity = {
+  'treadmill-interval-beginner': {
+    warmup: 'Lockeres Gehen · etwa 4–5,5 km/h · Belastung 2–3/10',
+    work: 'Kontrolliert zügig laufen · etwa 7–9 km/h · Belastung 6–7/10; kein Maximalsprint',
+    recovery: 'Locker gehen · etwa 4–5,5 km/h · Belastung 2–3/10',
+    cooldown: 'Langsam gehen · etwa 3,5–5 km/h · Belastung 2–3/10',
+  },
+  'treadmill-interval-intermediate': {
+    warmup: 'Locker gehen oder traben · etwa 4,5–7 km/h · Belastung 2–3/10',
+    work: 'Zügig laufen · etwa 8,5–11,5 km/h · Belastung 7–8/10',
+    recovery: 'Gehen oder sehr locker traben · etwa 4,5–6,5 km/h · Belastung 2–3/10',
+    cooldown: 'Langsam gehen · etwa 3,5–5 km/h · Belastung 2–3/10',
+  },
+  'treadmill-interval-advanced': {
+    warmup: 'Locker gehen oder traben · etwa 5–8 km/h · Belastung 2–3/10',
+    work: 'Kräftig, aber gleichmäßig laufen · etwa 10–13,5 km/h · Belastung 8–9/10; kein Sprint',
+    recovery: 'Sehr locker traben oder gehen · etwa 5–7 km/h · Belastung 2–3/10',
+    cooldown: 'Langsam gehen · etwa 3,5–5 km/h · Belastung 2–3/10',
+  },
+  'bike-interval-beginner': {
+    warmup: 'Locker einrollen · etwa 60–75 U/min · Belastung 2–3/10',
+    work: 'Etwa 75–90 U/min · Widerstand für Belastung 6–7/10 einstellen; kein Maximalsprint',
+    recovery: 'Widerstand senken · etwa 60–75 U/min · Belastung 2–3/10',
+    cooldown: 'Locker ausrollen · etwa 60–75 U/min · Belastung 2–3/10',
+  },
+  'bike-interval-intermediate': {
+    warmup: 'Locker einrollen · etwa 65–80 U/min · Belastung 2–3/10',
+    work: 'Etwa 80–95 U/min · Widerstand für Belastung 7–8/10 einstellen',
+    recovery: 'Widerstand senken · etwa 60–75 U/min · Belastung 2–3/10',
+    cooldown: 'Locker ausrollen · etwa 60–75 U/min · Belastung 2–3/10',
+  },
+  'bike-interval-advanced': {
+    warmup: 'Locker einrollen · etwa 65–80 U/min · Belastung 2–3/10',
+    work: 'Etwa 85–100 U/min · Widerstand für Belastung 8–9/10 einstellen; kein Maximalsprint',
+    recovery: 'Widerstand senken · etwa 65–80 U/min · Belastung 2–3/10',
+    cooldown: 'Locker ausrollen · etwa 60–75 U/min · Belastung 2–3/10',
+  },
+}
+
 const intervalPlan = (id, name, exerciseId, count, workMinutes, restMinutes, level) => {
   const bike = exerciseId.startsWith('gym:bike-')
-  const warmup = bike ? 'gym:bike-warmup' : 'gym:treadmill-warmup'
-  const cooldown = bike ? 'gym:bike-cooldown' : 'gym:treadmill-cooldown'
   const totalMinutes = 15 + count * workMinutes + (count - 1) * restMinutes
+  const intensity = intervalIntensity[id]
   return {
     id: `gym:plan-${id}`, name, category: 'Ausdauer',
     guidedEndurance: { kind: 'interval', warmupSeconds: 600,
       workSeconds: workMinutes * 60, recoverySeconds: restMinutes * 60,
-      repeat: count, cooldownSeconds: 300, mainLibraryId: exerciseId },
+      repeat: count, cooldownSeconds: 300, mainLibraryId: exerciseId, intensity },
     description: `Geführter Trainingstag von etwa ${totalMinutes} Min.: etwa 10 Min. locker aufwärmen, ${count} × ${workMinutes} Min. Belastung mit ${restMinutes} Min. sehr lockerer aktiver Pause dazwischen, anschließend etwa 5 Min. auslaufen. Aufwärmen und Auslaufen kannst du selbst beenden; die Hauptübung wechselt die Phasen automatisch. ${level} Als Orientierung über 6–8 Wochen: 1 Intervalltag und 1–2 lockere Ausdauertage pro Woche, angepasst an Beach-/Hallentraining und Erholung.${workMinutes < 4 ? ' Diese Stufe ist eine vorsichtige Progression, kein exakt geprüftes Studienprotokoll.' : ''}`,
     evidence: workMinutes < 4 ? intervalSource
       : bike ? cyclingFourByFourSource : fourByFourSource,
     weeklyEvidence: enduranceMixSource,
-    exercises: [ref(warmup, 'Etwa 10 Min. locker; frei beenden'),
-      ref(exerciseId, `${count} × ${workMinutes} Min. Belastung mit ${restMinutes} Min. lockerer Pause; die App führt durch alle Phasen.`,
+    exercises: [ref(exerciseId, `${count} × ${workMinutes} Min. Belastung mit ${restMinutes} Min. lockerer Pause; Aufwärmen und Auslaufen frei beenden.`,
         { targetDurationSeconds: workMinutes * 60, intervalCount: count,
-          intervalRestSeconds: restMinutes * 60 }),
-      ref(cooldown, 'Etwa 5 Min. locker; frei beenden')],
+          intervalRestSeconds: restMinutes * 60 })],
   }
 }
 
@@ -359,21 +398,23 @@ export const ADDITIONAL_PLANS = [
     id: 'gym:plan-treadmill-base', name: 'Ausdauer-Grundlage · Laufband',
     category: 'Ausdauer', evidence: aerobicSource, weeklyEvidence: enduranceMixSource,
     guidedEndurance: { kind: 'steady', warmupSeconds: 600, mainSeconds: 1500,
-      cooldownSeconds: 300, mainLibraryId: 'gym:treadmill' },
+      cooldownSeconds: 300, mainLibraryId: 'gym:treadmill',
+      intensity: { warmup: 'Lockeres Gehen · etwa 4–5,5 km/h · Belastung 2–3/10',
+        work: 'Gehen oder lockeres Laufen · etwa 5–8 km/h · Belastung 5–6/10; Gespräch möglich',
+        cooldown: 'Langsames Gehen · etwa 3,5–5 km/h · Belastung 2–3/10' } },
     description: 'Geführter lockerer Ausdauertag: etwa 10 Min. locker beginnen, 25 Min. gesprächsfähig laufen oder gehen, anschließend etwa 5 Min. auslaufen. Aufwärmen und Auslaufen kannst du selbst beenden; die Hauptübung endet nach 25 Min. 1–2× pro Woche als Ergänzung zu einem Intervalltag.',
-    exercises: [ref('gym:treadmill-warmup', 'Etwa 10 Min. locker; frei beenden'),
-      ref('gym:treadmill', '25 Min. gleichmäßig; geführte Hauptübung'),
-      ref('gym:treadmill-cooldown', 'Etwa 5 Min. locker; frei beenden')],
+    exercises: [ref('gym:treadmill', '25 Min. gleichmäßig; Aufwärmen und Auslaufen frei beenden')],
   },
   {
     id: 'gym:plan-bike-base', name: 'Ausdauer-Grundlage · Fahrrad',
     category: 'Ausdauer', evidence: aerobicSource, weeklyEvidence: enduranceMixSource,
     guidedEndurance: { kind: 'steady', warmupSeconds: 600, mainSeconds: 1800,
-      cooldownSeconds: 300, mainLibraryId: 'volleyball:bike' },
+      cooldownSeconds: 300, mainLibraryId: 'volleyball:bike',
+      intensity: { warmup: 'Locker einrollen · etwa 60–75 U/min · Belastung 2–3/10',
+        work: 'Gleichmäßig fahren · etwa 75–90 U/min · Belastung 5–6/10; Widerstand passend einstellen',
+        cooldown: 'Locker ausrollen · etwa 60–75 U/min · Belastung 2–3/10' } },
     description: 'Geführter lockerer Ausdauertag: etwa 10 Min. locker einrollen, 30 Min. gleichmäßig und gesprächsfähig fahren, anschließend etwa 5 Min. ausrollen. Aufwärmen und Auslaufen kannst du selbst beenden; die Hauptübung endet nach 30 Min. Für Distanzvergleiche dasselbe Ergometer nutzen.',
-    exercises: [ref('gym:bike-warmup', 'Etwa 10 Min. locker; frei beenden'),
-      ref('bike', '30 Min. gleichmäßig; geführte Hauptübung'),
-      ref('gym:bike-cooldown', 'Etwa 5 Min. locker; frei beenden')],
+    exercises: [ref('bike', '30 Min. gleichmäßig; Aufwärmen und Ausrollen frei beenden')],
   },
   {
     id: 'gym:plan-core-beginner', name: 'Core · Stabiler Einstieg',

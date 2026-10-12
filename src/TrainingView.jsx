@@ -17,8 +17,8 @@ import {
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
 } from './trainingModel.js'
-import { timerStorageKey } from './trainingTimer.js'
-import { guidedEnduranceSpec, mainDurationSeconds,
+import { formatTimer, timerStorageKey } from './trainingTimer.js'
+import { guidedEnduranceSpec, guidedMainReference, mainDurationSeconds,
   confirmGuidedMain } from './enduranceFlow.js'
 import './TrainingView.css'
 
@@ -71,6 +71,35 @@ function SportTrainingEditor({ session, onSave, onClose }) {
       <button type="button" className="secondary-button" onClick={onClose}>Schließen</button>
     </div>
   </section>
+}
+
+function GuidedPlanPreview({ plan }) {
+  const spec = guidedEnduranceSpec(plan)
+  const main = guidedMainReference(plan)
+  const phases = [
+    ['Aufwärmen', spec.warmupSeconds, spec.intensity?.warmup],
+    [spec.kind === 'interval' ? 'Intervalltraining' : 'Hauptübung',
+      mainDurationSeconds(spec), spec.intensity?.work],
+    ['Auslaufen', spec.cooldownSeconds, spec.intensity?.cooldown],
+  ]
+  return <>
+    <h3 className="training-preview-heading">Eine Übung · drei Phasen</h3>
+    <div className="training-guided-exercise"><strong>{main.name}</strong>
+      <ExerciseInfo exercise={main} /></div>
+    <ol className="training-plan-preview">
+      {phases.map(([name, duration, intensity], index) => <li key={name}>
+        <strong>{index + 1}. {name}</strong>
+        <small>{index === 1 && spec.kind === 'interval'
+          ? `${spec.repeat} × ${formatTimer(spec.workSeconds)} Belastung · ${formatTimer(spec.recoverySeconds)} lockere Bewegung dazwischen · gesamt ${formatTimer(duration)}`
+          : `${formatTimer(duration)} ${index === 1 ? 'fest' : 'Orientierung · frei beenden'}`}</small>
+        {intensity && <small>{intensity}</small>}
+        {index === 1 && spec.kind === 'interval' && spec.intensity?.recovery
+          && <small>Erholung: {spec.intensity.recovery}</small>}
+      </li>)}
+    </ol>
+    {spec.intensity && <p className="helper-text">Die Gerätewerte sind Startbereiche, keine Pflichtwerte.
+      Passe Tempo oder Widerstand an dein Belastungsgefühl an.</p>}
+  </>
 }
 
 function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, onDelete }) {
@@ -199,7 +228,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   }
   function exercisesFromPlan(plan) {
     const guided = guidedEnduranceSpec(plan)
-    const references = guided ? [plan.exercises[1]] : plan.exercises
+    const references = guided ? [guidedMainReference(plan)] : plan.exercises
     return references.map((reference, index) => {
       const item = visibleLibrary.find((candidate) => exerciseIdentity(candidate) === reference.libraryId)
         ?? visibleLibrary.find((candidate) => candidate.name === reference.name
@@ -664,9 +693,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         {pendingPlan.weeklyEvidence && <a className="training-plan-evidence" href={pendingPlan.weeklyEvidence.url}
           target="_blank" rel="noopener noreferrer">Wochenrhythmus: {pendingPlan.weeklyEvidence.label} ↗</a>}
         <p className="history-meta">{(pendingPlan.categories ?? [pendingPlan.category]).join(' + ')}
-          {' · '}{pendingPlan.exercises.length} {guidedEnduranceSpec(pendingPlan) ? 'Phasen' : 'Übungen'}</p>
-        <h3 className="training-preview-heading">
-          {guidedEnduranceSpec(pendingPlan) ? 'Phasen dieser Einheit' : 'Übungen in diesem Plan'}</h3>
+          {' · '}{guidedEnduranceSpec(pendingPlan) ? '1 Übung · 3 Phasen'
+            : `${pendingPlan.exercises.length} Übungen`}</p>
+        {guidedEnduranceSpec(pendingPlan) ? <GuidedPlanPreview plan={pendingPlan} /> : <>
+        <h3 className="training-preview-heading">Übungen in diesem Plan</h3>
         <ol className="training-plan-preview">
           {pendingPlan.exercises.map((item, index) => <li className="training-exercise-row"
             key={`${item.libraryId}-${index}`}>
@@ -674,7 +704,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
               {item.target && <small>{item.target}</small>}</span>
             <ExerciseInfo exercise={item} />
           </li>)}
-        </ol>
+        </ol></>}
         <button type="button" className="text-button" onClick={() => setPendingPlan(null)}>
           Andere Vorlage oder freie Einheit wählen
         </button>
@@ -699,7 +729,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
             else setPendingPlan(plan)
           }}>
           <span><strong>{plan.name}</strong><small>{(plan.categories ?? [plan.category]).join(' + ')}
-            {' · '}{plan.exercises.length} Übungen</small></span><span aria-hidden="true">›</span>
+            {' · '}{guidedEnduranceSpec(plan) ? '1 Übung · 3 Phasen'
+              : `${plan.exercises.length} Übungen`}</small></span><span aria-hidden="true">›</span>
         </button>) : <p className="helper-text">Keine passende Vorlage gefunden. Du kannst ein freies Training starten.</p>}
       </div>
       </>}
@@ -780,7 +811,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
             {expandedPlanCategory === category && <div className="training-plan-group-content">
               {plans.map((plan) => <div className="training-plan-row" key={plan.id}>
                 <div><strong>{plan.name}</strong>
-                  <span className="history-meta">{(plan.categories ?? [plan.category]).join(' + ')} · {plan.exercises.length} {guidedEnduranceSpec(plan) ? 'Phasen' : 'Übungen'}{!isBuiltInPlan(plan) ? ' · Eigene Vorlage' : ''}</span>
+                  <span className="history-meta">{(plan.categories ?? [plan.category]).join(' + ')} · {guidedEnduranceSpec(plan) ? '1 Übung · 3 Phasen' : `${plan.exercises.length} Übungen`}{!isBuiltInPlan(plan) ? ' · Eigene Vorlage' : ''}</span>
                   {plan.description && <span className="training-plan-description">{plan.description}</span>}
                   {plan.evidence && <a className="training-plan-evidence" href={plan.evidence.url}
                     target="_blank" rel="noopener noreferrer">Trainingsgrundlage: {plan.evidence.label} ↗</a>}</div>
