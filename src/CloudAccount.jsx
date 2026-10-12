@@ -18,6 +18,9 @@ const AUTH_ERRORS = {
 
 const STATUS = {
   loading: 'Cloud-Daten werden geprüft …',
+  checkingAccess: 'Dein Testplatz wird geprüft …',
+  limitReached: 'Die fünf Testplätze sind bereits vergeben. Bitte wende dich an Marc.',
+  accessError: 'Dein Zugang konnte nicht geprüft werden. Bitte versuche es erneut.',
   pending: 'Änderungen warten auf die Cloud-Speicherung …',
   saving: 'Änderungen werden in der Cloud gespeichert …',
   ready: 'Mit der Cloud synchronisiert.',
@@ -83,7 +86,7 @@ export default function CloudAccount({ state, onResolve, onRetry, onExport }) {
       {state.status === 'signedOut' ? (
         <>
           <p>Mit deinem persönlichen Konto bleiben Training und Spieltage auch auf einem neuen Gerät verfügbar.</p>
-          <p>Private Testversion: Deine Einträge werden auf diesem Gerät gespeichert und nach der Anmeldung mit deinem eigenen Cloud-Konto synchronisiert. Sichere wichtige Einträge gelegentlich über „Daten exportieren“.</p>
+          <p>Private Testversion: Nach der Anmeldung gehören deine Einträge zu deinem Konto und werden mit der Cloud synchronisiert. Sichere wichtige Einträge gelegentlich über „Daten exportieren“.</p>
           <form onSubmit={(event) => { event.preventDefault(); authenticate('signIn') }}>
             <label className="field-label" htmlFor="cloud-email">E-Mail-Adresse</label>
             <input id="cloud-email" className="field" type="email" autoComplete="email"
@@ -114,7 +117,8 @@ export default function CloudAccount({ state, onResolve, onRetry, onExport }) {
               </div>
             </div>
           )}
-          {(state.status === 'offline' || state.status === 'error') && (
+          {(state.status === 'offline' || state.status === 'error'
+            || state.status === 'limitReached' || state.status === 'accessError') && (
             <button className="secondary-button" type="button" onClick={onRetry}>Erneut versuchen</button>
           )}
           <button className="text-button" type="button" onClick={logOut}>

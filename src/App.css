@@ -596,6 +596,16 @@ input[type="date"] {
 .cloud-account p { line-height: 1.5; }
 .cloud-account form { display: grid; gap: 8px; }
 .cloud-account .field { width: 100%; }
+.access-gate-card {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #1a281c, var(--panel) 70%);
+}
+.access-gate-card h2 { margin: 0 0 8px; }
+.access-gate-card > p:not(.eyebrow) { color: var(--muted); line-height: 1.55; }
+.access-gate-card .cloud-account { margin: 22px 0 0; }
+.app-access-gate .main-navigation button:disabled { cursor: default; opacity: .42; }
 .cloud-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .cloud-actions button { min-height: 44px; }
 .cloud-conflict { border-top: 1px solid var(--border); margin-top: 16px; }

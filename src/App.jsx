@@ -5,6 +5,7 @@ import { installUpdate, isUpdateAvailable } from "./pwa.js";
 import { CloudSync } from "./cloudSync.js";
 import { isAthleteData } from "./syncPolicy.js";
 import DataSecurity from "./DataSecurity.jsx";
+import CloudAccount from "./CloudAccount.jsx";
 import TrainingView from "./TrainingView.jsx";
 import HomeView from "./HomeView.jsx";
 import VolleyballView from "./VolleyballView.jsx";
@@ -278,6 +279,38 @@ function App() {
     setActiveArea(type);
     setNotice("");
     window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  if (!cloudState.authorized) {
+    return (
+      <main className="app app-access-gate">
+        <header className="app-header">
+          <div>
+            <p className="eyebrow">DEIN TRAINING. DEINE ENTWICKLUNG.</p>
+            <h1>Beach Athlete</h1>
+          </div>
+          <span className="app-mark">BA</span>
+        </header>
+        <nav className="main-navigation" aria-label="Hauptnavigation">
+          <button type="button" className="home-navigation-button" disabled aria-label="Startseite">⌂</button>
+          <button type="button" className="secondary-button" disabled>🏖️ Beach</button>
+          <button type="button" className="secondary-button" disabled>🏟️ Halle</button>
+          <button type="button" className="secondary-button" disabled>💪 Training</button>
+        </nav>
+        <section className="access-gate-card">
+          <p className="eyebrow">PERSÖNLICHER ZUGANG</p>
+          <h2>Bitte melde dich an</h2>
+          <p>Nach der Anmeldung kannst du deine Trainings, Spieltage und Auswertungen nutzen. Für diese Testversion stehen insgesamt fünf Plätze bereit.</p>
+          <CloudAccount state={cloudState} onRetry={() => cloudRef.current?.retry()} />
+          {storageDamaged && (
+            <button type="button" className="secondary-button" onClick={exportRawData}>
+              Beschädigte lokale Rohdaten sichern
+            </button>
+          )}
+        </section>
+        <footer className="app-footer">BEACH ATHLETE <span>•</span> DEIN WEG, DEINE DATEN</footer>
+      </main>
+    );
   }
 
   return (

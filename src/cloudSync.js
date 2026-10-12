@@ -1,10 +1,12 @@
 import { onAuthStateChanged } from 'firebase/auth'
 import {
+  arrayUnion,
   doc,
   getDocFromServer,
   onSnapshot,
   runTransaction,
   serverTimestamp,
+  updateDoc,
 } from 'firebase/firestore'
 import { firebaseAuth, firestore } from './firebase.js'
 import { chooseInitialSync, dataHash, isAthleteData, isRemoteData, localDataForAccount } from './syncPolicy.js'
@@ -12,6 +14,7 @@ import { chooseInitialSync, dataHash, isAthleteData, isRemoteData, localDataForA
 const META_PREFIX = 'beach-athlete-cloud-meta-'
 const LOCAL_OWNER_KEY = 'beach-athlete-local-owner'
 const ACCOUNT_DATA_PREFIX = 'beach-athlete-local-data-'
+const ACCESS_PREFIX = 'beach-athlete-access-'
 const MAX_DOCUMENT_BYTES = 900_000
 
 function readMeta(uid) {
@@ -45,6 +48,7 @@ export class CloudSync {
     this.unsubDocument = null
     this.deferredSnapshot = null
     this.active = false
+    this.authorized = false
     this.onOnline = () => this.retry()
     this.onVisible = () => {
       if (document.visibilityState === 'visible') this.retry()
@@ -53,7 +57,7 @@ export class CloudSync {
 
   publish(status, message = '') {
     this.status = status
-    this.onState({ status, message, email: this.user?.email || '', conflict: Boolean(this.conflict) })
+    this.onState({ status, message, email: this.user?.email || '', conflict: Boolean(this.conflict), authorized: this.authorized })
   }
 
   updateData(data) {
@@ -100,12 +104,16 @@ export class CloudSync {
     this.deferredSnapshot = null
     this.writing = false
     this.user = user
+    this.authorized = false
     this.meta = user ? readMeta(user.uid) : null
     this.conflict = null
     if (!user) {
       this.publish('signedOut')
       return
     }
+    this.publish('checkingAccess')
+    const hasAccess = await this.checkAccess(generation)
+    if (!hasAccess || generation !== this.generation) return
     try {
       const storedUid = localStorage.getItem(LOCAL_OWNER_KEY)
       let savedData = null
@@ -130,6 +138,49 @@ export class CloudSync {
     this.reference = doc(firestore, 'users', user.uid, 'data', 'current')
     this.publish('loading')
     await this.reconcile(generation)
+  }
+
+  async checkAccess(generation) {
+    const uid = this.user.uid
+    const registry = doc(firestore, 'config', 'betaAccess')
+    try {
+      const snapshot = await getDocFromServer(registry)
+      if (generation !== this.generation) return false
+      if (!snapshot.exists()) throw new Error('Access registry missing')
+      const { members, limit } = snapshot.data()
+      if (!Array.isArray(members) || !Number.isInteger(limit)) throw new Error('Invalid access registry')
+      if (!members.includes(uid)) {
+        if (members.length >= limit) {
+          this.publish('limitReached', 'Die fünf Testplätze sind bereits vergeben. Bitte wende dich an Marc.')
+          return false
+        }
+        try {
+          await updateDoc(registry, { members: arrayUnion(uid) })
+        } catch (error) {
+          if (generation !== this.generation) return false
+          const latest = await getDocFromServer(registry)
+          if (latest.exists() && latest.data().members?.length >= latest.data().limit) {
+            this.publish('limitReached', 'Die fünf Testplätze sind bereits vergeben. Bitte wende dich an Marc.')
+            return false
+          }
+          throw error
+        }
+      }
+      if (generation !== this.generation) return false
+      this.authorized = true
+      localStorage.setItem(`${ACCESS_PREFIX}${uid}`, '1')
+      return true
+    } catch (error) {
+      if (generation !== this.generation) return false
+      if ((error.code === 'unavailable' || !navigator.onLine)
+        && localStorage.getItem(`${ACCESS_PREFIX}${uid}`) === '1') {
+        this.authorized = true
+        this.publish('offline', 'Offline verfügbar. Änderungen werden später synchronisiert.')
+        return true
+      }
+      this.publish('accessError', 'Zugang konnte nicht geprüft werden. Bitte versuche es online erneut.')
+      return false
+    }
   }
 
   async reconcile(generation = this.generation) {
@@ -313,6 +364,10 @@ export class CloudSync {
   retry() {
     if (!this.user || this.status === 'conflict' || this.writing) return
     this.clearTimer()
+    if (!this.authorized) {
+      this.enterUser(this.user)
+      return
+    }
     this.publish('loading')
     this.reconcile()
   }
