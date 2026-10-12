@@ -54,8 +54,11 @@ function loadAthleteProfile() {
     const stored = JSON.parse(localStorage.getItem("beach-athlete-profile"));
     if (stored && typeof stored === "object" && !Array.isArray(stored)
       && (stored.bodyweightKg === "" || stored.bodyweightKg == null
-        || (Number.isFinite(Number(stored.bodyweightKg)) && Number(stored.bodyweightKg) > 0))) {
-      return { bodyweightKg: stored.bodyweightKg ?? "" };
+        || (Number.isFinite(Number(stored.bodyweightKg)) && Number(stored.bodyweightKg) > 0))
+      && (stored.heightCm === undefined || stored.heightCm === "" || stored.heightCm == null
+        || (Number.isFinite(Number(stored.heightCm)) && Number(stored.heightCm) > 0
+          && Number(stored.heightCm) <= 300))) {
+      return { ...stored, bodyweightKg: stored.bodyweightKg ?? "" };
     }
   } catch { /* Keep the training log available even if this optional field is damaged. */ }
   return { bodyweightKg: "" };

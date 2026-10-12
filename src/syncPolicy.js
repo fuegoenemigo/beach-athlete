@@ -52,7 +52,12 @@ export function isAthleteData(data) {
       && typeof data.athleteProfile === 'object' && !Array.isArray(data.athleteProfile)
       && (data.athleteProfile.bodyweightKg === '' || data.athleteProfile.bodyweightKg == null
         || (Number.isFinite(Number(data.athleteProfile.bodyweightKg))
-          && Number(data.athleteProfile.bodyweightKg) > 0))))
+          && Number(data.athleteProfile.bodyweightKg) > 0))
+      && (data.athleteProfile.heightCm === undefined || data.athleteProfile.heightCm === ''
+        || data.athleteProfile.heightCm == null
+        || (Number.isFinite(Number(data.athleteProfile.heightCm))
+          && Number(data.athleteProfile.heightCm) > 0
+          && Number(data.athleteProfile.heightCm) <= 300))))
     && (data.trainingPlans === undefined || (Array.isArray(data.trainingPlans)
       && data.trainingPlans.every(isTrainingPlan)))
     && data.sessions.every((item) => item && typeof item === 'object'
@@ -90,6 +95,7 @@ export function hasPersonalData(data, defaultLibrary) {
   return data.sessions.length > 0 || data.volleyballDays.length > 0
     || (data.trainingPlans?.length ?? 0) > 0
     || Boolean(data.athleteProfile?.bodyweightKg)
+    || Boolean(data.athleteProfile?.heightCm)
     || JSON.stringify(data.exerciseLibrary) !== JSON.stringify(defaultLibrary)
 }
 

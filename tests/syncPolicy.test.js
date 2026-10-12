@@ -14,6 +14,15 @@ test('first login uploads existing local training', () => {
   assert.equal(chooseInitialSync(withTraining(), null, null, 'user-1', library), 'upload')
 })
 
+test('height synchronizes without changing the hash of older profiles', () => {
+  const original = { ...empty(), athleteProfile: { bodyweightKg: '75' } }
+  const withHeight = { ...original, athleteProfile: { bodyweightKg: '75', heightCm: '181' } }
+  assert.equal(isAthleteData(withHeight), true)
+  assert.notEqual(dataHash(original), dataHash(withHeight))
+  assert.equal(isAthleteData({ ...original, athleteProfile: { heightCm: '400' } }), false)
+  assert.equal(isAthleteData(original), true)
+})
+
 test('new device downloads cloud data instead of uploading defaults', () => {
   assert.equal(chooseInitialSync(empty(), remote(withTraining()), null, 'user-1', library), 'download')
 })

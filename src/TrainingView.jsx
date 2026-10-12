@@ -378,8 +378,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     if (draft && !hasRequiredIntervalDuration(exercise, draft)) {
       setFlowMessage('Bitte gib die tatsächlich geschaffte Dauer dieses Intervalls ein.'); return
     }
-    const advanced = confirmAndAdvanceSet(entries, type,
-      exercise.loadMode === 'bodyweight' ? athleteProfile.bodyweightKg : '')
+    const advanced = confirmAndAdvanceSet(entries, type, athleteProfile.bodyweightKg)
     if (!advanced) {
       setFlowMessage('Bitte gib die Werte für diesen Satz ein.'); return
     }
