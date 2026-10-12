@@ -101,7 +101,7 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
     <details className="home-calendar-method">
       <summary>Wie entsteht die Wertung?</summary>
       <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Jede vergleichbare Übung zählt gleich viel zum Tagesdurchschnitt: bis −15 % starker Rückgang, unter −5 % Rückgang, von −5 % bis +5 % keine Änderung, über +5 % Verbesserung und ab +15 % starke Verbesserung.</p>
-      <p>Bei Kraftübungen zählt der beste geschätzte Kraftwert aus Gewicht und Wiederholungen. Bei Sprüngen zählt die gemessene Höhe, bei Core-Halteübungen die Dauer und bei Ausdauer mit gleicher Distanz das Tempo. Fehlt ein vergleichbarer Messwert, bleibt der Tag neutral.</p>
+      <p>Bei Kraftübungen wird der beste Satz der aktuellen Ausführung mit dem besten Satz der letzten Ausführung derselben Übungs-ID verglichen. Der Satzwert kombiniert Gewicht und Wiederholungen; gemeint ist nicht der persönliche Bestwert aller Zeiten. Bei Sprüngen zählt die gemessene Höhe, bei Core-Halteübungen die Dauer und bei Ausdauer mit gleicher Distanz das Tempo. Fehlt ein vergleichbarer Messwert, bleibt der Tag ohne Leistungswertung.</p>
     </details>
   </section>
     {selectedDate && <EntryWindow compact title={formatDate(selectedDate)} subtitle="DEIN KALENDERTAG"
