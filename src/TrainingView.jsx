@@ -5,7 +5,8 @@ import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
 import { isRecentDate } from './activityHistory.js'
-import { DEFAULT_EXERCISES, enrichExercise, searchTrainingPlans } from './volleyballTraining.js'
+import { DEFAULT_EXERCISES, enrichExercise, guidedCardioPlanForExercise,
+  searchTrainingPlans } from './volleyballTraining.js'
 import { groupedTrainingPlans, isBuiltInPlan, removeTrainingPlan,
   restoreBuiltInPlans, visibleTrainingPlans, plansForCategory } from './trainingPlanLibrary.js'
 import {
@@ -79,7 +80,7 @@ function GuidedPlanPreview({ plan }) {
   const main = guidedMainReference(plan)
   const phases = [
     ['Aufwärmen', spec.warmupSeconds, spec.intensity?.warmup],
-    [spec.kind === 'interval' ? 'Intervalltraining' : 'Hauptübung',
+    [spec.kind === 'interval' ? 'Intervalltraining' : spec.kind === 'sprint' ? 'Sprintserie' : 'Hauptübung',
       mainDurationSeconds(spec), spec.intensity?.work],
     ['Auslaufen', spec.cooldownSeconds, spec.intensity?.cooldown],
   ]
@@ -92,9 +93,11 @@ function GuidedPlanPreview({ plan }) {
         <strong>{index + 1}. {name}</strong>
         <small>{index === 1 && spec.kind === 'interval'
           ? `${spec.repeat} × ${formatTimer(spec.workSeconds)} Belastung · ${formatTimer(spec.recoverySeconds)} lockere Bewegung dazwischen · gesamt ${formatTimer(duration)}`
+          : index === 1 && spec.kind === 'sprint'
+            ? `${spec.series} Serien à ${spec.sprintsPerSeries} × ${spec.sprintMeters} m · ${spec.recoverySeconds} s Laufpause · ${formatTimer(spec.seriesRecoverySeconds)} Serienpause`
           : `${formatTimer(duration)} ${index === 1 ? 'fest' : 'Orientierung · frei beenden'}`}</small>
         {intensity && <small>{intensity}</small>}
-        {index === 1 && spec.kind === 'interval' && spec.intensity?.recovery
+        {index === 1 && ['interval', 'sprint'].includes(spec.kind) && spec.intensity?.recovery
           && <small>Erholung: {spec.intensity.recovery}</small>}
       </li>)}
     </ol>
@@ -309,6 +312,15 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setNotice('')
   }
   function addExercise(item) {
+    if (item.category === 'Ausdauer') {
+      if (activeSession.category !== 'Ausdauer' || activeSession.exercises.length) {
+        setFlowMessage('Starte diese Cardio-Übung als eigene geführte Ausdauereinheit. Schließe zuerst die aktuelle Einheit ab.'); return
+      }
+      const plan = visiblePlans.find((candidate) => guidedEnduranceSpec(candidate)
+        && candidate.guidedEndurance.mainLibraryId === item.id)
+        ?? guidedCardioPlanForExercise(item)
+      if (plan) { applyPlan(plan); return }
+    }
     const exercise = createLoggedExercise(item)
     exercise.entries = [{ ...createTrainingSet(exercise.type,
       exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
@@ -476,6 +488,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   function createCustomExercise() {
     const name = customName.trim()
     if (!name || !activeSession) { setFlowMessage('Bitte gib einen Übungsnamen ein.'); return }
+    if (selectedExerciseCategory === 'Ausdauer'
+      && (activeSession.category !== 'Ausdauer' || activeSession.exercises.length)) {
+      setFlowMessage('Starte eine neue Cardio-Übung als eigene geführte Ausdauereinheit.'); return
+    }
     if (visibleLibrary.some((item) => item.category === selectedExerciseCategory
       && item.name.toLocaleLowerCase('de-DE') === name.toLocaleLowerCase('de-DE'))) {
       setFlowMessage('Diese Übung gibt es in der Kategorie bereits.'); return
@@ -483,6 +499,12 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const item = { id: crypto.randomUUID(), name, category: selectedExerciseCategory,
       type: customType, muscleGroup: customGroup }
     setExerciseLibrary((previous) => [...previous, item])
+    if (item.category === 'Ausdauer') {
+      applyPlan(guidedCardioPlanForExercise(item))
+      setCustomName('')
+      setNotice('Cardio-Übung angelegt und geführte Einheit gestartet.')
+      return
+    }
     const exercise = createLoggedExercise(item)
     exercise.entries = [{ ...createTrainingSet(exercise.type), completed: false }]
     updateSession({ exercises: [...activeSession.exercises, exercise] })

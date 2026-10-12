@@ -30,6 +30,11 @@ function bestMetric(exercise) {
   }
   if (type === 'distance' || type === 'carry') {
     if (exercise.guidedEndurance) {
+      const sprint = entries.find((entry) => entry.guidedCompletion
+        && positive(entry.averageSprintSeconds) && positive(entry.completedSprints)
+        && entry.completedSprints === entry.prescribedSprints)
+      if (sprint) return { key: `guidedSprint:${exercise.guidedProtocolId}:${sprint.prescribedSprints}`,
+        value: 1 / Number(sprint.averageSprintSeconds) }
       const guided = entries.find((entry) => entry.guidedCompletion
         && positive(entry.distanceValue) && positive(entry.durationValue))
       if (!guided) return null

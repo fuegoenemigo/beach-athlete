@@ -3,8 +3,8 @@ import { elapsedSeconds } from './trainingTimer.js'
 const positiveInteger = (value) => Number.isInteger(value) && value > 0
 
 export function tracksDeviceDistance(spec) {
-  return spec?.mainLibraryId?.includes('treadmill')
-    || spec?.mainLibraryId?.includes('bike')
+  return ['treadmill', 'bike', 'elliptical', 'rowing-erg', 'ski-erg']
+    .some((device) => spec?.mainLibraryId?.includes(device))
 }
 
 function deviceReadingMeters(value, unit) {
@@ -38,7 +38,35 @@ export function guidedEnduranceSpec(plan) {
   if (spec.kind === 'steady' && positiveInteger(spec.mainSeconds)) return spec
   if (spec.kind === 'interval' && positiveInteger(spec.repeat)
     && positiveInteger(spec.workSeconds) && positiveInteger(spec.recoverySeconds)) return spec
+  if (spec.kind === 'sprint' && positiveInteger(spec.series)
+    && positiveInteger(spec.sprintsPerSeries) && positiveInteger(spec.sprintMeters)
+    && positiveInteger(spec.recoverySeconds)
+    && positiveInteger(spec.seriesRecoverySeconds)) return spec
   return null
+}
+
+export function prescribedSprints(spec) {
+  return spec.series * spec.sprintsPerSeries
+}
+
+export function sprintRecoverySeconds(spec, completedSprints) {
+  return completedSprints % spec.sprintsPerSeries === 0
+    ? spec.seriesRecoverySeconds : spec.recoverySeconds
+}
+
+export function finishGuidedSprint(flow, now) {
+  if (flow?.spec?.kind !== 'sprint' || flow.phase !== 'main'
+    || flow.sprintStage !== 'running' || !Number.isFinite(flow.sprintStartedAt)) return flow
+  const time = Math.max(0.1, Math.round((now - flow.sprintStartedAt) / 10) / 100)
+  const completedSprints = (flow.completedSprints ?? 0) + 1
+  const done = completedSprints >= prescribedSprints(flow.spec)
+  return { ...flow, completedSprints,
+    sprintTimesSeconds: [...(flow.sprintTimesSeconds ?? []), time],
+    sprintStartedAt: null,
+    sprintStage: done ? 'done' : 'recovery',
+    recoveryStartedAt: done ? null : now,
+    clock: done ? { ...flow.clock, running: false,
+      elapsedMs: elapsedSeconds(flow.clock, now) * 1000 } : flow.clock }
 }
 
 export function guidedMainReference(plan) {
@@ -48,12 +76,14 @@ export function guidedMainReference(plan) {
 }
 
 export function mainDurationSeconds(spec) {
+  if (spec.kind === 'sprint') return null
   return spec.kind === 'interval'
     ? spec.repeat * spec.workSeconds + (spec.repeat - 1) * spec.recoverySeconds
     : spec.mainSeconds
 }
 
 export function mainPhaseAt(spec, elapsed) {
+  if (spec.kind === 'sprint') return { kind: 'sprint', elapsed }
   const total = mainDurationSeconds(spec)
   const seconds = Math.max(0, elapsed)
   if (seconds >= total) return { kind: 'done', remaining: 0, elapsed: total, total,
@@ -78,7 +108,10 @@ export function mainPhaseAt(spec, elapsed) {
 
 export function canConfirmMain(flow, now) {
   return flow?.phase === 'main' && flow.clock
-    && elapsedSeconds(flow.clock, now) >= mainDurationSeconds(flow.spec)
+    && (flow.spec.kind === 'sprint'
+      ? flow.sprintStage === 'done'
+        && flow.sprintTimesSeconds?.length === prescribedSprints(flow.spec)
+      : elapsedSeconds(flow.clock, now) >= mainDurationSeconds(flow.spec))
     && !flow.mainConfirmed
 }
 
@@ -86,11 +119,20 @@ export function completedMainEntry(flow, now, id) {
   if (!canConfirmMain(flow, now)) return null
   const distanceMeters = deviceDistanceMeters(flow)
   if (flow.distanceTracking && distanceMeters == null) return null
+  const sprint = flow.spec.kind === 'sprint'
+  const durationSeconds = sprint ? elapsedSeconds(flow.clock, now) : mainDurationSeconds(flow.spec)
   return { id, completed: true, confirmedAt: new Date(now).toISOString(),
-    durationValue: String(mainDurationSeconds(flow.spec)), durationUnit: 's',
-    distanceValue: distanceMeters == null ? '' : String(distanceMeters / 1000),
-    distanceUnit: 'km',
+    durationValue: String(durationSeconds), durationUnit: 's',
+    distanceValue: sprint ? String(prescribedSprints(flow.spec) * flow.spec.sprintMeters)
+      : distanceMeters == null ? '' : String(distanceMeters / 1000),
+    distanceUnit: sprint ? 'm' : 'km',
     guidedCompletion: true,
+    ...(sprint ? { prescribedSprints: prescribedSprints(flow.spec),
+      completedSprints: prescribedSprints(flow.spec),
+      sprintMeters: flow.spec.sprintMeters,
+      sprintTimesSeconds: flow.sprintTimesSeconds,
+      averageSprintSeconds: Math.round(flow.sprintTimesSeconds.reduce((sum, time) => sum + time, 0)
+        / flow.sprintTimesSeconds.length * 100) / 100 } : {}),
     ...(distanceMeters == null ? {} : {
       deviceStartReading: flow.warmupDeviceReading,
       deviceEndReading: flow.mainDeviceReading,

@@ -128,3 +128,19 @@ test('guided endurance compares distance at the same fixed protocol and duration
   assert.equal(scores.get('2026-10-11').changePercent, 10)
   assert.equal(scores.get('2026-10-12').status, 'unrated')
 })
+
+test('guided sprint series compares average sprint time of the same full protocol', () => {
+  const sprint = (averageSprintSeconds) => ({
+    libraryId: 'volleyball:repeat-sprint', name: 'Wiederholter 30-m-Sprint',
+    category: 'Ausdauer', type: 'distance', guidedEndurance: true,
+    guidedProtocolId: 'volleyball:plan-endurance',
+    entries: [{ completed: true, guidedCompletion: true, prescribedSprints: 12,
+      completedSprints: 12, averageSprintSeconds, distanceValue: '360',
+      distanceUnit: 'm', durationValue: '900', durationUnit: 's' }],
+  })
+  const scores = trainingDayPerformances([
+    session('old-sprints', '2026-10-10', [sprint(6.2)]),
+    session('fast-sprints', '2026-10-12', [sprint(5.9)]),
+  ])
+  assert.equal(scores.get('2026-10-12').status, 'improved')
+})

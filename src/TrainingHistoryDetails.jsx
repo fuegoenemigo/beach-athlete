@@ -39,7 +39,9 @@ export default function TrainingHistoryDetails({ session }) {
           {exercise.guidedEndurance && entries.map((entry) => <p className="training-guided-result"
             key={entry.id}>Hauptübung: {formatTrainingEntry(entry, type, exercise) || 'Ohne Messwert'}
             {entry.guidedCompletion && entry.prescribedIntervals
-              ? ` · ${entry.completedIntervals}/${entry.prescribedIntervals} Belastungsphasen vollständig` : ''}</p>)}
+              ? ` · ${entry.completedIntervals}/${entry.prescribedIntervals} Belastungsphasen vollständig` : ''}
+            {entry.guidedCompletion && entry.prescribedSprints
+              ? ` · ${entry.completedSprints}/${entry.prescribedSprints} Sprints · Ø ${entry.averageSprintSeconds} s` : ''}</p>)}
           {!exercise.guidedEndurance && entries.length > 0 && <ol>{entries.map((entry, setIndex) =>
             <li key={entry.id ?? setIndex}>
               <span>Satz {setIndex + 1}: {formatTrainingEntry(entry, type, exercise) || 'Ohne Messwert'}</span>

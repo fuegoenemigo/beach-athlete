@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { elapsedSeconds, formatTimer } from './trainingTimer.js'
 import { deviceDistanceMeters, hasWarmupReading, mainDurationSeconds,
-  mainPhaseAt } from './enduranceFlow.js'
-import { ADDITIONAL_PLANS, FOCUS_PLANS } from './volleyballTraining.js'
+  mainPhaseAt, finishGuidedSprint, prescribedSprints,
+  sprintRecoverySeconds } from './enduranceFlow.js'
+import { ADDITIONAL_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS } from './volleyballTraining.js'
 import { enduranceProgress } from './enduranceProgress.js'
 import { RatingStepper } from './VolleyballInputs.jsx'
 
@@ -12,17 +13,18 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
   onUpdateResult, onUpdateReading, onConfirmMain, onSave, onClose, onCancel, flowMessage }) {
   const flow = session.enduranceFlow
   const spec = flow.spec
-  const intensity = spec.intensity ?? [...FOCUS_PLANS, ...ADDITIONAL_PLANS]
+  const intensity = spec.intensity ?? [...FOCUS_PLANS, ...ADDITIONAL_PLANS, ...VOLLEYBALL_PLANS]
     .find((plan) => plan.id === session.planId)?.guidedEndurance?.intensity
   const [now, setNow] = useState(() => Date.now())
   const elapsed = elapsedSeconds(flow.clock, now)
   const main = mainPhaseAt(spec, elapsed)
   const isMain = flow.phase === 'main'
   const running = flow.clock?.running && (!isMain || main.kind !== 'done')
-  const mainName = spec.kind === 'interval' ? 'Intervalltraining' : 'Hauptübung'
+  const mainName = spec.kind === 'interval' ? 'Intervalltraining'
+    : spec.kind === 'sprint' ? 'Sprintserie' : 'Hauptübung'
   const activeStep = flow.phase === 'warmup' ? 0 : ['ready', 'main'].includes(flow.phase) ? 1 : 2
-  const result = session.exercises.find((exercise) => exercise.guidedEndurance)
-    ?.entries.find((entry) => entry.guidedCompletion)
+  const guidedExercise = session.exercises.find((exercise) => exercise.guidedEndurance)
+  const result = guidedExercise?.entries.find((entry) => entry.guidedCompletion)
   const measuredMeters = deviceDistanceMeters(flow)
   const readingUnit = flow.deviceUnit === 'm' ? 'm' : 'km'
   const progress = flow.phase === 'summary' ? enduranceProgress(session, sessions) : null
@@ -123,9 +125,10 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
         {!hasWarmupReading(flow) && <p className="helper-text">Bitte den Gerätestand eintragen, bevor die Hauptübung startet.</p>}
       </div>}
       <p className="helper-text">{spec.kind === 'interval'
-        ? `${spec.repeat} Belastungsphasen à ${formatTimer(spec.workSeconds)} mit ${formatTimer(spec.recoverySeconds)} lockerer Bewegung dazwischen.`
-        : `${formatTimer(spec.mainSeconds)} gleichmäßige Bewegung.`}
-        {' '}Die App zeigt dir jede Phase und beendet die Hauptübung nach {formatTimer(mainDurationSeconds(spec))} automatisch.</p>
+        ? `${spec.repeat} Belastungsphasen à ${formatTimer(spec.workSeconds)} mit ${formatTimer(spec.recoverySeconds)} lockerer Bewegung dazwischen. Die App beendet die Hauptübung nach ${formatTimer(mainDurationSeconds(spec))} automatisch.`
+        : spec.kind === 'sprint'
+          ? `${spec.series} Serien mit je ${spec.sprintsPerSeries} × ${spec.sprintMeters} m. Starte und beende jeden Sprint selbst. Die App zeigt die Pausen und zählt die Läufe.`
+          : `${formatTimer(spec.mainSeconds)} gleichmäßige Bewegung. Die App beendet die Hauptübung nach ${formatTimer(mainDurationSeconds(spec))} automatisch.`}</p>
       {intensity?.work && <div className="endurance-intensity-guide">
         <p><strong>Belastung:</strong> {intensity.work}</p>
         {spec.kind === 'interval' && intensity.recovery
@@ -134,10 +137,66 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
       </div>}
       <button type="button" className="primary-button"
         disabled={flow.distanceTracking && !hasWarmupReading(flow)}
-        onClick={() => moveTo('main', freshClock())}>{mainName} starten</button>
+        onClick={() => {
+          if (spec.kind === 'sprint') onUpdateFlow((current) => ({ ...current,
+            phase: 'main', clock: freshClock(), sprintStage: 'waiting',
+            completedSprints: 0, sprintTimesSeconds: [], sprintStartedAt: null,
+            recoveryStartedAt: null }))
+          else moveTo('main', freshClock())
+        }}>{mainName} starten</button>
     </>}
 
-    {isMain && <>
+    {isMain && spec.kind === 'sprint' && <>
+      <h2>{flow.sprintStage === 'done' ? 'Sprintserie beendet'
+        : `Sprint ${Math.min((flow.completedSprints ?? 0) + 1, prescribedSprints(spec))} von ${prescribedSprints(spec)}`}</h2>
+      <p className="endurance-phase-count">Serie {Math.min(Math.floor((flow.completedSprints ?? 0)
+        / spec.sprintsPerSeries) + 1, spec.series)} von {spec.series}
+        {' · '}{flow.completedSprints ?? 0} von {prescribedSprints(spec)} Läufen geschafft</p>
+      {flow.sprintStage === 'waiting' && <>
+        <p className="helper-text">Stelle dich für {spec.sprintMeters} m bereit. Starte die Zeit direkt beim Loslaufen.</p>
+        <button type="button" className="primary-button" onClick={() => onUpdateFlow((current) => ({
+          ...current, sprintStage: 'running', sprintStartedAt: Date.now(),
+        }))}>▶ Sprint starten</button>
+      </>}
+      {flow.sprintStage === 'running' && <>
+        <p className="helper-text">{spec.sprintMeters} m sprinten · Zeit seit Start</p>
+        <output className="endurance-clock">{Math.max(0,
+          (now - flow.sprintStartedAt) / 1000).toFixed(1)} s</output>
+        <button type="button" className="primary-button" onClick={() => {
+          const at = Date.now()
+          onUpdateFlow((current) => finishGuidedSprint(current, at))
+          setNow(at)
+        }}>{spec.sprintMeters} m geschafft</button>
+      </>}
+      {flow.sprintStage === 'recovery' && <>
+        <p className="helper-text">{flow.completedSprints % spec.sprintsPerSeries === 0
+          ? 'Serienpause · locker bewegen und vollständig erholen'
+          : 'Laufpause · locker gehen'}</p>
+        <output className="endurance-clock endurance-rest-clock">{formatTimer(Math.max(0,
+          Math.ceil(sprintRecoverySeconds(spec, flow.completedSprints)
+            - (now - flow.recoveryStartedAt) / 1000)))}</output>
+        {now - flow.recoveryStartedAt >= sprintRecoverySeconds(spec, flow.completedSprints) * 1000
+          && <button type="button" className="primary-button"
+            onClick={() => onUpdateFlow((current) => ({ ...current, sprintStage: 'running',
+              sprintStartedAt: Date.now(), recoveryStartedAt: null }))}>
+            ▶ Nächsten Sprint starten</button>}
+      </>}
+      {flow.sprintStage === 'done' && <>
+        <p className="helper-text">Alle {prescribedSprints(spec)} Sprints wurden erfasst.
+          Bestätige nur, wenn du sie wirklich vollständig absolviert hast.</p>
+        <p className="endurance-distance-result">{prescribedSprints(spec) * spec.sprintMeters} m Sprintstrecke</p>
+        <button type="button" className="primary-button" onClick={onConfirmMain}>
+          Sprintserie vollständig absolviert · Auslaufen starten</button>
+      </>}
+      {flow.sprintStage !== 'done' && <button type="button" className="text-button"
+        onClick={() => {
+          if (window.confirm('Sprintserie abbrechen und neu starten? Es wird kein Abschluss gespeichert.'))
+            onUpdateFlow((current) => ({ ...current, phase: 'ready', clock: null,
+              sprintStage: null, completedSprints: 0, sprintTimesSeconds: [] }))
+        }}>Sprintserie abbrechen</button>}
+    </>}
+
+    {isMain && spec.kind !== 'sprint' && <>
       {main.kind === 'done' ? <>
         <h2>{mainName} beendet</h2>
         <p className="helper-text">Alle vorgesehenen Phasen sind abgelaufen. Bestätige nur,
@@ -213,8 +272,10 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
       <h2>{mainName} vollständig abgeschlossen</h2>
       <p className="helper-text">{spec.kind === 'interval'
         ? `${spec.repeat} von ${spec.repeat} Belastungsphasen absolviert.`
+        : spec.kind === 'sprint' ? `${prescribedSprints(spec)} von ${prescribedSprints(spec)} Sprints absolviert.`
         : 'Die vorgegebene Hauptübung absolviert.'}
-        {' '}Gespeichert wird die bestätigte Hauptübung von {formatTimer(mainDurationSeconds(spec))}.
+        {' '}Gespeichert wird die bestätigte Hauptübung von {formatTimer(spec.kind === 'sprint'
+          ? Number(result?.durationValue || 0) : mainDurationSeconds(spec))}.
         Aufwärmen und Auslaufen zählen nicht zur Distanz der Hauptübung.</p>
       <label className="field-label" htmlFor="guided-endurance-date">Trainingsdatum</label>
       <input id="guided-endurance-date" className="field" type="date" value={session.date}
@@ -232,7 +293,10 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
         <input id="endurance-summary-end" className="field" type="text" inputMode="decimal"
           value={flow.mainDeviceReading ?? ''}
           onChange={(event) => onUpdateReading('mainDeviceReading', event.target.value)} />
-      </div> : <>
+      </div> : spec.kind === 'sprint' ? <p className="endurance-distance-result">
+        {result?.distanceValue} m in {result?.completedSprints} Sprints
+        {' · '}durchschnittlich {result?.averageSprintSeconds} s pro Sprint
+      </p> : guidedExercise?.type === 'distance' ? <>
         <label className="field-label" htmlFor="guided-endurance-distance">
           Distanz der Hauptübung (km, optional)</label>
         <input id="guided-endurance-distance" className="field" type="number" min="0" step="any"
@@ -242,7 +306,7 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
             if (value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0))
               onUpdateResult({ distanceValue: value, distanceUnit: 'km' })
           }} />
-      </>}
+      </> : null}
       <RatingStepper id="guided-endurance-intensity" label="Anstrengung der Hauptübung (1–10, optional)"
         value={session.intensity ?? ''} onChange={(intensity) => onUpdateSession({ intensity })} />
       {progress && <div className="endurance-progress-guidance">

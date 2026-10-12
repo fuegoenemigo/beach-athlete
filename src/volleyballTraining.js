@@ -495,10 +495,16 @@ export const VOLLEYBALL_PLANS = [
   },
   {
     id: 'volleyball:plan-endurance', name: 'Volleyball-Ausdauer · Wiederholte Sprints',
-    category: 'Ausdauer', description: 'Vollständiger Sprinttag: 10 Min. locker aufwärmen, 2 Serien à 6 × 30 m mit etwa 20 s Pause zwischen Läufen und 5 Min. zwischen Serien, danach 5–10 Min. auslaufen. Bei Bedarf weniger Läufe; nicht direkt nach einem intensiven Volleyballtag.',
-    exercises: [ref('gym:walking-warmup', '10 Min. locker bis zügig gehen; tatsächliche Dauer erfassen'),
-      ref('repeat-sprint', 'Pro Satz ein 30-m-Sprint: Distanz und Laufzeit erfassen'),
-      ref('gym:walking-cooldown', '5–10 Min. locker gehen; tatsächliche Dauer erfassen')],
+    category: 'Ausdauer',
+    guidedEndurance: { kind: 'sprint', warmupSeconds: 600, cooldownSeconds: 300,
+      mainLibraryId: 'volleyball:repeat-sprint', series: 2, sprintsPerSeries: 6,
+      sprintMeters: 30, recoverySeconds: 20, seriesRecoverySeconds: 300,
+      intensity: { warmup: 'Locker gehen und dynamisch mobilisieren · Belastung 2–3/10',
+        work: '30 m schnell und technisch sauber sprinten; vor jedem Start bereit sein',
+        recovery: '20 s locker gehen; zwischen den Serien 5 Min. erholen',
+        cooldown: 'Locker gehen · Belastung 2–3/10' } },
+    description: 'Geführter Sprinttag: etwa 10 Min. locker aufwärmen, 2 Serien à 6 × 30 m mit 20 s Pause zwischen Läufen und 5 Min. zwischen Serien, danach locker auslaufen. Jeder 30-m-Sprint wird einzeln gestartet und beendet; die App zählt die Sprints und Pausen, speichert aber nur eine bestätigte Hauptübung. Bei nachlassender Technik abbrechen und den Tag nicht als vollständig markieren.',
+    exercises: [ref('repeat-sprint', '2 Serien à 6 × 30 m; 20 s Laufpause und 5 Min. Serienpause')],
   },
   {
     id: 'volleyball:plan-core', name: 'Volleyball-Core · Rumpf & Schulter',
@@ -518,6 +524,37 @@ export const VOLLEYBALL_PLANS = [
       ref('hip-mobility', '2 × 45 s je Seite')],
   },
 ]
+
+export function guidedCardioPlanForExercise(item) {
+  if (item?.category !== 'Ausdauer' || item.performanceRole === 'support') return null
+  const existing = [...FOCUS_PLANS, ...ADDITIONAL_PLANS, ...VOLLEYBALL_PLANS]
+    .find((plan) => plan.guidedEndurance?.mainLibraryId === item.id)
+  if (existing) return existing
+  const interval = ['gym:run-intervals', 'gym:bike-intervals', 'gym:jump-rope'].includes(item.id)
+  const rope = item.id === 'gym:jump-rope'
+  const spec = interval
+    ? { kind: 'interval', warmupSeconds: 300, cooldownSeconds: 300,
+      mainLibraryId: item.id, repeat: 6, workSeconds: 60,
+      recoverySeconds: rope ? 60 : 120,
+      intensity: { warmup: 'Locker beginnen · Belastung 2–3/10',
+        work: 'Zügig, aber kontrolliert · Belastung 6–7/10',
+        recovery: 'Sehr locker bewegen · Belastung 2–3/10',
+        cooldown: 'Locker auslaufen · Belastung 2–3/10' } }
+    : { kind: 'steady', warmupSeconds: 300, mainSeconds: 1200,
+      cooldownSeconds: 300, mainLibraryId: item.id,
+      intensity: { warmup: 'Locker beginnen · Belastung 2–3/10',
+        work: 'Gleichmäßig und gesprächsfähig · Belastung 5–6/10',
+        cooldown: 'Locker beenden · Belastung 2–3/10' } }
+  return { id: `guided:cardio:${item.id}`, name: `Cardio · ${item.name}`,
+    category: 'Ausdauer', guidedEndurance: spec,
+    description: interval
+      ? 'Geführter Startvorschlag mit Aufwärmen, sechs Belastungsphasen und Auslaufen. Die App führt durch die Zeitfenster; nur die bestätigte Hauptübung wird gespeichert.'
+      : 'Geführter Startvorschlag mit Aufwärmen, 20 Minuten gleichmäßiger Hauptübung und Auslaufen. Nur die bestätigte Hauptübung wird gespeichert.',
+    exercises: [{ libraryId: item.id, name: item.name, category: 'Ausdauer',
+      type: item.type, muscleGroup: item.muscleGroup,
+      target: interval ? '6 × 1 Min. Belastung mit lockerer Pause' : '20 Min. gleichmäßig' }],
+  }
+}
 
 const normalizeSearch = (value) => String(value ?? '').normalize('NFD')
   .replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('de-DE')

@@ -90,7 +90,8 @@ export default function GuidedTrainingPanel({
       exerciseMeasurement({ ...previous.item,
         category: previous.item.category ?? previous.session.category }), previous.item) : null
   }
-  const available = library.filter((item) => item.category === exerciseCategory)
+  const available = library.filter((item) => item.category === exerciseCategory
+    && !(exerciseCategory === 'Ausdauer' && item.performanceRole === 'support'))
   const groups = [...new Set(available.map((item) => item.muscleGroup || 'Allgemein'))]
     .sort((a, b) => a.localeCompare(b, 'de-DE'))
   const needsGroup = groups.length > 1
@@ -104,7 +105,7 @@ export default function GuidedTrainingPanel({
     <p className="eyebrow">{formatDate(session.date)} · {session.category}</p>
     <div className="training-flow-steps" aria-label="Fortschritt der Trainingserfassung">
       <span className={step === 'exercise' ? 'current' : ''}>1 Übung</span>
-      <span className={step === 'set' ? 'current' : ''}>2 Sätze</span>
+      <span className={step === 'set' ? 'current' : ''}>2 {session.category === 'Ausdauer' ? 'Phasen' : 'Sätze'}</span>
       <span className={step === 'summary' ? 'current' : ''}>3 Abschluss</span>
     </div>
 

@@ -269,8 +269,8 @@ test('additional plans cover non-strength categories and record interval work pe
   }
   for (const plan of [...FOCUS_PLANS, ...ADDITIONAL_PLANS, ...VOLLEYBALL_PLANS]
     .filter((item) => item.category === 'Ausdauer')) {
-    assert.ok(plan.guidedEndurance ? plan.exercises.length === 1
-      : plan.exercises.length >= 3, plan.id)
+    assert.ok(plan.guidedEndurance, plan.id)
+    assert.equal(plan.exercises.length, 1, plan.id)
   }
 })
 

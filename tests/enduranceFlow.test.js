@@ -1,32 +1,81 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { ADDITIONAL_PLANS, FOCUS_PLANS } from '../src/volleyballTraining.js'
+import { ADDITIONAL_PLANS, DEFAULT_EXERCISES, FOCUS_PLANS, VOLLEYBALL_PLANS,
+  guidedCardioPlanForExercise } from '../src/volleyballTraining.js'
 import { guidedEnduranceSpec, guidedMainReference, mainDurationSeconds, mainPhaseAt,
   canConfirmMain, confirmGuidedMain, tracksDeviceDistance, hasWarmupReading,
-  deviceDistanceMeters } from '../src/enduranceFlow.js'
+  deviceDistanceMeters, finishGuidedSprint, prescribedSprints,
+  sprintRecoverySeconds } from '../src/enduranceFlow.js'
 import { createLoggedExercise } from '../src/trainingModel.js'
 import { isAthleteData } from '../src/syncPolicy.js'
 
-const guidedPlans = [...FOCUS_PLANS, ...ADDITIONAL_PLANS].filter((plan) => plan.guidedEndurance)
+const guidedPlans = [...FOCUS_PLANS, ...ADDITIONAL_PLANS, ...VOLLEYBALL_PLANS]
+  .filter((plan) => plan.guidedEndurance)
 
 test('guided endurance plans have a valid main exercise and a fixed protocol', () => {
-  assert.equal(guidedPlans.length, 9)
+  assert.equal(guidedPlans.length, 10)
   for (const plan of guidedPlans) {
     const spec = guidedEnduranceSpec(plan)
     assert.ok(spec, plan.id)
     assert.equal(plan.exercises.length, 1)
     assert.equal(guidedMainReference(plan).libraryId, spec.mainLibraryId)
-    assert.ok(mainDurationSeconds(spec) > 0)
+    if (spec.kind !== 'sprint') assert.ok(mainDurationSeconds(spec) > 0)
     assert.ok(spec.intensity?.warmup)
     assert.ok(spec.intensity?.work)
     assert.ok(spec.intensity?.cooldown)
     if (spec.kind === 'interval') assert.ok(spec.intensity.recovery)
+    if (spec.kind === 'sprint') assert.equal(prescribedSprints(spec), 12)
   }
   assert.equal(guidedEnduranceSpec({ ...guidedPlans[0], exercises: [] }), null)
   const legacy = guidedPlans[0]
   assert.ok(guidedEnduranceSpec({ ...legacy, exercises: [
     { libraryId: 'old:warmup' }, legacy.exercises[0], { libraryId: 'old:cooldown' },
   ] }))
+})
+
+test('every selectable cardio exercise starts a guided phase plan', () => {
+  const cardio = DEFAULT_EXERCISES.filter((item) => item.category === 'Ausdauer'
+    && item.performanceRole !== 'support')
+  assert.ok(cardio.length > 10)
+  for (const item of cardio) {
+    const plan = guidedCardioPlanForExercise(item)
+    assert.ok(plan, item.id)
+    assert.ok(guidedEnduranceSpec(plan), item.id)
+    assert.equal(plan.exercises.length, 1)
+    assert.equal(plan.guidedEndurance.mainLibraryId, item.id)
+  }
+  assert.equal(tracksDeviceDistance(guidedCardioPlanForExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'gym:rowing-erg')).guidedEndurance), true)
+})
+
+test('repeated 30 m sprints follow two series and save one complete main result', () => {
+  const plan = guidedPlans.find((item) => item.id === 'volleyball:plan-endurance')
+  const spec = guidedEnduranceSpec(plan)
+  assert.equal(spec.kind, 'sprint')
+  let flow = { spec, phase: 'main', sprintStage: 'running', sprintStartedAt: 1000,
+    completedSprints: 0, sprintTimesSeconds: [], mainConfirmed: false,
+    clock: { startedAt: 0, elapsedMs: 0, running: true } }
+  for (let index = 1; index <= 12; index += 1) {
+    const at = index * 1000 + 6000
+    flow = { ...flow, sprintStage: 'running', sprintStartedAt: at - 6000 }
+    flow = finishGuidedSprint(flow, at)
+    assert.equal(flow.completedSprints, index)
+    if (index < 12) assert.equal(canConfirmMain(flow, at), false)
+    if (index === 6) assert.equal(sprintRecoverySeconds(spec, index), 300)
+    if (index === 1) assert.equal(sprintRecoverySeconds(spec, index), 20)
+  }
+  assert.equal(flow.sprintStage, 'done')
+  assert.equal(flow.sprintTimesSeconds.length, 12)
+  const main = createLoggedExercise({ ...plan.exercises[0], id: spec.mainLibraryId })
+  const session = { id: 'sprint', date: '2026-10-12', category: 'Ausdauer',
+    exercises: [{ ...main, guidedEndurance: true, entries: [] }], enduranceFlow: flow }
+  const done = confirmGuidedMain(session, 19000, 'sprint-result')
+  assert.equal(done.exercises.length, 1)
+  assert.equal(done.exercises[0].entries.length, 1)
+  assert.equal(done.exercises[0].entries[0].distanceValue, '360')
+  assert.equal(done.exercises[0].entries[0].averageSprintSeconds, 6)
+  assert.equal(done.exercises[0].entries[0].completedSprints, 12)
+  assert.equal(isAthleteData({ sessions: [done], exerciseLibrary: [], volleyballDays: [] }), true)
 })
 
 test('interval phases switch at their exact boundaries and omit the last recovery', () => {
