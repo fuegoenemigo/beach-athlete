@@ -19,6 +19,7 @@ import {
 } from './trainingModel.js'
 import { formatTimer, timerStorageKey } from './trainingTimer.js'
 import { guidedEnduranceSpec, guidedMainReference, mainDurationSeconds,
+  tracksDeviceDistance, deviceDistanceMeters,
   confirmGuidedMain } from './enduranceFlow.js'
 import './TrainingView.css'
 
@@ -289,7 +290,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       planId: plan?.id ?? null, planName: plan?.name ?? '',
       durationMinutes: '', intensity: '', notes: '', status: 'ongoing',
       ...(guided ? { enduranceFlow: { spec: guided, phase: 'warmup',
-        clock: null, mainConfirmed: false } } : {}),
+        clock: null, mainConfirmed: false,
+        distanceTracking: tracksDeviceDistance(guided), deviceUnit: 'km',
+        warmupDeviceReading: '', mainDeviceReading: '' } } : {}),
       exercises, createdAt: new Date().toISOString(),
     }
     setSessions((previous) => addTrainingIfNoOpen(previous, session))
@@ -341,7 +344,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       updateSession({ planId: plan.id, planName: plan.name,
         categories: plan.categories ?? [plan.category], exercises,
         ...(guided ? { enduranceFlow: { spec: guided, phase: 'warmup',
-          clock: null, mainConfirmed: false } } : {}) })
+          clock: null, mainConfirmed: false,
+          distanceTracking: tracksDeviceDistance(guided), deviceUnit: 'km',
+          warmupDeviceReading: '', mainDeviceReading: '' } } : {}) })
       setActiveExerciseId(first.id)
       setSelectedExerciseCategory(first.category)
       setFlowStep('set')
@@ -398,6 +403,24 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     if (!exercise) return
     updateExercise(exercise.id, { entries: exercise.entries.map((entry) =>
       entry.guidedCompletion ? { ...entry, ...changes } : entry) })
+  }
+  function updateGuidedReading(field, value) {
+    setSessions((previous) => previous.map((session) => {
+      if (session.id !== activeSessionId || !session.enduranceFlow?.distanceTracking) return session
+      const flow = field === 'deviceUnit'
+        ? { ...session.enduranceFlow, deviceUnit: value,
+          warmupDeviceReading: '', mainDeviceReading: '' }
+        : { ...session.enduranceFlow, [field]: value }
+      const distance = deviceDistanceMeters(flow)
+      return { ...session, enduranceFlow: flow,
+        exercises: session.exercises.map((exercise) => ({ ...exercise,
+          entries: (exercise.entries ?? []).map((entry) => entry.guidedCompletion
+            ? { ...entry, distanceValue: distance == null ? '' : String(distance / 1000),
+              deviceStartReading: flow.warmupDeviceReading,
+              deviceEndReading: flow.mainDeviceReading,
+              deviceReadingUnit: flow.deviceUnit } : entry) })) }
+    }))
+    setFlowMessage('')
   }
   function finishExercise() {
     const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
@@ -482,6 +505,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     if (activeSession.enduranceFlow && (activeSession.enduranceFlow.phase !== 'summary'
       || !activeSession.enduranceFlow.mainConfirmed)) {
       setFlowMessage('Bitte absolviere und bestätige zuerst die geführte Hauptübung.'); return
+    }
+    if (activeSession.enduranceFlow?.distanceTracking
+      && deviceDistanceMeters(activeSession.enduranceFlow) == null) {
+      setFlowMessage('Bitte prüfe die beiden Gerätestände. Der Stand nach der Hauptübung muss größer sein.'); return
     }
     if (activeSession.exercises.some((exercise) => (exercise.entries ?? [])
       .some((entry) => isConfirmedSet(entry, exerciseMeasurement(exercise))
@@ -764,9 +791,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       {isSportTrainingAttendance(activeSession)
         ? <SportTrainingEditor key={activeSession.id} session={activeSession} onClose={closeTraining}
           onSave={(changes) => { updateSession(changes); closeTraining(); setNotice('Trainingsdatum gespeichert.') }} />
-        : activeSession.enduranceFlow ? <GuidedEndurancePanel session={activeSession}
+        : activeSession.enduranceFlow ? <GuidedEndurancePanel session={activeSession} sessions={sessions}
           onUpdateFlow={updateEnduranceFlow} onUpdateSession={updateSession}
-          onUpdateResult={updateGuidedResult}
+          onUpdateResult={updateGuidedResult} onUpdateReading={updateGuidedReading}
           onConfirmMain={confirmEnduranceMain} onSave={saveTraining}
           onClose={closeTraining} onCancel={cancelTraining} flowMessage={flowMessage} />
         : <GuidedTrainingPanel

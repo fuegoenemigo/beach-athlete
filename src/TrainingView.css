@@ -433,6 +433,17 @@
   border-radius: 11px; color: #d8e3d7; background: #203023; line-height: 1.45; }
 .endurance-intensity-guide p { margin: 0 0 6px; }
 .endurance-intensity-guide small { color: #c1d0c3; }
+.endurance-device-reading { display: grid; gap: 9px; padding: 13px;
+  border: 1px solid var(--border); border-radius: 12px; background: #1b251c; }
+.endurance-device-reading h3 { margin: 0; font-size: 1rem; }
+.endurance-device-reading .field-label { margin: 2px 0 0; }
+.endurance-device-reading .field { width: 100%; min-width: 0; }
+.endurance-distance-result { margin: 0; color: var(--green); }
+.endurance-progress-guidance { padding: 13px; border: 1px solid var(--border);
+  border-radius: 12px; background: #1b251c; line-height: 1.45; }
+.endurance-progress-guidance p { margin: 8px 0 0; }
+.endurance-comparable-check { display: flex; align-items: flex-start; gap: 9px; color: #d8e3d7; }
+.endurance-comparable-check input { flex: none; margin-top: 4px; }
 .endurance-progress { width: 100%; height: 12px; accent-color: #80bd6a; }
 .endurance-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 .endurance-actions button { flex: 1 1 135px; margin: 0; }

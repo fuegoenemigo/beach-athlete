@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { elapsedSeconds, formatTimer } from './trainingTimer.js'
-import { mainDurationSeconds, mainPhaseAt } from './enduranceFlow.js'
+import { deviceDistanceMeters, hasWarmupReading, mainDurationSeconds,
+  mainPhaseAt } from './enduranceFlow.js'
 import { ADDITIONAL_PLANS, FOCUS_PLANS } from './volleyballTraining.js'
+import { enduranceProgress } from './enduranceProgress.js'
 import { RatingStepper } from './VolleyballInputs.jsx'
 
 const freshClock = () => ({ startedAt: Date.now(), elapsedMs: 0, running: true })
 
-export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSession,
-  onUpdateResult, onConfirmMain, onSave, onClose, onCancel, flowMessage }) {
+export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, onUpdateSession,
+  onUpdateResult, onUpdateReading, onConfirmMain, onSave, onClose, onCancel, flowMessage }) {
   const flow = session.enduranceFlow
   const spec = flow.spec
   const intensity = spec.intensity ?? [...FOCUS_PLANS, ...ADDITIONAL_PLANS]
@@ -21,6 +23,9 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
   const activeStep = flow.phase === 'warmup' ? 0 : ['ready', 'main'].includes(flow.phase) ? 1 : 2
   const result = session.exercises.find((exercise) => exercise.guidedEndurance)
     ?.entries.find((entry) => entry.guidedCompletion)
+  const measuredMeters = deviceDistanceMeters(flow)
+  const readingUnit = flow.deviceUnit === 'm' ? 'm' : 'km'
+  const progress = flow.phase === 'summary' ? enduranceProgress(session, sessions) : null
 
   useEffect(() => {
     if (!running) return undefined
@@ -100,6 +105,23 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
 
     {flow.phase === 'ready' && <>
       <h2>Bereit für die Hauptübung</h2>
+      {flow.distanceTracking && <div className="endurance-device-reading">
+        <h3>Gerätestand nach dem Aufwärmen</h3>
+        <p className="helper-text">Lies die bisher zurückgelegte Strecke am Gerät ab.
+          Dieser Stand dient nur als Ausgangswert und zählt nicht zur Hauptübung.</p>
+        <label className="field-label" htmlFor="endurance-reading-unit">Anzeige am Gerät</label>
+        <select id="endurance-reading-unit" className="field" value={readingUnit}
+          onChange={(event) => onUpdateReading('deviceUnit', event.target.value)}>
+          <option value="km">Kilometer (z. B. 0,75)</option>
+          <option value="m">Meter (z. B. 750)</option>
+        </select>
+        <label className="field-label" htmlFor="endurance-warmup-reading">
+          Zurückgelegte Strecke am Gerät ({readingUnit})</label>
+        <input id="endurance-warmup-reading" className="field" type="text" inputMode="decimal"
+          value={flow.warmupDeviceReading ?? ''} placeholder={readingUnit === 'km' ? 'z. B. 0,75' : 'z. B. 750'}
+          onChange={(event) => onUpdateReading('warmupDeviceReading', event.target.value)} />
+        {!hasWarmupReading(flow) && <p className="helper-text">Bitte den Gerätestand eintragen, bevor die Hauptübung startet.</p>}
+      </div>}
       <p className="helper-text">{spec.kind === 'interval'
         ? `${spec.repeat} Belastungsphasen à ${formatTimer(spec.workSeconds)} mit ${formatTimer(spec.recoverySeconds)} lockerer Bewegung dazwischen.`
         : `${formatTimer(spec.mainSeconds)} gleichmäßige Bewegung.`}
@@ -111,6 +133,7 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
         <small>Startbereiche: Tempo oder Widerstand an dein Belastungsgefühl anpassen.</small>
       </div>}
       <button type="button" className="primary-button"
+        disabled={flow.distanceTracking && !hasWarmupReading(flow)}
         onClick={() => moveTo('main', freshClock())}>{mainName} starten</button>
     </>}
 
@@ -120,7 +143,20 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
         <p className="helper-text">Alle vorgesehenen Phasen sind abgelaufen. Bestätige nur,
           wenn du die Hauptübung tatsächlich vollständig absolviert hast.</p>
         <output className="endurance-clock">{formatTimer(main.total)}</output>
-        <button type="button" className="primary-button"
+        {flow.distanceTracking && <div className="endurance-device-reading">
+          <h3>Gerätestand nach der Hauptübung</h3>
+          <p className="helper-text">Lies den Stand direkt am Ende der Hauptübung ab,
+            bevor die Strecke des Auslaufens dazukommt. Startstand: {flow.warmupDeviceReading} {readingUnit}.</p>
+          <label className="field-label" htmlFor="endurance-main-reading">
+            Zurückgelegte Strecke am Gerät ({readingUnit})</label>
+          <input id="endurance-main-reading" className="field" type="text" inputMode="decimal"
+            value={flow.mainDeviceReading ?? ''} placeholder={readingUnit === 'km' ? 'z. B. 3,15' : 'z. B. 3150'}
+            onChange={(event) => onUpdateReading('mainDeviceReading', event.target.value)} />
+          {measuredMeters == null ? <p className="helper-text">Der zweite Stand muss größer sein
+            als der Stand nach dem Aufwärmen.</p> : <p className="endurance-distance-result">
+            Distanz der Hauptübung: <strong>{measuredMeters} m</strong></p>}
+        </div>}
+        <button type="button" className="primary-button" disabled={flow.distanceTracking && measuredMeters == null}
           onClick={onConfirmMain}>{mainName} vollständig absolviert · Auslaufen starten</button>
       </> : <>
         <h2 aria-live="polite" className={main.kind === 'recovery' ? 'endurance-recovery' : ''}>
@@ -151,7 +187,8 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
             : <button type="button" className="primary-button" onClick={resume}>Fortsetzen</button>}
           <button type="button" className="text-button" onClick={() => {
             if (window.confirm('Hauptübung abbrechen und neu starten? Es wird kein Abschluss gespeichert.'))
-              moveTo('ready')
+              onUpdateFlow((current) => ({ ...current, phase: 'ready', clock: null,
+                warmupDeviceReading: '', mainDeviceReading: '' }))
           }}>Hauptübung abbrechen</button>
         </div>
       </>}
@@ -178,21 +215,47 @@ export default function GuidedEndurancePanel({ session, onUpdateFlow, onUpdateSe
         ? `${spec.repeat} von ${spec.repeat} Belastungsphasen absolviert.`
         : 'Die vorgegebene Hauptübung absolviert.'}
         {' '}Gespeichert wird die bestätigte Hauptübung von {formatTimer(mainDurationSeconds(spec))}.
-        Aufwärmen und Auslaufen bleiben ohne Messwerte.</p>
+        Aufwärmen und Auslaufen zählen nicht zur Distanz der Hauptübung.</p>
       <label className="field-label" htmlFor="guided-endurance-date">Trainingsdatum</label>
       <input id="guided-endurance-date" className="field" type="date" value={session.date}
         onChange={(event) => { if (event.target.value) onUpdateSession({ date: event.target.value }) }} />
-      <label className="field-label" htmlFor="guided-endurance-distance">
-        Distanz der Hauptübung (km, optional)</label>
-      <input id="guided-endurance-distance" className="field" type="number" min="0" step="any"
-        inputMode="decimal" value={result?.distanceValue ?? ''}
-        onChange={(event) => {
-          const value = event.target.value
-          if (value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0))
-            onUpdateResult({ distanceValue: value, distanceUnit: 'km' })
-        }} />
+      {flow.distanceTracking ? <div className="endurance-device-reading">
+        <h3>Ermittelte Distanz der Hauptübung</h3>
+        <p className="endurance-distance-result"><strong>{measuredMeters ?? '–'} m</strong>
+          {' '}= Stand nach Hauptübung minus Stand nach Aufwärmen</p>
+        <p className="helper-text">Ablesefehler? Korrigiere die beiden Gerätestände hier.</p>
+        <label className="field-label" htmlFor="endurance-summary-start">Nach Aufwärmen ({readingUnit})</label>
+        <input id="endurance-summary-start" className="field" type="text" inputMode="decimal"
+          value={flow.warmupDeviceReading ?? ''}
+          onChange={(event) => onUpdateReading('warmupDeviceReading', event.target.value)} />
+        <label className="field-label" htmlFor="endurance-summary-end">Nach Hauptübung ({readingUnit})</label>
+        <input id="endurance-summary-end" className="field" type="text" inputMode="decimal"
+          value={flow.mainDeviceReading ?? ''}
+          onChange={(event) => onUpdateReading('mainDeviceReading', event.target.value)} />
+      </div> : <>
+        <label className="field-label" htmlFor="guided-endurance-distance">
+          Distanz der Hauptübung (km, optional)</label>
+        <input id="guided-endurance-distance" className="field" type="number" min="0" step="any"
+          inputMode="decimal" value={result?.distanceValue ?? ''}
+          onChange={(event) => {
+            const value = event.target.value
+            if (value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0))
+              onUpdateResult({ distanceValue: value, distanceUnit: 'km' })
+          }} />
+      </>}
       <RatingStepper id="guided-endurance-intensity" label="Anstrengung der Hauptübung (1–10, optional)"
         value={session.intensity ?? ''} onChange={(intensity) => onUpdateSession({ intensity })} />
+      {progress && <div className="endurance-progress-guidance">
+        {progress.previousCount > 0 && <label className="endurance-comparable-check">
+          <input type="checkbox" checked={flow.sameSetup === true}
+            onChange={(event) => onUpdateFlow((current) => ({ ...current,
+              sameSetup: event.target.checked }))} />
+          Gleiches Gerät und gleiche Einstellungen wie beim letzten Mal
+        </label>}
+        {progress.changePercent != null && <p><strong>Gegenüber der letzten Einheit desselben Plans:</strong>
+          {' '}{progress.changePercent > 0 ? '+' : ''}{progress.changePercent.toLocaleString('de-DE')} % Distanz</p>}
+        <p>{progress.text}</p>
+      </div>}
       <label className="field-label" htmlFor="guided-endurance-notes">Notiz zur Einheit (optional)</label>
       <textarea id="guided-endurance-notes" className="field notes-field" rows="2"
         value={session.notes ?? ''} onChange={(event) => onUpdateSession({ notes: event.target.value })} />

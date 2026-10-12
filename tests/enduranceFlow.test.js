@@ -2,7 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { ADDITIONAL_PLANS, FOCUS_PLANS } from '../src/volleyballTraining.js'
 import { guidedEnduranceSpec, guidedMainReference, mainDurationSeconds, mainPhaseAt,
-  canConfirmMain, confirmGuidedMain } from '../src/enduranceFlow.js'
+  canConfirmMain, confirmGuidedMain, tracksDeviceDistance, hasWarmupReading,
+  deviceDistanceMeters } from '../src/enduranceFlow.js'
 import { createLoggedExercise } from '../src/trainingModel.js'
 import { isAthleteData } from '../src/syncPolicy.js'
 
@@ -43,6 +44,36 @@ test('interval phases switch at their exact boundaries and omit the last recover
   })
   assert.equal(mainPhaseAt(spec, 959).kind, 'work')
   assert.equal(mainPhaseAt(spec, 960).kind, 'done')
+})
+
+test('device readings isolate the main distance from warmup and cooldown', () => {
+  const spec = guidedPlans.find((plan) => plan.id === 'gym:plan-treadmill-interval-beginner').guidedEndurance
+  assert.equal(tracksDeviceDistance(spec), true)
+  assert.equal(tracksDeviceDistance(guidedPlans.find((plan) =>
+    plan.id === 'gym:plan-endurance-base').guidedEndurance), false)
+  const flow = { spec, phase: 'main', distanceTracking: true, deviceUnit: 'km',
+    warmupDeviceReading: '0,75', mainDeviceReading: '2,125', mainConfirmed: false,
+    clock: { startedAt: 0, elapsedMs: 0, running: true } }
+  assert.equal(hasWarmupReading(flow), true)
+  assert.equal(deviceDistanceMeters(flow), 1375)
+  assert.equal(deviceDistanceMeters({ ...flow, mainDeviceReading: '0,5' }), null)
+  assert.equal(deviceDistanceMeters({ ...flow, mainDeviceReading: '' }), null)
+  assert.equal(deviceDistanceMeters({ ...flow, mainDeviceReading: '2,1234' }), null)
+  assert.equal(deviceDistanceMeters({ ...flow, deviceUnit: 'm',
+    warmupDeviceReading: '750', mainDeviceReading: '2125' }), 1375)
+  const main = createLoggedExercise({ ...guidedPlans.find((plan) =>
+    plan.id === 'gym:plan-treadmill-interval-beginner').exercises[0], id: spec.mainLibraryId })
+  const session = { id: 'reading', date: '2026-10-12', category: 'Ausdauer',
+    exercises: [{ ...main, guidedEndurance: true, entries: [] }], enduranceFlow: flow }
+  const finish = mainDurationSeconds(spec) * 1000
+  const missing = { ...session, enduranceFlow: { ...flow, mainDeviceReading: '' } }
+  assert.equal(confirmGuidedMain(missing, finish, 'missing'), missing)
+  const confirmed = confirmGuidedMain(session, finish, 'distance')
+  const entry = confirmed.exercises[0].entries[0]
+  assert.equal(entry.distanceValue, '1.375')
+  assert.equal(entry.deviceStartReading, '0,75')
+  assert.equal(entry.deviceEndReading, '2,125')
+  assert.equal(isAthleteData({ sessions: [confirmed], exerciseLibrary: [], volleyballDays: [] }), true)
 })
 
 test('the full main workout is recorded once, only after time and user confirmation', () => {

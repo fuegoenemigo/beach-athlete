@@ -2,6 +2,33 @@ import { elapsedSeconds } from './trainingTimer.js'
 
 const positiveInteger = (value) => Number.isInteger(value) && value > 0
 
+export function tracksDeviceDistance(spec) {
+  return spec?.mainLibraryId?.includes('treadmill')
+    || spec?.mainLibraryId?.includes('bike')
+}
+
+function deviceReadingMeters(value, unit) {
+  const input = String(value ?? '').trim()
+  if (!(unit === 'm' ? /^\d+$/.test(input) : /^\d+(?:[.,]\d{1,3})?$/.test(input))) return null
+  const rawMeters = Number(input.replace(',', '.')) * (unit === 'm' ? 1 : 1000)
+  const meters = Math.round(rawMeters)
+  return Number.isSafeInteger(meters) && meters >= 0
+    && Math.abs(rawMeters - meters) < 0.000001 ? meters : null
+}
+
+export function deviceDistanceMeters(flow) {
+  if (!flow?.distanceTracking) return null
+  const unit = flow.deviceUnit === 'm' ? 'm' : 'km'
+  const start = deviceReadingMeters(flow.warmupDeviceReading, unit)
+  const end = deviceReadingMeters(flow.mainDeviceReading, unit)
+  return start != null && end != null && end > start ? end - start : null
+}
+
+export function hasWarmupReading(flow) {
+  return deviceReadingMeters(flow?.warmupDeviceReading,
+    flow?.deviceUnit === 'm' ? 'm' : 'km') != null
+}
+
 export function guidedEnduranceSpec(plan) {
   const spec = plan?.guidedEndurance
   if (!spec || plan.category !== 'Ausdauer'
@@ -57,10 +84,18 @@ export function canConfirmMain(flow, now) {
 
 export function completedMainEntry(flow, now, id) {
   if (!canConfirmMain(flow, now)) return null
+  const distanceMeters = deviceDistanceMeters(flow)
+  if (flow.distanceTracking && distanceMeters == null) return null
   return { id, completed: true, confirmedAt: new Date(now).toISOString(),
     durationValue: String(mainDurationSeconds(flow.spec)), durationUnit: 's',
-    distanceValue: '', distanceUnit: 'km',
+    distanceValue: distanceMeters == null ? '' : String(distanceMeters / 1000),
+    distanceUnit: 'km',
     guidedCompletion: true,
+    ...(distanceMeters == null ? {} : {
+      deviceStartReading: flow.warmupDeviceReading,
+      deviceEndReading: flow.mainDeviceReading,
+      deviceReadingUnit: flow.deviceUnit === 'm' ? 'm' : 'km',
+    }),
     ...(flow.spec.kind === 'interval' ? {
       prescribedIntervals: flow.spec.repeat, completedIntervals: flow.spec.repeat,
       workSeconds: flow.spec.workSeconds, recoverySeconds: flow.spec.recoverySeconds,
