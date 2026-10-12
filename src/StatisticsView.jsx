@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import TrainingLineChart from './TrainingLineChart.jsx'
-import TrainingStatistics, { TrainingTrend } from './TrainingStatistics.jsx'
+import TrainingStatistics, { CategoryStatistics, StrengthStatistics, TrainingTrend } from './TrainingStatistics.jsx'
+import EntryWindow from './EntryWindow.jsx'
 
 const sections = [
   { id: 'training', title: 'Training', axis: 'Trainingsleistung',
@@ -29,15 +30,21 @@ function PreviewChart({ title, axis }) {
 }
 
 export default function StatisticsView({ training }) {
-  const [expandedSection, setExpandedSection] = useState(null)
+  const [trainingWindow, setTrainingWindow] = useState(null)
+  const selectedCategory = training.categories.find((category) => category.name === trainingWindow?.name)
+  const selectedSport = sections.find((section) => section.id === trainingWindow?.name)
+  const windowTitle = trainingWindow?.level === 'categories' ? 'Training'
+    : trainingWindow?.level === 'strength' ? 'Krafttraining · Muskelgruppen'
+      : trainingWindow?.level === 'sport' ? selectedSport?.title : trainingWindow?.name
 
-  return <div className="statistics-sections">
+  return <><div className="statistics-sections">
     {sections.map((section) => <section className="statistics-section" key={section.id}>
       <button type="button" className="statistics-section-toggle"
-        aria-expanded={expandedSection === section.id} aria-controls={`statistics-detail-${section.id}`}
-        onClick={() => setExpandedSection((current) => current === section.id ? null : section.id)}>
+        aria-haspopup="dialog"
+        onClick={() => section.id === 'training' ? setTrainingWindow({ level: 'categories' })
+          : setTrainingWindow({ level: 'sport', name: section.id })}>
         <span className="statistics-section-heading"><strong>{section.title}</strong>
-          <span aria-hidden="true">{expandedSection === section.id ? '−' : '＋'}</span></span>
+          <span aria-hidden="true">↗</span></span>
         {section.id === 'training' ? <>
           <TrainingLineChart label="Training gesamt" series={training.overall.series} />
           <TrainingTrend result={training.overall} />
@@ -46,13 +53,27 @@ export default function StatisticsView({ training }) {
           <span className="statistics-preview-note">Vorschau · noch keine berechneten Werte</span>
         </>}
       </button>
-      <div id={`statistics-detail-${section.id}`}
-        className="statistics-section-detail" hidden={expandedSection !== section.id}>
-        <h3>{section.title} im Detail</h3>
-        <p>{section.note}</p>
-        {section.id === 'training' ? <TrainingStatistics progress={training} />
-          : <div className="statistics-detail-placeholder">{section.detail}</div>}
-      </div>
     </section>)}
   </div>
+    {trainingWindow && <EntryWindow key={`${trainingWindow.level}-${trainingWindow.name ?? ''}`}
+      title={windowTitle} subtitle={trainingWindow.level === 'sport' ? 'DEINE VOLLEYBALLSTATISTIK' : 'DEINE TRAININGSSTATISTIK'}
+      onClose={() => setTrainingWindow(null)}>
+      {(trainingWindow.level === 'strength' || trainingWindow.level === 'category') && <button type="button"
+        className="statistics-window-back" onClick={() => setTrainingWindow({ level: 'categories' })}>
+        ← Zu den Hauptkategorien
+      </button>}
+      {trainingWindow.level === 'categories' && <TrainingStatistics progress={training}
+        onOpenCategory={(name) => setTrainingWindow({
+          level: name === 'Krafttraining' ? 'strength' : 'category', name,
+        })} />}
+      {trainingWindow.level === 'strength' && selectedCategory
+        && <StrengthStatistics category={selectedCategory} />}
+      {trainingWindow.level === 'category' && selectedCategory
+        && <CategoryStatistics category={selectedCategory} />}
+      {trainingWindow.level === 'sport' && selectedSport && <div className="statistics-section-detail">
+        <p>{selectedSport.note}</p>
+        <div className="statistics-detail-placeholder">{selectedSport.detail}</div>
+      </div>}
+    </EntryWindow>}
+  </>
 }

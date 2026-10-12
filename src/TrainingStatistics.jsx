@@ -20,6 +20,7 @@ export function TrainingTrend({ result }) {
 }
 
 function ExerciseList({ exercises }) {
+  if (!exercises.length) return <p>Noch keine vergleichbaren Übungen vorhanden.</p>
   return <ul className="statistics-exercise-list">
     {exercises.map((exercise) => <li key={exercise.libraryId}>
       <span><strong>{exercise.name}</strong><small>Zuletzt verglichen am {shortDate(exercise.date)}</small></span>
@@ -28,39 +29,57 @@ function ExerciseList({ exercises }) {
   </ul>
 }
 
-export default function TrainingStatistics({ progress }) {
+export default function TrainingStatistics({ progress, onOpenCategory }) {
   return <div className="training-statistics">
-    <p>Jede Übung wird nur mit ihrer letzten Ausführung derselben ID verglichen. Pro Tag mittelt die App zuerst die Übungen jeder Muskelgruppe, dann die Muskelgruppen im Krafttraining. Die anderen Kategorien mitteln ihre vergleichbaren Übungen direkt. Der Gesamtwert mittelt die an diesem Tag bewertbaren Kategorien gleichgewichtet.</p>
-    <p>Die Diagramme beginnen bei 100 und schreiben diese prozentualen Tagesänderungen fort. Sie zeigen deinen persönlichen Trend, keine Bewertung gegenüber anderen Personen.</p>
-    <p>Mehr als +1 % gilt als Verbesserung, weniger als −1 % als Rückgang. Dazwischen zeigt die App Stagnation. Nur vergleichbare, abgeschlossene Übungen zählen.</p>
-    <details className="training-stat-method">
-      <summary>Wie bewertet die App einzelne Übungen?</summary>
-      <p>Bei Kraftübungen zählt der beste geschätzte Kraftwert aus Gewicht und Wiederholungen: Last × (1 + Wiederholungen ÷ 30). Bei Übungen ohne Gewicht zählen Wiederholungen. Sprünge nutzen die gemessene Höhe, Core-Halteübungen die Dauer.</p>
-      <p>Ausdauer vergleicht Tempo bei gleicher Distanz oder Strecke bei gleichem geführten Protokoll. Bei wiederholten Sprints zählt die durchschnittliche Sprintzeit. Unterschiedliche Messarten oder Protokolle werden nicht miteinander verrechnet.</p>
-    </details>
+    <p>Jede Übung wird mit ihrer letzten Ausführung derselben ID verglichen. Im Krafttraining entstehen daraus Muskelgruppenwerte; anschließend werden die Muskelgruppen zum Krafttrainingstrend zusammengefasst.</p>
+    <p>Die Diagramme starten bei 100 und zeigen deinen persönlichen Verlauf. Tippe auf eine Kategorie, um ihre Details zu öffnen.</p>
     <div className="training-statistics-categories">
-      {progress.categories.map((category) => <details className="training-stat-category" key={category.name}>
-        <summary><span>{category.name}</span><TrainingTrend result={category} /></summary>
-        <div className="training-stat-category-content">
-          <TrainingLineChart label={category.name} series={category.series} />
-          {category.series.length > 0 && <p>Aktueller Trendindex: <strong>{formatIndex(category.series.at(-1).value)}</strong></p>}
-          {category.groups.length > 0 && <div className="training-stat-groups">
-            <h4>Muskelgruppen</h4>
-            {category.groups.map((group) => <details className="training-stat-group" key={group.name}>
-              <summary><span>{group.name}</span><TrainingTrend result={group} /></summary>
-              <div className="training-stat-group-content">
-                <TrainingLineChart label={group.name} series={group.series} />
-                <h5>Übungen</h5><ExerciseList exercises={group.exercises} />
-              </div>
-            </details>)}
-          </div>}
-          {category.groups.length === 0 && category.exercises.length > 0 && <>
-            <h4>Übungen</h4><ExerciseList exercises={category.exercises} />
-          </>}
-          {category.exercises.length === 0 && <p>Noch keine vergleichbaren Übungen in dieser Kategorie.</p>}
-        </div>
-      </details>)}
+      {progress.categories.map((category) => <button type="button" className="training-stat-card"
+        key={category.name} onClick={() => onOpenCategory(category.name)}
+        aria-label={`${category.name} öffnen`}>
+        <span className="training-stat-card-heading"><strong>{category.name}</strong>
+          <span aria-hidden="true">↗</span></span>
+        <TrainingLineChart label={category.name} series={category.series} />
+        <TrainingTrend result={category} />
+      </button>)}
     </div>
-    <p>Reine Anwesenheit beim Beach- oder Hallentraining, Aufwärmen und Auslaufen erhalten keinen Leistungswert. Bei Mobility-Dauer fehlt bislang eine eindeutige Leistungsgröße; längeres Dehnen gilt deshalb nicht automatisch als Fortschritt.</p>
+    <details className="training-stat-method">
+      <summary>Wie wird der Fortschritt berechnet?</summary>
+      <p>Pro Tag werden zuerst die Übungen jeder Muskelgruppe gemittelt, danach die Muskelgruppen im Krafttraining. Die anderen Kategorien mitteln vergleichbare Übungen direkt. Der Gesamtwert mittelt die an diesem Tag bewertbaren Kategorien gleichgewichtet.</p>
+      <p>Bei Kraftübungen zählt der beste geschätzte Kraftwert: Last × (1 + Wiederholungen ÷ 30). Bei Übungen ohne Gewicht zählen Wiederholungen. Sprünge nutzen die gemessene Höhe, Core-Halteübungen die Dauer.</p>
+      <p>Ausdauer vergleicht Tempo bei gleicher Distanz oder Strecke bei gleichem geführten Protokoll. Bei wiederholten Sprints zählt die durchschnittliche Sprintzeit. Unterschiedliche Messarten werden nicht miteinander verrechnet.</p>
+      <p>Mehr als +1 % gilt als Verbesserung, weniger als −1 % als Rückgang. Dazwischen zeigt die App Stagnation. Reine Anwesenheit und Mobility-Dauer erhalten keinen Leistungswert.</p>
+    </details>
+  </div>
+}
+
+export function StrengthStatistics({ category }) {
+  return <div className="training-statistics">
+    <p>Krafttraining fasst die vergleichbaren Übungen zunächst je Muskelgruppe zusammen. Jede Muskelgruppe zählt anschließend gleich viel für den Krafttrainingstrend.</p>
+    <div className="training-stat-summary"><TrainingTrend result={category} />
+      {category.series.length > 0 && <span>Trendindex {formatIndex(category.series.at(-1).value)}</span>}</div>
+    {category.groups.length ? <div className="training-stat-groups">
+      {category.groups.map((group) => <details className="training-stat-group" key={group.name}>
+        <summary>
+          <span className="training-stat-card-heading"><strong>{group.name}</strong><span aria-hidden="true">＋</span></span>
+          <TrainingLineChart label={group.name} series={group.series} />
+          <TrainingTrend result={group} />
+        </summary>
+        <div className="training-stat-group-content"><h3>Übungen</h3>
+          <ExerciseList exercises={group.exercises} /></div>
+      </details>)}
+    </div> : <p>Noch keine vergleichbaren Kraftübungen für Muskelgruppen vorhanden.</p>}
+  </div>
+}
+
+export function CategoryStatistics({ category }) {
+  return <div className="training-statistics">
+    <p>Vergleichbare Übungen dieser Kategorie werden pro Tag gleichgewichtet zusammengefasst.</p>
+    <TrainingLineChart label={category.name} series={category.series} />
+    <div className="training-stat-summary"><TrainingTrend result={category} />
+      {category.series.length > 0 && <span>Trendindex {formatIndex(category.series.at(-1).value)}</span>}</div>
+    <h3>Übungen</h3>
+    <ExerciseList exercises={category.exercises} />
+    {category.name === 'Core und Mobility' && <p>Eine längere Mobility-Dauer gilt nicht automatisch als Fortschritt. Dafür ist noch keine eindeutige Leistungsgröße erfasst.</p>}
   </div>
 }
