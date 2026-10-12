@@ -146,10 +146,14 @@
 .home-calendar-number { grid-column: 1; grid-row: 1; justify-self: start; line-height: 1; font-size: 0.72rem; font-weight: 750; }
 .home-calendar-activity { grid-column: 2; grid-row: 1; justify-self: end; display: grid; place-items: center; min-width: 14px; font-size: 0.78rem; line-height: 1; }
 .home-steel-dumbbell { width: 17px; height: 16px; }
-.home-calendar-performance { grid-column: 1 / -1; grid-row: 2; align-self: center; justify-self: center; min-height: 23px; font-size: 1.17rem; line-height: 1; }
+.home-calendar-performance { grid-column: 1 / -1; grid-row: 2; align-self: center; justify-self: center; display: grid; place-items: center; width: 100%; min-height: 23px; line-height: 1; }
 .home-calendar-performance.is-unchanged { color: #b5bab8; font-family: Arial, sans-serif; font-size: 1.55rem; font-weight: 800; }
+.home-performance-graph { display: block; width: min(100%, 46px); height: 22px; overflow: visible; filter: drop-shadow(0 0 3px currentColor); }
+.home-performance-graph.is-improved { color: #84f5a1; }
+.home-performance-graph.is-decline { color: #ff687a; }
 .home-calendar-legend { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 14px; color: #bac7bd; font-size: 0.7rem; }
 .home-calendar-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.home-calendar-legend .home-performance-graph { width: 26px; height: 14px; }
 .home-calendar-legend .performance-minus { color: #b5bab8; font-style: normal; font-size: 1rem; font-weight: 800; }
 .home-calendar-hint { margin: 13px 0 0; color: #aab8ac; font-size: 0.77rem; line-height: 1.4; }
 .home-calendar-method { margin-top: 10px; color: #b8c6ba; font-size: 0.78rem; line-height: 1.5; }

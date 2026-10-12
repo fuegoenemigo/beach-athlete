@@ -6,8 +6,7 @@ import { isOpenTraining } from './trainingModel.js'
 import EntryWindow from './EntryWindow.jsx'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-const performanceLabels = { decline: 'Rückgang', unchanged: 'Gleich', improved: 'Leicht besser' }
-const performanceSymbols = { decline: '📉', unchanged: '−', improved: '📈' }
+const performanceLabels = { decline: 'Rückgang', unchanged: 'Gleich', improved: 'Verbesserung' }
 const percent = (value) => `${value > 0 ? '+' : ''}${value.toFixed(1).replace('.', ',')} %`
 const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -35,6 +34,17 @@ function SteelDumbbell() {
     <rect x="21" y="4" width="6" height="14" rx="1.5" fill="#c6d0d7" />
     <rect x="27" y="7" width="4" height="8" rx="1.2" fill="#9baab4" />
     <path d="M6 5h4m12 0h4" stroke="#f5f8fa" strokeWidth="1" strokeLinecap="round" />
+  </svg>
+}
+
+function PerformanceGraph({ status }) {
+  if (status !== 'improved' && status !== 'decline') return null
+  const path = status === 'improved'
+    ? 'M2 17 L11 14 L18 15 L27 9 L34 11 L46 3'
+    : 'M2 3 L11 7 L18 5 L27 12 L34 10 L46 17'
+  return <svg className={`home-performance-graph is-${status}`} viewBox="0 0 48 20"
+    fill="none" aria-hidden="true" focusable="false">
+    <path d={path} stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 
@@ -83,20 +93,20 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
             {recovery ? RECOVERY_DAY.emoji : activity?.icon === 'barbell' ? <SteelDumbbell /> : activity?.emoji}
           </span>
           {!recovery && <span className={`home-calendar-performance${performance?.status && performance.status !== 'unrated' ? ` is-${performance.status}` : ''}`}
-            aria-hidden="true">{performanceSymbols[performance?.status] ?? ''}</span>}
+            aria-hidden="true">{performance?.status === 'unchanged' ? '−' : <PerformanceGraph status={performance?.status} />}</span>}
         </button>
       })}
     </div>
     <div className="home-calendar-legend" aria-label="Kalendersymbole">
-      <span>📉 Rückgang</span>
+      <span><PerformanceGraph status="decline" /> Rückgang</span>
       <span><i className="performance-minus">−</i> Gleich</span>
-      <span>📈 Leicht besser</span>
+      <span><PerformanceGraph status="improved" /> Verbesserung</span>
       <span>🌿 Regeneration</span>
     </div>
     <p className="home-calendar-hint">Das große Symbol zeigt den Vergleich mit früheren Trainings. Tage ohne Eintrag bis heute gelten automatisch als Regeneration. Volleyballspiele und Volleyballtraining bleiben vorerst ohne Wertung.</p>
     <details className="home-calendar-method">
       <summary>Wie entsteht die Wertung?</summary>
-      <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Aus den prozentualen Änderungen entsteht der Tagesdurchschnitt. Unter −1 % erscheint 📉, zwischen −1 % und +1 % ein graues Minus und über +1 % 📈.</p>
+      <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Aus den prozentualen Änderungen entsteht der Tagesdurchschnitt. Unter −1 % erscheint der rote Graph, zwischen −1 % und +1 % ein graues Minus und über +1 % der grüne Graph.</p>
       <p>Bei Kraftübungen zählt der beste geschätzte Kraftwert aus Gewicht und Wiederholungen. Bei Sprüngen zählt die gemessene Höhe, bei Core-Halteübungen die Dauer und bei Ausdauer mit gleicher Distanz das Tempo. Fehlt ein vergleichbarer Messwert, bleibt der Tag neutral.</p>
     </details>
   </section>
