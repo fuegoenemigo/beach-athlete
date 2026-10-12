@@ -7,7 +7,9 @@ import EntryWindow from './EntryWindow.jsx'
 import PerformanceGraph from './PerformanceGraph.jsx'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-const performanceLabels = { decline: 'Rückgang', unchanged: 'Gleich', improved: 'Verbesserung' }
+const performanceLabels = { 'strong-decline': 'Starker Rückgang', decline: 'Rückgang',
+  unchanged: 'Keine Änderung', improved: 'Verbesserung',
+  'strong-improved': 'Starke Verbesserung' }
 const percent = (value) => `${value > 0 ? '+' : ''}${value.toFixed(1).replace('.', ',')} %`
 const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', {
   weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -88,15 +90,17 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
       })}
     </div>
     <div className="home-calendar-legend" aria-label="Kalendersymbole">
+      <span><PerformanceGraph status="strong-decline" /> Starker Rückgang</span>
       <span><PerformanceGraph status="decline" /> Rückgang</span>
-      <span><i className="performance-minus">−</i> Gleich</span>
+      <span><i className="performance-minus">−</i> Keine Änderung</span>
       <span><PerformanceGraph status="improved" /> Verbesserung</span>
+      <span><PerformanceGraph status="strong-improved" /> Starke Verbesserung</span>
       <span>🌿 Regeneration</span>
     </div>
     <p className="home-calendar-hint">Das große Symbol zeigt den Vergleich mit früheren Trainings. Tage ohne Eintrag bis heute gelten automatisch als Regeneration. Volleyballspiele und Volleyballtraining bleiben vorerst ohne Wertung.</p>
     <details className="home-calendar-method">
       <summary>Wie entsteht die Wertung?</summary>
-      <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Aus den prozentualen Änderungen entsteht der Tagesdurchschnitt. Unter −1 % erscheint der rote Graph, zwischen −1 % und +1 % ein graues Minus und über +1 % der grüne Graph.</p>
+      <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Jede vergleichbare Übung zählt gleich viel zum Tagesdurchschnitt: bis −15 % starker Rückgang, unter −5 % Rückgang, von −5 % bis +5 % keine Änderung, über +5 % Verbesserung und ab +15 % starke Verbesserung.</p>
       <p>Bei Kraftübungen zählt der beste geschätzte Kraftwert aus Gewicht und Wiederholungen. Bei Sprüngen zählt die gemessene Höhe, bei Core-Halteübungen die Dauer und bei Ausdauer mit gleicher Distanz das Tempo. Fehlt ein vergleichbarer Messwert, bleibt der Tag neutral.</p>
     </details>
   </section>

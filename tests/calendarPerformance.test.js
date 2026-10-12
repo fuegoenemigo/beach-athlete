@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { bestMetric, trainingDayPerformances } from '../src/calendarPerformance.js'
+import { bestMetric, calendarChangeStatus,
+  trainingDayPerformances } from '../src/calendarPerformance.js'
 
 const strength = (id, kg) => ({ libraryId: id, name: 'Bankdrücken', category: 'Krafttraining',
   type: 'strength', entries: [{ completed: true, reps: '8', weightKg: String(kg) }] })
@@ -49,12 +50,22 @@ test('a new dumbbell pair uses both weights without comparing against ambiguous 
   assert.equal(scores.get('2026-10-12').status, 'improved')
 })
 
-test('positive improvement uses one status regardless of magnitude', () => {
+test('an eight percent improvement uses the moderate calendar graph', () => {
   const scores = trainingDayPerformances([
     session('old', '2026-10-10', [strength('bench', 50)]),
     session('new', '2026-10-11', [strength('bench', 54)]),
   ])
   assert.equal(scores.get('2026-10-11').status, 'improved')
+})
+
+test('calendar uses five stages with five and fifteen percent boundaries', () => {
+  assert.equal(calendarChangeStatus(null), 'unrated')
+  assert.equal(calendarChangeStatus(-15), 'strong-decline')
+  assert.equal(calendarChangeStatus(-14.9), 'decline')
+  assert.equal(calendarChangeStatus(-5), 'unchanged')
+  assert.equal(calendarChangeStatus(5), 'unchanged')
+  assert.equal(calendarChangeStatus(5.1), 'improved')
+  assert.equal(calendarChangeStatus(15), 'strong-improved')
 })
 
 test('a day averages only comparable IDs and ignores an open training', () => {
@@ -81,7 +92,7 @@ test('calendar gives each comparable exercise ID equal weight across muscle grou
   const day = scores.get('2026-10-11')
   assert.equal(day.comparisons.length, 4)
   assert.ok(Math.abs(day.changePercent - 2.5) < 0.001)
-  assert.equal(day.status, 'improved')
+  assert.equal(day.status, 'unchanged')
   assert.ok(Math.abs(day.groupedChangePercent + 5) < 0.001)
 })
 

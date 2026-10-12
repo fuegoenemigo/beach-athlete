@@ -1,11 +1,20 @@
 import { exerciseMeasurement, hasLegacyValues, isConfirmedSet, isOpenTraining,
   isSportTrainingAttendance, effectiveTrainingWeight, isBodyweightOnly,
   dumbbellCount } from './trainingModel.js'
-import { aggregateTrainingComparisons, changeStatus } from './trainingAggregation.js'
+import { aggregateTrainingComparisons } from './trainingAggregation.js'
 
 const positive = (value) => value !== '' && value != null && Number(value) > 0
 const seconds = (value, unit) => Number(value) * (unit === 'min' ? 60 : 1)
 const meters = (value, unit) => Number(value) * (unit === 'km' ? 1000 : 1)
+
+export function calendarChangeStatus(changePercent) {
+  if (changePercent == null) return 'unrated'
+  if (changePercent <= -15) return 'strong-decline'
+  if (changePercent < -5) return 'decline'
+  if (changePercent <= 5) return 'unchanged'
+  if (changePercent < 15) return 'improved'
+  return 'strong-improved'
+}
 
 export function bestMetric(exercise) {
   const type = exerciseMeasurement(exercise)
@@ -87,7 +96,7 @@ function evaluateDay(exercises, previousById) {
   const changePercent = comparisons.length
     ? comparisons.reduce((sum, item) => sum + item.changePercent, 0) / comparisons.length
     : null
-  return { status: changeStatus(changePercent), changePercent,
+  return { status: calendarChangeStatus(changePercent), changePercent,
     groupedChangePercent: aggregate.changePercent,
     comparisons, categories: aggregate.categories, total: exercises.size }
 }

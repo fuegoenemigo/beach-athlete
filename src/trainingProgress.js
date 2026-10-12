@@ -37,7 +37,7 @@ export function trainingProgress(sessions) {
   const categoryEvents = new Map(SCORED_TRAINING_CATEGORIES.map((name) => [name, []]))
   const groupEvents = new Map()
   for (const [date, day] of days) {
-    if (day.status === 'unrated') continue
+    if (!day.comparisons.length) continue
     overallEvents.push({ date, changePercent: day.groupedChangePercent,
       exercises: day.comparisons })
     for (const category of day.categories) {
