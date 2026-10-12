@@ -58,7 +58,23 @@ textarea:focus-visible {
   padding: calc(28px + env(safe-area-inset-top, 0px)) 0 calc(32px + env(safe-area-inset-bottom, 0px));
 }
 
-.app-swipe-content { touch-action: pan-y; }
+.app-swipe-content { touch-action: pan-y pinch-zoom; }
+.app-swipe-content.is-swiping { position: relative; overflow: hidden; }
+.app-area-page { min-width: 0; }
+.app-swipe-content.is-swiping .app-area-page {
+  min-height: 100%;
+  background: var(--bg);
+  will-change: transform;
+}
+.app-area-page.is-to { position: absolute; top: 0; left: 0; width: 100%; }
+.app-swipe-content.is-settling .app-area-page.is-from,
+.app-swipe-content.is-settling .app-area-page.is-to {
+  transition: transform 280ms cubic-bezier(.22, 1, .36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-swipe-content.is-settling .app-area-page.is-from,
+  .app-swipe-content.is-settling .app-area-page.is-to { transition-duration: 0ms; }
+}
 
 .main-navigation {
   display: grid;

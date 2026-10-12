@@ -108,7 +108,7 @@ function GuidedPlanPreview({ plan }) {
   </>
 }
 
-function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, onDelete }) {
+function TrainingSessionCard({ session, planName, onShow, onOpen, onDelete }) {
   const ongoing = isOpenTraining(session)
   return <article id={`training-session-${session.id}`} className={`diary-panel training-session-card${ongoing ? ' training-session-open' : ''}`}>
     <div className="volleyball-day-header">
@@ -122,17 +122,7 @@ function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, on
       <p className="training-open-hint">Diese Einheit ist noch nicht abgeschlossen.</p>
       <button type="button" className="primary-button" onClick={onOpen}>Training fortsetzen</button>
     </>}
-    <button type="button" className="secondary-button" aria-expanded={expanded} onClick={onToggle}>
-      {expanded ? 'Training einklappen' : 'Training anzeigen'}
-    </button>
-    {expanded && <div className="training-session-details">
-      <TrainingHistoryDetails session={session} />
-      <div className="training-history-actions">
-        {!ongoing && <button type="button" className="secondary-button" onClick={onOpen}>
-          {isSportTrainingAttendance(session) ? 'Datum ändern' : 'Training bearbeiten'}
-        </button>}
-      </div>
-    </div>}
+    <button type="button" className="secondary-button" onClick={onShow}>Training anzeigen</button>
     <button type="button" className="secondary-button volleyball-delete-action" onClick={onDelete}>
       Training löschen
     </button>
@@ -266,6 +256,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setCustomDate(false)
     setSelectedDate(today())
     if (plan) setNewCategory(plan.category)
+    setShowPlans(false)
+    setExpandedPlanCategory(null)
     setNewSessionOpen(true)
   }
   function saveSportTraining() {
@@ -471,6 +463,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setFlowMessage('')
   }
   function openHistorySession(session) {
+    setShowHistory(false)
+    setExpandedSessionId(null)
     const category = canonicalCategory(session.category, session.subcategory)
     if (category !== session.category) {
       setSessions((previous) => previous.map((item) => item.id === session.id
@@ -748,10 +742,25 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       <p className="helper-text">Schließe dein offenes Training ab oder verwirf es, bevor du eine neue Einheit startest.</p>
       <div className="volleyball-day-list">{openSessions.map((session) => <TrainingSessionCard
         key={session.id} session={session} planName={planNameFor(session)}
-        expanded={expandedSessionId === session.id}
-        onToggle={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
+        onShow={() => { setShowHistory(false); setExpandedSessionId(session.id) }}
         onOpen={() => openHistorySession(session)} onDelete={() => deleteSession(session)} />)}</div>
     </section>}
+
+    {expandedSessionId && sessions.some((session) => session.id === expandedSessionId)
+      && <EntryWindow title={`Training · ${formatDate(sessions.find((session) => session.id === expandedSessionId).date)}`}
+        subtitle="TRAININGSERGEBNISSE" onClose={() => { setExpandedSessionId(null); setShowHistory(false) }}>
+        <TrainingHistoryDetails session={sessions.find((session) => session.id === expandedSessionId)} />
+        <div className="training-history-actions">
+          <button type="button" className="secondary-button" onClick={() => setExpandedSessionId(null)}>
+            {showHistory ? '← Alle Trainingseinheiten' : 'Schließen'}
+          </button>
+          <button type="button" className="secondary-button"
+            onClick={() => openHistorySession(sessions.find((session) => session.id === expandedSessionId))}>
+            {isOpenTraining(sessions.find((session) => session.id === expandedSessionId))
+              ? 'Training fortsetzen' : 'Training bearbeiten'}
+          </button>
+        </div>
+      </EntryWindow>}
 
     {!activeSession && <section className="diary-panel">
       <div className="section-heading"><div><p className="eyebrow">NEUE EINHEIT</p><h2>Training starten</h2></div></div>
@@ -875,21 +884,24 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         <div><p className="eyebrow">WIEDERVERWENDBAR</p><h2>Trainingsvorlagen</h2></div>
       </div>
       <button type="button" className="secondary-button training-section-toggle"
-        aria-expanded={showPlans} onClick={() => setShowPlans((open) => !open)}>
-        {showPlans ? 'Vorlagen schließen' : 'Vorlagen anzeigen'}
+        onClick={() => { setExpandedPlanCategory(null); setShowPlans(true) }}>
+        Vorlagen anzeigen
       </button>
-      {showPlans && <>
+      {showPlans && <EntryWindow title={planDraft ? 'Vorlage anpassen' : expandedPlanCategory ?? 'Trainingsvorlagen'}
+        subtitle="WIEDERVERWENDBAR" onClose={() => { setShowPlans(false); setPlanDraft(null); setExpandedPlanCategory(null) }}>
       {!planDraft && <>
         <p className="helper-text">Wähle einen Trainingsbereich und öffne dort eine passende Vorlage.</p>
         {openSessions.length > 0 && <p className="helper-text">Zum Starten einer Vorlage zuerst das offene Training abschließen.</p>}
-        <div className="training-plan-groups">{planGroups.map(({ category, plans }) =>
+        {expandedPlanCategory && <button type="button" className="secondary-button"
+          onClick={() => setExpandedPlanCategory(null)}>← Alle Kategorien</button>}
+        <div className="training-plan-groups">{planGroups.filter(({ category }) =>
+          !expandedPlanCategory || category === expandedPlanCategory).map(({ category, plans }) =>
           <section className="training-plan-group" key={category}>
-            <button type="button" className="training-plan-group-toggle"
-              aria-expanded={expandedPlanCategory === category}
-              onClick={() => setExpandedPlanCategory(expandedPlanCategory === category ? null : category)}>
+            {!expandedPlanCategory && <button type="button" className="training-plan-group-toggle"
+              onClick={() => setExpandedPlanCategory(category)}>
               <strong>{category}</strong><span>{plans.length} {plans.length === 1 ? 'Vorlage' : 'Vorlagen'}</span>
-              <span aria-hidden="true">{expandedPlanCategory === category ? '⌃' : '⌄'}</span>
-            </button>
+              <span aria-hidden="true">›</span>
+            </button>}
             {expandedPlanCategory === category && <div className="training-plan-group-content">
               {plans.map((plan) => <div className="training-plan-row" key={plan.id}>
                 <div><strong>{plan.name}</strong>
@@ -946,7 +958,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
               onClick={() => deletePlan(planDraft)}>Vorlage löschen</button>}
         </div>
       </div>}
-      </>}
+      </EntryWindow>}
     </section>}
 
     <section className="diary-panel">
@@ -956,28 +968,31 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       {!completedSessions.length ? <p className="helper-text">Hier sind aktuell keine abgeschlossenen Trainingseinheiten.</p>
         : <>
           <button type="button" className="secondary-button training-section-toggle"
-            aria-expanded={showHistory} onClick={() => setShowHistory((open) => !open)}>
-            {showHistory ? 'Trainingseinheiten einklappen' : 'Aktuelle Trainingseinheiten anzeigen'}
+            onClick={() => { setExpandedSessionId(null); setShowHistory(true) }}>
+            Aktuelle Trainingseinheiten anzeigen
           </button>
-          {showHistory && <div className="volleyball-day-list training-history-list">
+          {showHistory && !expandedSessionId && <EntryWindow title="Trainingseinheiten"
+            subtitle="DEIN VERLAUF" onClose={() => setShowHistory(false)}>
+          <div className="volleyball-day-list training-history-list">
             {completedSessions.map((session) => <TrainingSessionCard key={session.id}
               session={session} planName={planNameFor(session)}
-              expanded={expandedSessionId === session.id}
-              onToggle={() => setExpandedSessionId(expandedSessionId === session.id ? null : session.id)}
+              onShow={() => setExpandedSessionId(session.id)}
               onOpen={() => openHistorySession(session)} onDelete={() => deleteSession(session)} />)}
-          </div>}
+          </div>
+          </EntryWindow>}
         </>}
-      <button type="button" className="secondary-button" onClick={onOpenArchive}>Zum Archiv</button>
+      <button type="button" className="secondary-button" onClick={() => { setShowHistory(false); setExpandedSessionId(null); onOpenArchive() }}>Zum Archiv</button>
     </section>
 
     <section className="diary-panel training-library">
       <div className="section-heading"><div><p className="eyebrow">ÜBUNGEN</p>
         <h2>Übungsbibliothek verwalten</h2></div></div>
       <button type="button" className="secondary-button training-section-toggle"
-        aria-expanded={showLibrary} onClick={() => setShowLibrary((open) => !open)}>
-        {showLibrary ? 'Bibliothek schließen' : 'Bibliothek anzeigen'}
+        onClick={() => setShowLibrary(true)}>
+        Bibliothek anzeigen
       </button>
-      {showLibrary && <>
+      {showLibrary && <EntryWindow title="Übungsbibliothek" subtitle="ÜBUNGEN VERWALTEN"
+        onClose={() => setShowLibrary(false)}>
       <p className="helper-text">Jede Übung gehört zu einer Hauptkategorie und einer Muskelgruppe oder einem Schwerpunkt.</p>
       <label className="field-label" htmlFor="library-category">Hauptkategorie</label>
       <select id="library-category" className="field" value={libraryCategory}
@@ -1065,7 +1080,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
               </select>
             </label>)}
         </div>}
-      </>}
+      </EntryWindow>}
     </section>
   </div>
 }

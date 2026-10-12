@@ -147,6 +147,8 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     setActiveDayId(day.id);
     resetGame();
     setShowForm(true);
+    setShowSavedDays(false);
+    setExpandedDayId(null);
     setNotice("");
   }
 
@@ -537,11 +539,16 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
       {savedDays.length === 0 ? <p className="helper-text">Hier sind aktuell keine {label}-Spieltage.</p>
         : <>
           <button type="button" className="secondary-button volleyball-list-toggle"
-            aria-expanded={showSavedDays} onClick={() => setShowSavedDays((open) => !open)}>
-            {showSavedDays ? "Spieltage einklappen" : "Aktuelle Spieltage anzeigen"}
+            onClick={() => { setExpandedDayId(null); setShowSavedDays(true); }}>
+            Aktuelle Spieltage anzeigen
           </button>
-          {showSavedDays && <div className="volleyball-day-list">
-          {savedDays.map((day) => <div className="diary-panel" id={`volleyball-day-${sport}-${day.id}`} key={day.id}>
+          {showSavedDays && <EntryWindow
+            title={expandedDayId ? `${label} · ${formatDate(savedDays.find((day) => day.id === expandedDayId)?.date ?? today())}` : 'Meine Spieltage'}
+            subtitle={label.toUpperCase()} onClose={() => { setShowSavedDays(false); setExpandedDayId(null); }}>
+          {expandedDayId && <button type="button" className="secondary-button"
+            onClick={() => { setEditingLegacySetId(null); setExpandedDayId(null); }}>← Alle Spieltage</button>}
+          <div className="volleyball-day-list">
+          {savedDays.filter((day) => !expandedDayId || day.id === expandedDayId).map((day) => <div className="diary-panel" id={`volleyball-day-${sport}-${day.id}`} key={day.id}>
             <div className="volleyball-day-header"><h3>{formatDate(day.date)}</h3>
               <span>{day.games?.length ?? day.sets.length} {day.games ? "Spiele" : "Sätze"}</span></div>
             <p>{gameLabel(day.gameType)} · {day.sets.length} Sätze</p>
@@ -553,10 +560,10 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
               </button>}
             {day.dayStatus === "ongoing" && <button type="button" className="primary-button"
               onClick={() => resumeDay(day)}>Spieltag fortsetzen</button>}
-            <button type="button" className="secondary-button" aria-expanded={expandedDayId === day.id}
-              onClick={() => { setEditingLegacySetId(null); setExpandedDayId(expandedDayId === day.id ? null : day.id); }}>
-              {expandedDayId === day.id ? "Details schließen" : day.games ? "Spiele anzeigen" : "Sätze anzeigen"}
-            </button>
+            {!expandedDayId && <button type="button" className="secondary-button"
+              onClick={() => { setEditingLegacySetId(null); setExpandedDayId(day.id); }}>
+              {day.games ? "Spiele anzeigen" : "Sätze anzeigen"}
+            </button>}
             {expandedDayId === day.id && <div className="volleyball-day-list volleyball-day-details">
               {day.gameType === "tournament" && <>
                 {day.tournamentName && <p>Austragungsort: {day.tournamentLocation}</p>}
@@ -615,7 +622,8 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
               setExpandedDayId(null);
             }}>Spieltag löschen</button>
           </div>)}
-          </div>}
+          </div>
+          </EntryWindow>}
         </>}
       <button type="button" className="secondary-button" onClick={onOpenArchive}>Zum Archiv</button>
     </section>

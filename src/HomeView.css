@@ -103,8 +103,13 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 3px;
   text-align: center;
-  touch-action: pan-y;
+  touch-action: pan-y pinch-zoom;
 }
+.home-calendar-month-viewport { overflow: hidden; touch-action: pan-y pinch-zoom; }
+.home-calendar-month-track { display: flex; width: 300%; align-items: stretch; will-change: transform; }
+.home-calendar-month-track.is-settling { transition: transform 280ms cubic-bezier(.22, 1, .36, 1); }
+.home-calendar-month-panel { flex: 0 0 33.333333%; min-width: 0; align-content: start; }
+.home-calendar-month-panel[aria-hidden="true"] { pointer-events: none; }
 
 .home-weekday {
   padding: 2px 0;
@@ -149,10 +154,11 @@
 .home-calendar-legend .home-performance-graph { width: 26px; height: 14px; }
 .home-calendar-legend .performance-minus { color: #b5bab8; font-style: normal; font-size: 1rem; font-weight: 800; }
 .home-calendar-hint { margin: 13px 0 0; color: #aab8ac; font-size: 0.77rem; line-height: 1.4; }
-.home-calendar-method { margin-top: 10px; color: #b8c6ba; font-size: 0.78rem; line-height: 1.5; }
-.home-calendar-method summary { cursor: pointer; color: #dce8dc; font-weight: 700; }
-.home-calendar-method p { margin: 8px 0 0; }
+.home-calendar-method { margin-top: 10px; color: #dce8dc; font-size: 0.78rem; font-weight: 700; }
 .home-day-details { margin-top: 16px; padding-top: 15px; border-top: 1px solid #344638; }
+@media (prefers-reduced-motion: reduce) {
+  .home-calendar-month-track.is-settling { transition-duration: 0ms; }
+}
 .home-day-dialog { margin-top: 0; padding-top: 0; border-top: 0; }
 .home-day-details h3 { margin: 0 0 12px; font-size: 1rem; text-transform: capitalize; }
 .home-day-performance { margin: 0 0 12px; color: #d6e1d7; font-size: 0.85rem; line-height: 1.4; }

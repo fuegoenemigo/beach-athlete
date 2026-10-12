@@ -96,7 +96,16 @@ function App() {
   const [activityTarget, setActivityTarget] = useState(null);
   const activityNavigationId = useRef(0);
   const pageSwipeStart = useRef(null);
+  const pageSlideRef = useRef(null);
+  const swipeContentRef = useRef(null);
+  const pageFrame = useRef(null);
+  const pageTimer = useRef(null);
+  const [pageSlide, setPageSlide] = useState(null);
   const suppressPageClickUntil = useRef(0);
+  useEffect(() => () => {
+    window.cancelAnimationFrame(pageFrame.current);
+    window.clearTimeout(pageTimer.current);
+  }, []);
   const [exerciseLibrary, setExerciseLibrary] = useState(loadExerciseLibrary);
   const [trainingPlans, setTrainingPlans] = useState(loadTrainingPlans);
   const [athleteProfile, setAthleteProfile] = useState(loadAthleteProfile);
@@ -241,7 +250,15 @@ function App() {
     }
   }
 
+  function clearPageSlide() {
+    window.cancelAnimationFrame(pageFrame.current);
+    window.clearTimeout(pageTimer.current);
+    pageSlideRef.current = null;
+    setPageSlide(null);
+  }
+
   function selectArea(area) {
+    clearPageSlide();
     if (area === "home") {
       setArchiveTarget(null);
       setHomeInitialView(null);
@@ -253,6 +270,7 @@ function App() {
   }
 
   function openHomeView(view) {
+    clearPageSlide();
     setArchiveTarget(null);
     setHomeInitialView(view);
     setHomeViewKey((key) => key + 1);
@@ -261,6 +279,7 @@ function App() {
   }
 
   function openActivity(entry) {
+    clearPageSlide();
     const destination = activityDestination(entry);
     if (destination === "archive") {
       setArchiveTarget({ id: entry.id, type: entry.type, date: entry.date });
@@ -277,6 +296,7 @@ function App() {
   }
 
   function createCalendarEntry(type, date) {
+    clearPageSlide();
     activityNavigationId.current += 1;
     setActivityTarget({ type, date, mode: "create", navigationId: activityNavigationId.current });
     setActiveArea(type);
@@ -286,11 +306,55 @@ function App() {
 
   function startPageSwipe(event) {
     pageSwipeStart.current = null;
-    if (event.touches.length !== 1 || event.target.closest(
-      '.home-calendar, input, textarea, select, [contenteditable="true"], [role="slider"]')) return;
+    if (pageSlideRef.current?.settling || document.querySelector('.entry-window')
+      || event.touches.length !== 1 || event.target.closest(
+        '.home-calendar-month-viewport, input, textarea, select, [contenteditable="true"], [role="slider"]')) return;
     const touch = event.touches[0];
     if (touch.clientX < 24 || touch.clientX > window.innerWidth - 24) return;
-    pageSwipeStart.current = { x: touch.clientX, y: touch.clientY };
+    pageSwipeStart.current = { x: touch.clientX, y: touch.clientY,
+      width: event.currentTarget.getBoundingClientRect().width };
+  }
+
+  function dragPageSwipe(event) {
+    const start = pageSwipeStart.current;
+    if (!start || event.touches.length !== 1) return;
+    const touch = event.touches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+    const direction = dx < 0 ? 'left' : 'right';
+    const to = adjacentArea(activeArea, direction);
+    if (to === activeArea) return;
+    const slide = { from: activeArea, to, direction, width: start.width,
+      offset: Math.max(-start.width, Math.min(start.width, dx)), settling: false };
+    if (pageSlideRef.current?.to === to && !pageSlideRef.current.settling) {
+      pageSlideRef.current = slide;
+      swipeContentRef.current?.style.setProperty('--swipe-offset', `${slide.offset}px`);
+      return;
+    }
+    pageSlideRef.current = slide;
+    setPageSlide(slide);
+  }
+
+  function settlePageSwipe(slide, commit, offset) {
+    if (!slide) return;
+    const initial = { ...slide, offset, settling: false };
+    pageSlideRef.current = initial;
+    setPageSlide(initial);
+    window.cancelAnimationFrame(pageFrame.current);
+    window.clearTimeout(pageTimer.current);
+    pageFrame.current = window.requestAnimationFrame(() => {
+      const target = { ...initial, offset: commit
+        ? slide.direction === 'left' ? -slide.width : slide.width : 0,
+      settling: true };
+      pageSlideRef.current = target;
+      setPageSlide(target);
+    });
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    pageTimer.current = window.setTimeout(() => {
+      if (commit) selectArea(slide.to);
+      else { pageSlideRef.current = null; setPageSlide(null); }
+    }, reducedMotion ? 30 : 300);
   }
 
   function finishPageSwipe(event) {
@@ -300,10 +364,25 @@ function App() {
     const touch = event.changedTouches[0];
     const direction = swipeDirection(start, { x: touch.clientX, y: touch.clientY });
     const next = adjacentArea(activeArea, direction);
-    if (next !== activeArea) {
+    const slide = pageSlideRef.current;
+    if (next !== activeArea && direction) {
       suppressPageClickUntil.current = Date.now() + 350;
-      selectArea(next);
-    }
+      settlePageSwipe(slide ?? { from: activeArea, to: next, direction,
+        width: start.width, offset: 0 }, true, touch.clientX - start.x);
+    } else if (slide) settlePageSwipe(slide, false, slide.offset);
+  }
+
+  function areaVisible(area) {
+    return activeArea === area || pageSlide?.to === area;
+  }
+
+  function areaStyle(area) {
+    if (!pageSlide || (area !== pageSlide.from && area !== pageSlide.to)) return undefined;
+    const incoming = area === pageSlide.to;
+    const startOffset = pageSlide.direction === 'left' ? pageSlide.width : -pageSlide.width;
+    return { transform: incoming
+      ? `translate3d(calc(var(--swipe-offset) + ${startOffset}px), 0, 0)`
+      : 'translate3d(var(--swipe-offset), 0, 0)' };
   }
 
   if (!cloudState.authorized) {
@@ -430,26 +509,34 @@ function App() {
       {criticalNotice && <p className="notice-message" role="alert">{criticalNotice}</p>}
       {notice && <p className="notice-message transient-notice" role="status">{notice}</p>}
 
-      <div className="app-swipe-content" onTouchStart={startPageSwipe}
-        onTouchEnd={finishPageSwipe} onTouchCancel={() => { pageSwipeStart.current = null; }}
+      <div className={`app-swipe-content${pageSlide ? ' is-swiping' : ''}${pageSlide?.settling ? ' is-settling' : ''}`}
+        ref={swipeContentRef} style={{ '--swipe-offset': `${pageSlide?.offset ?? 0}px` }}
+        onTouchStart={startPageSwipe} onTouchMove={dragPageSwipe}
+        onTouchEnd={finishPageSwipe} onTouchCancel={() => {
+          pageSwipeStart.current = null;
+          settlePageSwipe(pageSlideRef.current, false, pageSlideRef.current?.offset ?? 0);
+        }}
         onClickCapture={(event) => {
           if (Date.now() < suppressPageClickUntil.current) {
             event.preventDefault();
             event.stopPropagation();
           }
         }}>
-      {activeArea === "home" && <HomeView key={homeViewKey}
+      {areaVisible("home") && <div className={`app-area-page${pageSlide?.from === 'home' ? ' is-from' : ''}${pageSlide?.to === 'home' ? ' is-to' : ''}`}
+        style={areaStyle('home')}><HomeView key={homeViewKey}
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
-        sessions={sessions} volleyballDays={volleyballDays} initialView={homeInitialView}
+        sessions={sessions} volleyballDays={volleyballDays}
+        initialView={activeArea === 'home' ? homeInitialView : null}
         archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}>
         <DataSecurity cloudState={cloudState}
           onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}
           onRetry={() => cloudRef.current?.retry()}
           onExport={exportData} onExportRaw={exportRawData}
           onImport={importData} storageDamaged={storageDamaged} />
-      </HomeView>}
+      </HomeView></div>}
 
-      <div hidden={activeArea !== "training"}>
+      <div className={`app-area-page${pageSlide?.from === 'training' ? ' is-from' : ''}${pageSlide?.to === 'training' ? ' is-to' : ''}`}
+        hidden={!areaVisible('training')} style={areaStyle('training')}>
         <TrainingView sessions={sessions} setSessions={setSessions}
           exerciseLibrary={exerciseLibrary} setExerciseLibrary={setExerciseLibrary}
           trainingPlans={trainingPlans} setTrainingPlans={setTrainingPlans}
@@ -458,13 +545,15 @@ function App() {
           navigationTarget={activityTarget?.type === "training" ? activityTarget : null} />
       </div>
 
-      <div hidden={activeArea !== "beach"}>
+      <div className={`app-area-page${pageSlide?.from === 'beach' ? ' is-from' : ''}${pageSlide?.to === 'beach' ? ' is-to' : ''}`}
+        hidden={!areaVisible('beach')} style={areaStyle('beach')}>
         <VolleyballView sport="beach" volleyballDays={volleyballDays}
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
           onOpenArchive={() => openHomeView("archive")}
           navigationTarget={activityTarget?.type === "beach" ? activityTarget : null} />
       </div>
-      <div hidden={activeArea !== "indoor"}>
+      <div className={`app-area-page${pageSlide?.from === 'indoor' ? ' is-from' : ''}${pageSlide?.to === 'indoor' ? ' is-to' : ''}`}
+        hidden={!areaVisible('indoor')} style={areaStyle('indoor')}>
         <VolleyballView sport="indoor" volleyballDays={volleyballDays}
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
           onOpenArchive={() => openHomeView("archive")}

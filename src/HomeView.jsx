@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import HomeCalendar from './HomeCalendar.jsx'
+import EntryWindow from './EntryWindow.jsx'
 import ArchiveView from './ArchiveView.jsx'
 import StatisticsView from './StatisticsView.jsx'
 import { trainingProgress } from './trainingProgress.js'
@@ -45,6 +46,9 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
 
   if (selectedFeature) {
     if (selectedFeature === 'profile' || selectedFeature === 'archive') return (
+      <EntryWindow title={selectedFeature === 'profile' ? 'Mein Profil' : 'Archiv'}
+        subtitle={selectedFeature === 'profile' ? 'DEIN KONTO' : 'DEINE EINTRÄGE'}
+        onClose={() => setSelectedFeature(null)}>
       <section className="home-detail home-functional-detail">
         <button className="home-back" type="button" onClick={() => setSelectedFeature(null)}>
           ← Zur Startseite
@@ -78,9 +82,12 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           {children}
         </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
       </section>
+      </EntryWindow>
     )
     const feature = FEATURES[selectedFeature]
     return (
+      <EntryWindow title={feature.title} subtitle="DEINE ENTWICKLUNG"
+        onClose={() => setSelectedFeature(null)}>
       <section className="home-detail" aria-labelledby="home-detail-title">
         <button className="home-back" type="button" onClick={() => setSelectedFeature(null)}>
           ← Zur Startseite
@@ -107,6 +114,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           <p>Startwert 60 · maximal 99. Über 80 wächst jeder Wert um höchstens zwei Punkte pro Woche. Nach je elf vollen Tagen ohne passendes Training sinkt der jeweilige Wert um einen Punkt, nie unter 60. Körpergewicht wird bei geeigneten Kraftübungen berücksichtigt; regelmäßige Mobility-Einheiten zählen zur Körperkontrolle.</p>
         </div>}
       </section>
+      </EntryWindow>
     )
   }
 
