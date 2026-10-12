@@ -126,11 +126,37 @@ export function isConfirmedSet(entry, type) {
     || (entry.completed === undefined && hasMeasuredValue(entry, type))
 }
 
-export function confirmAndAdvanceSet(entries, type, bodyweightKg = '') {
+export function suggestedTrainingSet(draft, previous, type, exercise = {}) {
+  if (!draft || !previous) return draft
+  const fields = type === 'strength' ? ['reps', 'weightKg']
+    : type === 'reps' ? exercise.loadMode === 'bodyweight' ? ['reps', 'weightKg'] : ['reps']
+    : type === 'jump' ? ['reps', 'heightCm', 'weightKg']
+      : type === 'carry' ? ['distanceValue', 'durationValue', 'weightKg']
+        : type === 'distance' ? ['distanceValue', 'durationValue'] : ['durationValue']
+  const suggested = { ...draft }
+  for (const field of fields) {
+    if (suggested[field] !== '' && suggested[field] != null) continue
+    if (previous[field] === '' || previous[field] == null) continue
+    const number = Number(previous[field])
+    if (!Number.isFinite(number) || number < 0) continue
+    let value = number
+    if (field === 'distanceValue' && (previous.distanceUnit ?? 'm') !== (draft.distanceUnit ?? 'm')) {
+      value *= previous.distanceUnit === 'km' ? 1000 : 0.001
+    }
+    if (field === 'durationValue' && (previous.durationUnit ?? 's') !== (draft.durationUnit ?? 's')) {
+      value *= previous.durationUnit === 'min' ? 60 : 1 / 60
+    }
+    suggested[field] = String(Number(value.toFixed(4)))
+  }
+  return suggested
+}
+
+export function confirmAndAdvanceSet(entries, type, bodyweightKg = '', previous = null, exercise = {}) {
   const draft = entries.find((entry) => entry.completed === false)
-  if (!draft || !hasMeasuredValue(draft, type)) return null
+  const values = suggestedTrainingSet(draft, previous, type, exercise)
+  if (!values || !hasMeasuredValue(values, type)) return null
   return [...entries.map((entry) => entry.id === draft.id
-    ? { ...entry, completed: true, confirmedAt: new Date().toISOString(),
+    ? { ...values, completed: true, confirmedAt: new Date().toISOString(),
       ...(bodyweightKg ? { bodyweightKg } : {}) } : entry),
   { ...createTrainingSet(type, draft.durationUnit ?? 's'), completed: false }]
 }

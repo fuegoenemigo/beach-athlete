@@ -15,6 +15,7 @@ import {
   createLoggedExercise, createTrainingSet, hasLegacyValues,
   canonicalCategory,
   hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
+  previousExercise, previousSetFor, suggestedTrainingSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
 } from './trainingModel.js'
@@ -372,13 +373,19 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     const entries = exercise.entries ?? []
     const draft = entries.find((entry) => entry.completed === false)
+    const previous = previousExercise(sessions, activeSession, exercise)
+    const sameType = previous && exerciseMeasurement({ ...previous.item,
+      category: previous.item.category ?? previous.session.category }) === type
+    const reference = sameType ? previousSetFor(previous,
+      entries.filter((entry) => isConfirmedSet(entry, type)).length) : null
+    const values = suggestedTrainingSet(draft, reference, type, exercise)
     if (timerIsActive(activeSession.id, exercise.id, draft?.id)) {
       setFlowMessage('Bitte stoppe zuerst die Zeitmessung für diesen Satz.'); return
     }
-    if (draft && !hasRequiredIntervalDuration(exercise, draft)) {
+    if (draft && !hasRequiredIntervalDuration(exercise, values)) {
       setFlowMessage('Bitte gib die tatsächlich geschaffte Dauer dieses Intervalls ein.'); return
     }
-    const advanced = confirmAndAdvanceSet(entries, type, athleteProfile.bodyweightKg)
+    const advanced = confirmAndAdvanceSet(entries, type, athleteProfile.bodyweightKg, reference, exercise)
     if (!advanced) {
       setFlowMessage('Bitte gib die Werte für diesen Satz ein.'); return
     }

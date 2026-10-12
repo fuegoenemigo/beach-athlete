@@ -4,6 +4,7 @@ import {
   createLoggedExercise, createTrainingSet, exerciseIdentity, hasLegacyValues,
   previousExercise, previousSetFor, formatTrainingEntry, canonicalCategory,
   hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
+  suggestedTrainingSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   createSportTrainingSession, isSportTrainingAttendance,
 } from '../src/trainingModel.js'
@@ -139,6 +140,42 @@ test('each current set references only the matching set from the last exercise',
     previousSetFor(previous, index), 'strength')),
   ['10 Wdh. · 50 kg', '8 Wdh. · 55 kg', '6 Wdh. · 60 kg'])
   assert.equal(previousSetFor(previous, 3), null)
+})
+
+test('a matching prior set appears as a suggestion and is saved only on confirmation', () => {
+  const prior = { reps: '8', weightKg: '60', bodyweightKg: '70', notes: 'old note' }
+  const draft = { ...createTrainingSet('strength'), completed: false }
+  assert.equal(draft.reps, '')
+  assert.deepEqual([suggestedTrainingSet(draft, prior, 'strength').reps,
+    suggestedTrainingSet(draft, prior, 'strength').weightKg], ['8', '60'])
+  const [saved, next] = confirmAndAdvanceSet([draft], 'strength', '75', prior)
+  assert.equal(saved.reps, '8')
+  assert.equal(saved.weightKg, '60')
+  assert.equal(saved.bodyweightKg, '75')
+  assert.equal(saved.notes, undefined)
+  assert.equal(next.reps, '')
+  assert.equal(confirmAndAdvanceSet([next], 'strength'), null)
+})
+
+test('typed values override prior values field by field and missing set numbers stay empty', () => {
+  const prior = { reps: '8', weightKg: '60' }
+  const draft = { ...createTrainingSet('strength'), reps: '10', completed: false }
+  const [saved] = confirmAndAdvanceSet([draft], 'strength', '', prior)
+  assert.equal(saved.reps, '10')
+  assert.equal(saved.weightKg, '60')
+  assert.equal(confirmAndAdvanceSet([{ ...createTrainingSet('strength'), completed: false }],
+    'strength', '', null), null)
+})
+
+test('time and distance suggestions convert into the current set units', () => {
+  const prior = { distanceValue: '2.5', distanceUnit: 'km', durationValue: '1.5',
+    durationUnit: 'min' }
+  const draft = { ...createTrainingSet('distance'), completed: false }
+  const suggested = suggestedTrainingSet(draft, prior, 'distance')
+  assert.equal(suggested.distanceValue, '2500')
+  assert.equal(suggested.durationValue, '90')
+  const [saved] = confirmAndAdvanceSet([draft], 'distance', '', prior)
+  assert.equal(formatTrainingEntry(saved, 'distance'), '2500 m · 90 Sek.')
 })
 
 test('old training categories resolve to the requested new categories without guessing other sports', () => {

@@ -502,6 +502,8 @@
 
 .training-reference strong { display: block; color: #c0c9c2; font-size: 0.8rem; }
 .training-reference span { display: block; margin-top: 5px; }
+.training-suggestion-help { margin: -5px 0 12px; color: #aebbb1; font-size: 0.78rem; }
+.training-activity-fields input::placeholder { color: #8e9a90; opacity: 1; }
 
 .training-plan-evidence { display: block; margin: 7px 0; color: #8fc8ad; font-size: 0.82rem; }
 

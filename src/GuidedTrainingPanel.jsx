@@ -4,7 +4,7 @@ import TrainingTimer from './TrainingTimer.jsx'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   exerciseMeasurement, formatTrainingEntry, previousExercise, previousSetFor, isConfirmedSet,
-  hasLegacyValues, canonicalCategory, defaultMeasurement,
+  hasLegacyValues, canonicalCategory, defaultMeasurement, suggestedTrainingSet,
 } from './trainingModel.js'
 
 const legacyLabels = {
@@ -15,18 +15,20 @@ const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de
   day: '2-digit', month: '2-digit', year: 'numeric',
 })
 
-function NumberField({ label, value, onChange, step = 'any' }) {
+function NumberField({ label, value, suggestion, onChange, step = 'any' }) {
   return <label className="training-field">{label}
     <input className="field" type="number" inputMode="decimal" min="0" step={step}
-      value={value ?? ''} onChange={(event) => {
+      value={value ?? ''} placeholder={suggestion ?? ''} onChange={(event) => {
         const next = event.target.value
         if (next === '' || (Number.isFinite(Number(next)) && Number(next) >= 0)) onChange(next)
       }} />
   </label>
 }
 
-function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
+function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }) {
+  const suggested = suggestedTrainingSet(entry, previous, type, exercise)
   const number = (label, field, step) => <NumberField label={label} value={entry[field]}
+    suggestion={previous ? suggested[field] : ''}
     step={step} onChange={(value) => onChange({ [field]: value })} />
   const timed = ['duration', 'distance', 'carry'].includes(type)
   const bodyweight = exercise.loadMode === 'bodyweight'
@@ -84,6 +86,9 @@ export default function GuidedTrainingPanel({
   const confirmed = entries.filter((entry) => isConfirmedSet(entry, type))
   const draft = entries.find((entry) => entry.completed === false)
   const previous = exercise && previousExercise(sessions, session, exercise)
+  const previousEntryFor = (index) => previous && exerciseMeasurement({ ...previous.item,
+    category: previous.item.category ?? previous.session.category }) === type
+    ? previousSetFor(previous, index) : null
   const referenceFor = (index) => {
     const entry = previousSetFor(previous, index)
     return entry ? formatTrainingEntry(entry,
@@ -239,11 +244,15 @@ export default function GuidedTrainingPanel({
         <p className="eyebrow">SATZ {confirmed.length + 1}</p>
         <h3>Werte eintragen</h3>
         <PreviousExerciseReference number={confirmed.length + 1} value={referenceFor(confirmed.length)} />
+        {previousEntryFor(confirmed.length) && <p className="training-suggestion-help">
+          Graue Werte werden beim Bestätigen übernommen. Tippe ins Feld, um sie zu ändern.
+        </p>}
         {['duration', 'distance', 'carry'].includes(type) && <TrainingTimer
           key={draft.id} sessionId={session.id} exercise={exercise} entry={draft}
           confirmedCount={confirmed.length}
           onDuration={(seconds, setId) => onTimerDuration(exercise.id, seconds, setId)} />}
         <SetFields entry={draft} type={type} exercise={exercise} athleteProfile={athleteProfile}
+          previous={previousEntryFor(confirmed.length)}
           onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
             item.id === draft.id ? { ...item, ...changes } : item) })} />
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}
