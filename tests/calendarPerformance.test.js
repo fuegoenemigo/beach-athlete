@@ -70,6 +70,21 @@ test('a day averages only comparable IDs and ignores an open training', () => {
   assert.equal(scores.has('2026-10-12'), false)
 })
 
+test('calendar gives each comparable exercise ID equal weight across muscle groups and categories', () => {
+  const withGroup = (id, group, weight) => ({ ...strength(id, weight), muscleGroup: group })
+  const scores = trainingDayPerformances([
+    session('old', '2026-10-10', [withGroup('bench', 'Brust', 50),
+      withGroup('fly', 'Brust', 50), withGroup('squat', 'Beine', 50), core(60)]),
+    session('new', '2026-10-11', [withGroup('bench', 'Brust', 60),
+      withGroup('fly', 'Brust', 60), withGroup('squat', 'Beine', 40), core(54)]),
+  ])
+  const day = scores.get('2026-10-11')
+  assert.equal(day.comparisons.length, 4)
+  assert.ok(Math.abs(day.changePercent - 2.5) < 0.001)
+  assert.equal(day.status, 'improved')
+  assert.ok(Math.abs(day.groupedChangePercent + 5) < 0.001)
+})
+
 test('a different exercise ID never counts as the same exercise even with the same name', () => {
   const scores = trainingDayPerformances([
     session('old', '2026-10-10', [strength('bench-a', 50)]),

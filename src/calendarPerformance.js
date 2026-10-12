@@ -84,7 +84,11 @@ function evaluateDay(exercises, previousById) {
       previousDate: previous.date, changePercent: ((current.value - baseline.value) / baseline.value) * 100 })
   }
   const aggregate = aggregateTrainingComparisons(comparisons)
-  return { status: changeStatus(aggregate.changePercent), changePercent: aggregate.changePercent,
+  const changePercent = comparisons.length
+    ? comparisons.reduce((sum, item) => sum + item.changePercent, 0) / comparisons.length
+    : null
+  return { status: changeStatus(changePercent), changePercent,
+    groupedChangePercent: aggregate.changePercent,
     comparisons, categories: aggregate.categories, total: exercises.size }
 }
 

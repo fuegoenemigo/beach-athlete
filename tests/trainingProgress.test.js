@@ -36,7 +36,9 @@ test('training progress weights exercise IDs within groups, then groups and cate
   assert.ok(Math.abs(strengthCategory.series[1].value - 105) < 0.001)
   assert.ok(Math.abs(progress.overall.changePercent - 5) < 0.001)
   assert.ok(Math.abs(progress.overall.series[1].value - 105) < 0.001)
-  assert.ok(Math.abs(trainingDayPerformances(sessions).get('2026-10-10').changePercent - 5) < 0.001)
+  const calendarDay = trainingDayPerformances(sessions).get('2026-10-10')
+  assert.ok(Math.abs(calendarDay.changePercent - 8) < 0.001)
+  assert.ok(Math.abs(calendarDay.groupedChangePercent - 5) < 0.001)
 })
 
 test('mobility duration is not scored as performance and unmeasured categories stay unrated', () => {
