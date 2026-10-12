@@ -140,6 +140,8 @@
   color: var(--muted);
 }
 
+.training-guided-result { margin: 8px 0 0; color: #dbe2dc; font-size: 0.85rem; }
+
 .training-history-note,
 .training-history-legacy {
   margin: 8px 0 0;
@@ -409,6 +411,25 @@
 .training-timer p { margin: 0; color: var(--muted); font-size: 0.82rem; }
 .training-timer-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
 .training-timer-actions button { flex: 1 1 135px; margin: 0; }
+
+.guided-endurance { display: grid; gap: 14px; }
+.guided-endurance h2 { margin: 8px 0 0; }
+.guided-endurance .helper-text { margin: 0; }
+.endurance-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.endurance-steps span { padding: 9px 5px; border: 1px solid var(--border); border-radius: 9px;
+  color: var(--muted); font-size: 0.75rem; text-align: center; overflow-wrap: anywhere; }
+.endurance-steps .current { color: var(--green); border-color: #668f5a; background: #233421; }
+.endurance-clock { display: block; padding: 18px 8px; border: 1px solid #587c4b;
+  border-radius: 15px; color: #eff7ef; background: #142217; text-align: center;
+  font-variant-numeric: tabular-nums; font-size: clamp(2.8rem, 14vw, 5rem); font-weight: 800; line-height: 1; }
+.endurance-countdown { color: var(--green); }
+.endurance-rest-clock { color: #a9cfff; border-color: #6d86a6; background: #192637; }
+.endurance-recovery { color: #a9cfff; }
+.endurance-phase-count { margin: 0; color: var(--green); font-weight: 700; }
+.endurance-progress { width: 100%; height: 12px; accent-color: #80bd6a; }
+.endurance-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.endurance-actions button { flex: 1 1 135px; margin: 0; }
+.guided-endurance > .primary-button { width: 100%; margin: 0; white-space: normal; }
 
 .training-flow-error {
   margin: 13px 0;

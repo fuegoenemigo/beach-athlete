@@ -36,14 +36,20 @@ export default function TrainingHistoryDetails({ session }) {
         const legacy = hasLegacyValues(exercise)
         return <div className="training-history-exercise" key={exercise.id ?? `${group}-${index}`}>
           <strong>{exercise.name || 'Übung'}</strong>
-          {entries.length > 0 && <ol>{entries.map((entry, setIndex) => <li key={entry.id ?? setIndex}>
-            <span>Satz {setIndex + 1}: {formatTrainingEntry(entry, type, exercise) || 'Ohne Messwert'}</span>
-            {entry.notes && <span className="training-history-set-note">{entry.notes}</span>}
-          </li>)}</ol>}
+          {exercise.guidedEndurance && entries.map((entry) => <p className="training-guided-result"
+            key={entry.id}>Hauptübung: {formatTrainingEntry(entry, type, exercise) || 'Ohne Messwert'}
+            {entry.guidedCompletion && entry.prescribedIntervals
+              ? ` · ${entry.completedIntervals}/${entry.prescribedIntervals} Belastungsphasen vollständig` : ''}</p>)}
+          {!exercise.guidedEndurance && entries.length > 0 && <ol>{entries.map((entry, setIndex) =>
+            <li key={entry.id ?? setIndex}>
+              <span>Satz {setIndex + 1}: {formatTrainingEntry(entry, type, exercise) || 'Ohne Messwert'}</span>
+              {entry.notes && <span className="training-history-set-note">{entry.notes}</span>}
+            </li>)}</ol>}
           {legacy && <p className="training-history-legacy">{Object.entries(legacyLabels)
             .filter(([field]) => exercise[field] !== '' && exercise[field] != null)
             .map(([field, label]) => `${label}: ${exercise[field]}`).join(' · ')}</p>}
-          {!entries.length && !legacy && <p className="history-meta">Keine Satzwerte erfasst</p>}
+          {!entries.length && !legacy && <p className="history-meta">
+            {exercise.guidedEndurance ? 'Hauptübung noch nicht bestätigt' : 'Keine Satzwerte erfasst'}</p>}
           {exercise.notes && <p className="training-history-note">{exercise.notes}</p>}
         </div>
       })}

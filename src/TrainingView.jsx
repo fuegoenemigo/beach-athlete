@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import GuidedTrainingPanel from './GuidedTrainingPanel.jsx'
+import GuidedEndurancePanel from './GuidedEndurancePanel.jsx'
 import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
@@ -17,6 +18,8 @@ import {
   isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
 } from './trainingModel.js'
 import { timerStorageKey } from './trainingTimer.js'
+import { guidedEnduranceSpec, mainDurationSeconds,
+  confirmGuidedMain } from './enduranceFlow.js'
 import './TrainingView.css'
 
 const today = () => new Date().toLocaleDateString('sv-SE')
@@ -75,7 +78,8 @@ function TrainingSessionCard({ session, planName, expanded, onToggle, onOpen, on
   return <article id={`training-session-${session.id}`} className={`diary-panel training-session-card${ongoing ? ' training-session-open' : ''}`}>
     <div className="volleyball-day-header">
       <h3>{formatDate(session.date)}</h3>
-      <span>{isSportTrainingAttendance(session) ? 'Abgeschlossen' : `${session.exercises.length} Übungen`}</span>
+      <span>{isSportTrainingAttendance(session) ? 'Abgeschlossen'
+        : session.enduranceFlow ? 'Geführte Einheit' : `${session.exercises.length} Übungen`}</span>
     </div>
     <p className="training-session-category">{canonicalCategory(session.category, session.subcategory) || 'Training'}</p>
     {planName && <p className="training-history-plan">Vorlage: {planName}</p>}
@@ -194,13 +198,18 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         exercise.id === id ? { ...exercise, ...changes } : exercise) } : session))
   }
   function exercisesFromPlan(plan) {
-    return plan.exercises.map((reference, index) => {
+    const guided = guidedEnduranceSpec(plan)
+    const references = guided ? [plan.exercises[1]] : plan.exercises
+    return references.map((reference, index) => {
       const item = visibleLibrary.find((candidate) => exerciseIdentity(candidate) === reference.libraryId)
         ?? visibleLibrary.find((candidate) => candidate.name === reference.name
           && candidate.category === (reference.category ?? plan.category))
         ?? { ...reference, id: reference.libraryId, category: reference.category ?? plan.category }
       const exercise = createLoggedExercise({ ...item, ...reference,
         id: item.id, target: reference.target ?? item.target })
+      if (guided) return { ...exercise, guidedEndurance: true,
+        guidedProtocolId: plan.id,
+        targetDurationSeconds: mainDurationSeconds(guided) }
       return index === 0 ? { ...exercise,
         entries: [{ ...createTrainingSet(exercise.type,
           exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
@@ -242,6 +251,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const entryDate = customDate ? selectedDate : today()
     if (!entryDate) { setNotice('Bitte wähle ein Trainingsdatum.'); return }
     const exercises = plan ? exercisesFromPlan(plan) : []
+    const guided = guidedEnduranceSpec(plan)
     const category = plan && (plan.categories ?? [plan.category]).includes(newCategory)
       ? newCategory : plan?.category ?? newCategory
     const session = {
@@ -249,6 +259,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       category, categories: plan?.categories ?? [category], subcategory: '',
       planId: plan?.id ?? null, planName: plan?.name ?? '',
       durationMinutes: '', intensity: '', notes: '', status: 'ongoing',
+      ...(guided ? { enduranceFlow: { spec: guided, phase: 'warmup',
+        clock: null, mainConfirmed: false } } : {}),
       exercises, createdAt: new Date().toISOString(),
     }
     setSessions((previous) => addTrainingIfNoOpen(previous, session))
@@ -294,10 +306,13 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       setFlowMessage('Eine Vorlage kannst du nur vor der ersten Übung laden.'); return
     }
     const exercises = exercisesFromPlan(plan)
+    const guided = guidedEnduranceSpec(plan)
     if (exercises.length) {
       const first = exercises[0]
       updateSession({ planId: plan.id, planName: plan.name,
-        categories: plan.categories ?? [plan.category], exercises })
+        categories: plan.categories ?? [plan.category], exercises,
+        ...(guided ? { enduranceFlow: { spec: guided, phase: 'warmup',
+          clock: null, mainConfirmed: false } } : {}) })
       setActiveExerciseId(first.id)
       setSelectedExerciseCategory(first.category)
       setFlowStep('set')
@@ -337,6 +352,23 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       }) }
     }))
     setFlowMessage('')
+  }
+  function updateEnduranceFlow(updater) {
+    setSessions((previous) => previous.map((session) => session.id === activeSessionId
+      && session.enduranceFlow
+      ? { ...session, enduranceFlow: updater(session.enduranceFlow) } : session))
+  }
+  function confirmEnduranceMain() {
+    const now = Date.now()
+    const entryId = crypto.randomUUID()
+    setSessions((previous) => previous.map((session) => session.id === activeSessionId
+      ? confirmGuidedMain(session, now, entryId) : session))
+  }
+  function updateGuidedResult(changes) {
+    const exercise = activeSession?.exercises.find((item) => item.guidedEndurance)
+    if (!exercise) return
+    updateExercise(exercise.id, { entries: exercise.entries.map((entry) =>
+      entry.guidedCompletion ? { ...entry, ...changes } : entry) })
   }
   function finishExercise() {
     const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
@@ -418,6 +450,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   }
   function saveTraining() {
     if (!activeSession.date) { setFlowMessage('Bitte wähle ein Trainingsdatum.'); return }
+    if (activeSession.enduranceFlow && (activeSession.enduranceFlow.phase !== 'summary'
+      || !activeSession.enduranceFlow.mainConfirmed)) {
+      setFlowMessage('Bitte absolviere und bestätige zuerst die geführte Hauptübung.'); return
+    }
     if (activeSession.exercises.some((exercise) => (exercise.entries ?? [])
       .some((entry) => isConfirmedSet(entry, exerciseMeasurement(exercise))
         && !hasRequiredIntervalDuration(exercise, entry)))) {
@@ -628,8 +664,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         {pendingPlan.weeklyEvidence && <a className="training-plan-evidence" href={pendingPlan.weeklyEvidence.url}
           target="_blank" rel="noopener noreferrer">Wochenrhythmus: {pendingPlan.weeklyEvidence.label} ↗</a>}
         <p className="history-meta">{(pendingPlan.categories ?? [pendingPlan.category]).join(' + ')}
-          {' · '}{pendingPlan.exercises.length} Übungen</p>
-        <h3 className="training-preview-heading">Übungen in diesem Plan</h3>
+          {' · '}{pendingPlan.exercises.length} {guidedEnduranceSpec(pendingPlan) ? 'Phasen' : 'Übungen'}</p>
+        <h3 className="training-preview-heading">
+          {guidedEnduranceSpec(pendingPlan) ? 'Phasen dieser Einheit' : 'Übungen in diesem Plan'}</h3>
         <ol className="training-plan-preview">
           {pendingPlan.exercises.map((item, index) => <li className="training-exercise-row"
             key={`${item.libraryId}-${index}`}>
@@ -696,6 +733,11 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       {isSportTrainingAttendance(activeSession)
         ? <SportTrainingEditor key={activeSession.id} session={activeSession} onClose={closeTraining}
           onSave={(changes) => { updateSession(changes); closeTraining(); setNotice('Trainingsdatum gespeichert.') }} />
+        : activeSession.enduranceFlow ? <GuidedEndurancePanel session={activeSession}
+          onUpdateFlow={updateEnduranceFlow} onUpdateSession={updateSession}
+          onUpdateResult={updateGuidedResult}
+          onConfirmMain={confirmEnduranceMain} onSave={saveTraining}
+          onClose={closeTraining} onCancel={cancelTraining} flowMessage={flowMessage} />
         : <GuidedTrainingPanel
       session={activeSession} sessions={sessions} library={visibleLibrary} plans={visiblePlans}
       athleteProfile={athleteProfile} exerciseCategory={selectedExerciseCategory}
@@ -738,7 +780,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
             {expandedPlanCategory === category && <div className="training-plan-group-content">
               {plans.map((plan) => <div className="training-plan-row" key={plan.id}>
                 <div><strong>{plan.name}</strong>
-                  <span className="history-meta">{(plan.categories ?? [plan.category]).join(' + ')} · {plan.exercises.length} Übungen{!isBuiltInPlan(plan) ? ' · Eigene Vorlage' : ''}</span>
+                  <span className="history-meta">{(plan.categories ?? [plan.category]).join(' + ')} · {plan.exercises.length} {guidedEnduranceSpec(plan) ? 'Phasen' : 'Übungen'}{!isBuiltInPlan(plan) ? ' · Eigene Vorlage' : ''}</span>
                   {plan.description && <span className="training-plan-description">{plan.description}</span>}
                   {plan.evidence && <a className="training-plan-evidence" href={plan.evidence.url}
                     target="_blank" rel="noopener noreferrer">Trainingsgrundlage: {plan.evidence.label} ↗</a>}</div>

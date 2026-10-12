@@ -261,12 +261,14 @@ export const FOCUS_PLANS = [
   {
     id: 'gym:plan-endurance-base', name: 'Ausdauer aufbauen · Zügiges Gehen',
     category: 'Ausdauer',
+    guidedEndurance: { kind: 'steady', warmupSeconds: 300, mainSeconds: 1500,
+      cooldownSeconds: 300, mainLibraryId: 'gym:walking' },
     evidence: { label: 'WHO · Empfehlungen zur Ausdaueraktivität',
       url: 'https://www.who.int/europe/news-room/fact-sheets/item/physical-activity' },
-    description: 'Vollständiger Einstiegstag: 5 Min. locker gehen, 20–30 Min. zügig und gesprächsfähig gehen, 5 Min. locker auslaufen. Als Ausgangspunkt 2× pro Woche; Dauer erst steigern, wenn die Einheit gut vertragen wird.',
-    exercises: [ref('gym:walking-warmup', '5 Min. locker gehen; tatsächliche Dauer erfassen'),
-      ref('gym:walking', '20–30 Min. zügig gehen; tatsächliche Dauer und Distanz erfassen'),
-      ref('gym:walking-cooldown', '5 Min. locker gehen; tatsächliche Dauer erfassen')],
+    description: 'Geführter Einstiegstag: etwa 5 Min. locker gehen, 25 Min. zügig und gesprächsfähig gehen, danach etwa 5 Min. auslaufen. Aufwärmen und Auslaufen kannst du selbst beenden; die Hauptübung endet nach 25 Min. Als Ausgangspunkt 2× pro Woche.',
+    exercises: [ref('gym:walking-warmup', 'Etwa 5 Min. locker gehen; frei beenden'),
+      ref('gym:walking', '25 Min. zügig gehen; geführte Hauptübung'),
+      ref('gym:walking-cooldown', 'Etwa 5 Min. locker gehen; frei beenden')],
   },
   {
     id: 'gym:plan-jump-basics', name: 'Sprungkraft aufbauen · Explosive Kniebeugen',
@@ -325,15 +327,18 @@ const intervalPlan = (id, name, exerciseId, count, workMinutes, restMinutes, lev
   const totalMinutes = 15 + count * workMinutes + (count - 1) * restMinutes
   return {
     id: `gym:plan-${id}`, name, category: 'Ausdauer',
-    description: `Vollständiger Trainingstag von etwa ${totalMinutes} Min.: 10 Min. locker aufwärmen, ${count} × ${workMinutes} Min. Belastung mit ${restMinutes} Min. sehr lockerer aktiver Pause dazwischen, anschließend 5 Min. auslaufen. ${level} Als Orientierung über 6–8 Wochen: 1 Intervalltag und 1–2 lockere Ausdauertage pro Woche, angepasst an Beach-/Hallentraining und Erholung. Jede Phase und jeden Belastungsabschnitt mit tatsächlich geschaffter Dauer erfassen.${workMinutes < 4 ? ' Diese Stufe ist eine vorsichtige Progression, kein exakt geprüftes Studienprotokoll.' : ''}`,
+    guidedEndurance: { kind: 'interval', warmupSeconds: 600,
+      workSeconds: workMinutes * 60, recoverySeconds: restMinutes * 60,
+      repeat: count, cooldownSeconds: 300, mainLibraryId: exerciseId },
+    description: `Geführter Trainingstag von etwa ${totalMinutes} Min.: etwa 10 Min. locker aufwärmen, ${count} × ${workMinutes} Min. Belastung mit ${restMinutes} Min. sehr lockerer aktiver Pause dazwischen, anschließend etwa 5 Min. auslaufen. Aufwärmen und Auslaufen kannst du selbst beenden; die Hauptübung wechselt die Phasen automatisch. ${level} Als Orientierung über 6–8 Wochen: 1 Intervalltag und 1–2 lockere Ausdauertage pro Woche, angepasst an Beach-/Hallentraining und Erholung.${workMinutes < 4 ? ' Diese Stufe ist eine vorsichtige Progression, kein exakt geprüftes Studienprotokoll.' : ''}`,
     evidence: workMinutes < 4 ? intervalSource
       : bike ? cyclingFourByFourSource : fourByFourSource,
     weeklyEvidence: enduranceMixSource,
-    exercises: [ref(warmup, '10 Min. locker; tatsächliche Dauer erfassen'),
-      ref(exerciseId, `${count} Sätze = ${count} Belastungsabschnitte à ${workMinutes} Min.; je Satz tatsächliche Dauer und optional Distanz eintragen. ${restMinutes} Min. locker zwischen den Sätzen.`,
+    exercises: [ref(warmup, 'Etwa 10 Min. locker; frei beenden'),
+      ref(exerciseId, `${count} × ${workMinutes} Min. Belastung mit ${restMinutes} Min. lockerer Pause; die App führt durch alle Phasen.`,
         { targetDurationSeconds: workMinutes * 60, intervalCount: count,
           intervalRestSeconds: restMinutes * 60 }),
-      ref(cooldown, '5 Min. locker; tatsächliche Dauer erfassen')],
+      ref(cooldown, 'Etwa 5 Min. locker; frei beenden')],
   }
 }
 
@@ -353,18 +358,22 @@ export const ADDITIONAL_PLANS = [
   {
     id: 'gym:plan-treadmill-base', name: 'Ausdauer-Grundlage · Laufband',
     category: 'Ausdauer', evidence: aerobicSource, weeklyEvidence: enduranceMixSource,
-    description: 'Vollständiger lockerer Ausdauertag von etwa 35–45 Min.: 10 Min. locker beginnen, 20–30 Min. gesprächsfähig laufen oder gehen, 5 Min. locker auslaufen. 1–2× pro Woche als Ergänzung zu einem Intervalltag; Umfang über 6–8 Wochen allmählich anpassen.',
-    exercises: [ref('gym:treadmill-warmup', '10 Min. locker; tatsächliche Dauer erfassen'),
-      ref('gym:treadmill', '20–30 Min. gleichmäßig; tatsächliche Dauer und Strecke erfassen'),
-      ref('gym:treadmill-cooldown', '5 Min. locker; tatsächliche Dauer erfassen')],
+    guidedEndurance: { kind: 'steady', warmupSeconds: 600, mainSeconds: 1500,
+      cooldownSeconds: 300, mainLibraryId: 'gym:treadmill' },
+    description: 'Geführter lockerer Ausdauertag: etwa 10 Min. locker beginnen, 25 Min. gesprächsfähig laufen oder gehen, anschließend etwa 5 Min. auslaufen. Aufwärmen und Auslaufen kannst du selbst beenden; die Hauptübung endet nach 25 Min. 1–2× pro Woche als Ergänzung zu einem Intervalltag.',
+    exercises: [ref('gym:treadmill-warmup', 'Etwa 10 Min. locker; frei beenden'),
+      ref('gym:treadmill', '25 Min. gleichmäßig; geführte Hauptübung'),
+      ref('gym:treadmill-cooldown', 'Etwa 5 Min. locker; frei beenden')],
   },
   {
     id: 'gym:plan-bike-base', name: 'Ausdauer-Grundlage · Fahrrad',
     category: 'Ausdauer', evidence: aerobicSource, weeklyEvidence: enduranceMixSource,
-    description: 'Vollständiger lockerer Ausdauertag von etwa 40–55 Min.: 10 Min. locker einrollen, 25–40 Min. gleichmäßig und gesprächsfähig fahren, 5 Min. locker ausrollen. 1–2× pro Woche als Ergänzung zu einem Intervalltag; für Distanzvergleiche dasselbe Ergometer nutzen.',
-    exercises: [ref('gym:bike-warmup', '10 Min. locker; tatsächliche Dauer erfassen'),
-      ref('bike', '25–40 Min. gleichmäßig; tatsächliche Dauer und optional Distanz erfassen'),
-      ref('gym:bike-cooldown', '5 Min. locker; tatsächliche Dauer erfassen')],
+    guidedEndurance: { kind: 'steady', warmupSeconds: 600, mainSeconds: 1800,
+      cooldownSeconds: 300, mainLibraryId: 'volleyball:bike' },
+    description: 'Geführter lockerer Ausdauertag: etwa 10 Min. locker einrollen, 30 Min. gleichmäßig und gesprächsfähig fahren, anschließend etwa 5 Min. ausrollen. Aufwärmen und Auslaufen kannst du selbst beenden; die Hauptübung endet nach 30 Min. Für Distanzvergleiche dasselbe Ergometer nutzen.',
+    exercises: [ref('gym:bike-warmup', 'Etwa 10 Min. locker; frei beenden'),
+      ref('bike', '30 Min. gleichmäßig; geführte Hauptübung'),
+      ref('gym:bike-cooldown', 'Etwa 5 Min. locker; frei beenden')],
   },
   {
     id: 'gym:plan-core-beginner', name: 'Core · Stabiler Einstieg',

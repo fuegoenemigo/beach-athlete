@@ -29,6 +29,13 @@ function bestMetric(exercise) {
     return holds.length ? { key: 'coreHold', value: Math.max(...holds.map((entry) => seconds(entry.durationValue, entry.durationUnit))) } : null
   }
   if (type === 'distance' || type === 'carry') {
+    if (exercise.guidedEndurance) {
+      const guided = entries.find((entry) => entry.guidedCompletion
+        && positive(entry.distanceValue) && positive(entry.durationValue))
+      if (!guided) return null
+      return { key: `guidedDistance:${exercise.guidedProtocolId}:${seconds(guided.durationValue,
+        guided.durationUnit)}`, value: meters(guided.distanceValue, guided.distanceUnit) }
+    }
     const timed = entries.filter((entry) => positive(entry.distanceValue) && positive(entry.durationValue))
     if (!timed.length) return null
     const measured = timed.map((entry) => {

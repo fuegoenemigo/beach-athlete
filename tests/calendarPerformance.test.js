@@ -111,3 +111,20 @@ test('endurance pace is comparable only at the same distance', () => {
   assert.equal(scores.get('2026-10-11').status, 'unrated')
   assert.equal(scores.get('2026-10-12').status, 'improved')
 })
+
+test('guided endurance compares distance at the same fixed protocol and duration', () => {
+  const guided = (distance, protocol = 'gym:plan-treadmill-base') => ({
+    libraryId: 'gym:treadmill', name: 'Laufband', category: 'Ausdauer', type: 'distance',
+    guidedEndurance: true, guidedProtocolId: protocol,
+    entries: [{ completed: true, guidedCompletion: true, durationValue: '1500',
+      durationUnit: 's', distanceValue: distance, distanceUnit: 'km' }],
+  })
+  const scores = trainingDayPerformances([
+    session('old', '2026-10-10', [guided('3')]),
+    session('better', '2026-10-11', [guided('3.3')]),
+    session('other-plan', '2026-10-12', [guided('3.5', 'another-plan')]),
+  ])
+  assert.equal(scores.get('2026-10-11').status, 'improved')
+  assert.equal(scores.get('2026-10-11').changePercent, 10)
+  assert.equal(scores.get('2026-10-12').status, 'unrated')
+})
