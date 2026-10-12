@@ -608,10 +608,31 @@ input[type="date"] {
   text-decoration: underline;
 }
 
+.account-shortcuts {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 14px;
+}
+
+.profile-shortcut {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 6px;
+  border: 0;
+  color: #aeb7b1;
+  background: transparent;
+}
+
+.profile-shortcut svg { display: block; width: 30px; height: 30px; fill: currentColor; }
+.profile-shortcut:hover { color: #e0e8e1; }
+
 .sync-status {
   display: block;
   min-height: 44px;
-  margin: 8px 0 14px auto;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;

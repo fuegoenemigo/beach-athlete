@@ -81,19 +81,7 @@
 .home-calendar .home-widget-kicker { color: #c5d1c7; }
 .home-calendar .home-month-navigation button { color: #e1eae0; border-color: #566158; background: #202822; }
 
-.home-security-link {
-  justify-self: start;
-  min-height: 36px;
-  padding: 5px 10px;
-  border: 1px solid #344638;
-  border-radius: 10px;
-  color: #dce8dc;
-  background: #172019;
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.home-security-link:focus-visible, .home-month-navigation button:focus-visible,
+.home-month-navigation button:focus-visible,
 .home-calendar-day:focus-visible, .archive-entry-toggle:focus-visible,
 .archive-month-toggle:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 
@@ -358,6 +346,7 @@
 .home-profile-card h3 { margin: 0 0 8px; font-size: 1.25rem; }
 .home-profile-card p:not(.eyebrow) { color: var(--muted); line-height: 1.5; }
 .home-profile-card .field-label { margin-top: 14px; }
+.home-profile-card + .home-data-security { margin-top: 18px; }
 
 .home-functional-detail { padding: 18px; }
 .home-functional-detail .home-back { margin-bottom: 12px; }

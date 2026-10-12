@@ -11,8 +11,8 @@ const FEATURES = {
   },
   card: {
     icon: '🏅',
-    title: 'Spielerkarte & Profil',
-    text: 'Hier hinterlegst du deine Körperdaten. Die Auswertung und Gestaltung deiner Spielerkarte legen wir anschließend gemeinsam fest.',
+    title: 'Spielerkarte',
+    text: 'Attribute, Entwicklung und Bewertung deiner Spielerkarte gestalten wir anschließend gemeinsam.',
   },
 }
 
@@ -28,13 +28,39 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   }
 
   if (selectedFeature) {
-    if (selectedFeature === 'security' || selectedFeature === 'archive') return (
+    if (selectedFeature === 'profile' || selectedFeature === 'archive') return (
       <section className="home-detail home-functional-detail">
         <button className="home-back" type="button" onClick={() => setSelectedFeature(null)}>
           ← Zur Startseite
         </button>
-        {selectedFeature === 'security' ? children
-          : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
+        {selectedFeature === 'profile' ? <>
+          <p className="eyebrow">DEIN KONTO</p>
+          <h2>Mein Profil</h2>
+          <section className="home-profile-card" aria-labelledby="personal-data-title">
+            <h3 id="personal-data-title">Persönliche Daten</h3>
+            <p>Größe und Körpergewicht stehen für deine spätere Auswertung bereit. Dein Körpergewicht erscheint außerdem bei Übungen mit Eigengewicht.</p>
+            <label className="field-label" htmlFor="profile-bodyweight">Körpergewicht (kg)</label>
+            <input id="profile-bodyweight" className="field" type="number" inputMode="decimal"
+              min="1" step="0.1" placeholder="Noch nicht hinterlegt"
+              value={athleteProfile.bodyweightKg ?? ''}
+              onChange={(event) => {
+                const value = event.target.value
+                if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0))
+                  setAthleteProfile((profile) => ({ ...profile, bodyweightKg: value }))
+              }} />
+            <label className="field-label" htmlFor="profile-height">Körpergröße (cm)</label>
+            <input id="profile-height" className="field" type="number" inputMode="decimal"
+              min="1" max="300" step="0.1" placeholder="Noch nicht hinterlegt"
+              value={athleteProfile.heightCm ?? ''}
+              onChange={(event) => {
+                const value = event.target.value
+                if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0
+                  && Number(value) <= 300))
+                  setAthleteProfile((profile) => ({ ...profile, heightCm: value }))
+              }} />
+          </section>
+          {children}
+        </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
       </section>
     )
     const feature = FEATURES[selectedFeature]
@@ -44,41 +70,15 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           ← Zur Startseite
         </button>
         <div className="home-detail-icon" aria-hidden="true">{feature.icon}</div>
-        <p className="eyebrow">{selectedFeature === 'card' ? 'DEIN PROFIL' : 'BALD IN BEACH ATHLETE'}</p>
+        <p className="eyebrow">BALD IN BEACH ATHLETE</p>
         <h2 id="home-detail-title">{feature.title}</h2>
         <p>{feature.text}</p>
-        {selectedFeature === 'card' && <div className="home-profile-card">
-          <h3>Körperdaten</h3>
-          <p>Das Körpergewicht wird bei Eigengewichtsübungen angezeigt. Größe und Gewicht stehen für die spätere Auswertung deiner Entwicklung bereit.</p>
-          <label className="field-label" htmlFor="profile-bodyweight">Körpergewicht (kg)</label>
-          <input id="profile-bodyweight" className="field" type="number" inputMode="decimal"
-            min="1" step="0.1" placeholder="Noch nicht hinterlegt"
-            value={athleteProfile.bodyweightKg ?? ''}
-            onChange={(event) => {
-              const value = event.target.value
-              if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0))
-                setAthleteProfile((profile) => ({ ...profile, bodyweightKg: value }))
-            }} />
-          <label className="field-label" htmlFor="profile-height">Körpergröße (cm)</label>
-          <input id="profile-height" className="field" type="number" inputMode="decimal"
-            min="1" max="300" step="0.1" placeholder="Noch nicht hinterlegt"
-            value={athleteProfile.heightCm ?? ''}
-            onChange={(event) => {
-              const value = event.target.value
-              if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0
-                && Number(value) <= 300))
-                setAthleteProfile((profile) => ({ ...profile, heightCm: value }))
-            }} />
-        </div>}
       </section>
     )
   }
 
   return (
     <div className="home-dashboard" aria-label="Startseite">
-      <button className="home-security-link" type="button" onClick={() => openFeature('security')}>
-        <span aria-hidden="true">🔑</span> Daten &amp; Sicherheit
-      </button>
       <HomeCalendar sessions={sessions} volleyballDays={volleyballDays}
         onOpenActivity={onOpenActivity} onCreateEntry={onCreateEntry} />
 
@@ -103,7 +103,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
         onClick={() => openFeature('card')} aria-label="Spielerkarte öffnen">
         <span className="home-widget-header">
           <span>
-            <span className="home-widget-kicker">DEIN PROFIL</span>
+            <span className="home-widget-kicker">DEINE ENTWICKLUNG</span>
             <span className="home-widget-title">Spielerkarte</span>
           </span>
           <span className="home-widget-arrow" aria-hidden="true">↗</span>

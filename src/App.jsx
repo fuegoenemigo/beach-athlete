@@ -340,16 +340,25 @@ function App() {
 
       </nav>
 
-      <button type="button" className="sync-status"
-        onClick={() => openHomeView("security")}
-        aria-label="Synchronisierungsstatus anzeigen">
-        {cloudState.status === "ready" ? "☁ Cloud aktuell" :
-          cloudState.status === "pending" || cloudState.status === "saving" ? "☁ Synchronisierung läuft" :
-            cloudState.status === "signedOut" ? "◌ Nur auf diesem Gerät" :
-              cloudState.status === "conflict" ? "⚠ Datenkonflikt prüfen" :
-                cloudState.status === "offline" ? "◌ Cloud offline" :
-                  cloudState.status === "unavailable" || cloudState.status === "error" ? "⚠ Daten prüfen" : "◌ Cloud prüfen"}
-      </button>
+      <div className="account-shortcuts">
+        <button type="button" className="profile-shortcut" onClick={() => openHomeView("profile")}
+          aria-label="Mein Profil öffnen" title="Mein Profil">
+          <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+            <circle cx="16" cy="7" r="5" />
+            <path d="M8 29V20a5 5 0 0 1 5-5h6a5 5 0 0 1 5 5v9h-4v-9a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v9z" />
+          </svg>
+        </button>
+        <button type="button" className="sync-status"
+          onClick={() => openHomeView("profile")}
+          aria-label="Synchronisierungsstatus und Profil öffnen">
+          {cloudState.status === "ready" ? "☁ Cloud aktuell" :
+            cloudState.status === "pending" || cloudState.status === "saving" ? "☁ Synchronisierung läuft" :
+              cloudState.status === "signedOut" ? "◌ Nur auf diesem Gerät" :
+                cloudState.status === "conflict" ? "⚠ Datenkonflikt prüfen" :
+                  cloudState.status === "offline" ? "◌ Cloud offline" :
+                    cloudState.status === "unavailable" || cloudState.status === "error" ? "⚠ Daten prüfen" : "◌ Cloud prüfen"}
+        </button>
+      </div>
 
       {updateAvailable && (
         <div className="update-notice" role="status">
