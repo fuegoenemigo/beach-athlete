@@ -7,9 +7,11 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { firebaseAuth, firestore } from './firebase.js'
-import { chooseInitialSync, dataHash, isAthleteData, isRemoteData } from './syncPolicy.js'
+import { chooseInitialSync, dataHash, isAthleteData, isRemoteData, localDataForAccount } from './syncPolicy.js'
 
 const META_PREFIX = 'beach-athlete-cloud-meta-'
+const LOCAL_OWNER_KEY = 'beach-athlete-local-owner'
+const ACCOUNT_DATA_PREFIX = 'beach-athlete-local-data-'
 const MAX_DOCUMENT_BYTES = 900_000
 
 function readMeta(uid) {
@@ -102,6 +104,27 @@ export class CloudSync {
     this.conflict = null
     if (!user) {
       this.publish('signedOut')
+      return
+    }
+    try {
+      const storedUid = localStorage.getItem(LOCAL_OWNER_KEY)
+      let savedData = null
+      if (storedUid && storedUid !== user.uid) {
+        if (!isAthleteData(this.data)) throw new Error('Invalid local account data')
+        localStorage.setItem(`${ACCOUNT_DATA_PREFIX}${storedUid}`, JSON.stringify(this.data))
+        const saved = localStorage.getItem(`${ACCOUNT_DATA_PREFIX}${user.uid}`)
+        savedData = saved ? JSON.parse(saved) : null
+      }
+      const localData = localDataForAccount(
+        this.data, storedUid, user.uid, this.defaultLibrary, savedData,
+      )
+      if (localData !== this.data) {
+        this.data = localData
+        this.onApply(localData)
+      }
+      localStorage.setItem(LOCAL_OWNER_KEY, user.uid)
+    } catch {
+      this.publish('error', 'Lokale Kontodaten konnten nicht sicher zugeordnet werden. Bitte exportiere deine Daten.')
       return
     }
     this.reference = doc(firestore, 'users', user.uid, 'data', 'current')

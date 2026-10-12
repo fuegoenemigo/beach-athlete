@@ -99,6 +99,18 @@ export function hasPersonalData(data, defaultLibrary) {
     || JSON.stringify(data.exerciseLibrary) !== JSON.stringify(defaultLibrary)
 }
 
+export function localDataForAccount(data, storedUid, currentUid, defaultLibrary, savedData = null) {
+  if (!storedUid || storedUid === currentUid) return data
+  if (savedData && isAthleteData(savedData)) return savedData
+  return {
+    sessions: [],
+    exerciseLibrary: structuredClone(defaultLibrary),
+    volleyballDays: [],
+    trainingPlans: [],
+    athleteProfile: { bodyweightKg: '' },
+  }
+}
+
 export function chooseInitialSync(local, remote, meta, uid, defaultLibrary) {
   if (!isAthleteData(local) || (remote && !isRemoteData(remote))) return 'invalid'
   if (!remote) return 'upload'

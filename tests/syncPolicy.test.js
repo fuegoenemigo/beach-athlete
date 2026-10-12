@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { chooseInitialSync, dataHash, isAthleteData, isVolleyballDateTaken } from '../src/syncPolicy.js'
+import { chooseInitialSync, dataHash, isAthleteData, isVolleyballDateTaken, localDataForAccount } from '../src/syncPolicy.js'
 
 const library = [{ name: 'Kniebeugen', category: 'Krafttraining', type: 'strength' }]
 const empty = () => ({ sessions: [], exerciseLibrary: structuredClone(library), volleyballDays: [] })
@@ -46,6 +46,19 @@ test('different account and malformed data never silently overwrite cloud', () =
   assert.equal(chooseInitialSync(withTraining(), remote(empty()), meta, 'user-2', library), 'conflict')
   assert.equal(chooseInitialSync(withTraining(), { ...remote(empty()), sessions: {} }, null, 'user-1', library), 'invalid')
   assert.equal(isAthleteData({ ...empty(), volleyballDays: [null] }), false)
+})
+
+test('switching accounts does not offer the previous account data for first upload', () => {
+  const previousData = withTraining()
+  const nextData = localDataForAccount(previousData, 'user-1', 'user-2', library)
+  assert.equal(nextData.sessions.length, 0)
+  assert.equal(nextData.exerciseLibrary.length, 1)
+  assert.equal(chooseInitialSync(nextData, null, null, 'user-2', library), 'upload')
+  assert.equal(localDataForAccount(previousData, 'user-1', 'user-1', library), previousData)
+  assert.equal(localDataForAccount(previousData, null, 'user-1', library), previousData)
+  const secondUserData = { ...empty(), sessions: [{ id: 'second', date: '2026-10-12', exercises: [] }] }
+  assert.equal(localDataForAccount(previousData, 'user-1', 'user-2', library, secondUserData), secondUserData)
+  assert.equal(localDataForAccount(previousData, 'user-1', 'user-2', library, { sessions: null }).sessions.length, 0)
 })
 
 test('beach and indoor volleyball reserve the same calendar date, training does not', () => {

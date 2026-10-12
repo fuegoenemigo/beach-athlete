@@ -83,6 +83,7 @@ export default function CloudAccount({ state, onResolve, onRetry, onExport }) {
       {state.status === 'signedOut' ? (
         <>
           <p>Mit deinem persönlichen Konto bleiben Training und Spieltage auch auf einem neuen Gerät verfügbar.</p>
+          <p>Private Testversion: Deine Einträge werden auf diesem Gerät gespeichert und nach der Anmeldung mit deinem eigenen Cloud-Konto synchronisiert. Sichere wichtige Einträge gelegentlich über „Daten exportieren“.</p>
           <form onSubmit={(event) => { event.preventDefault(); authenticate('signIn') }}>
             <label className="field-label" htmlFor="cloud-email">E-Mail-Adresse</label>
             <input id="cloud-email" className="field" type="email" autoComplete="email"
