@@ -1,21 +1,21 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import HomeCalendar from './HomeCalendar.jsx'
 import ArchiveView from './ArchiveView.jsx'
 import StatisticsView from './StatisticsView.jsx'
-import PerformanceGraph from './PerformanceGraph.jsx'
 import { trainingProgress } from './trainingProgress.js'
+import { athleteRating } from './athleteRating.js'
 import './HomeView.css'
 
 const FEATURES = {
   statistics: {
     icon: '📊',
     title: 'Statistiken',
-    text: 'Dein Training zeigt jetzt einen berechneten Verlauf. Die Bewertungsregeln für Beach und Halle legen wir anschließend gemeinsam fest.',
+    text: 'Deine fünf athletischen Werte starten bei 60 und entwickeln sich mit deinem Training. Die Bewertungsregeln für Beach und Halle legen wir anschließend gemeinsam fest.',
   },
   card: {
     icon: '🏅',
     title: 'Spielerkarte',
-    text: 'Attribute, Entwicklung und Bewertung deiner Spielerkarte gestalten wir anschließend gemeinsam.',
+    text: 'Deine athletische Spielerkarte nutzt dieselben Werte wie die Trainingsstatistik. Spielergebnisse und Volleyball-Technik fließen nicht ein.',
   },
 }
 
@@ -23,7 +23,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
   const [selectedFeature, setSelectedFeature] = useState(initialView)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
-  const training = trainingProgress(sessions)
+  const training = useMemo(() => trainingProgress(sessions), [sessions])
+  const rating = useMemo(() => athleteRating(sessions, athleteProfile), [sessions, athleteProfile])
   const latestTrainingStatus = training.overall.status
   const trainingTrendLabel = { improved: 'Verbesserung', decline: 'Rückgang',
     unchanged: 'Stagnation' }[latestTrainingStatus] ?? 'noch keine Wertung'
@@ -77,10 +78,26 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           ← Zur Startseite
         </button>
         <div className="home-detail-icon" aria-hidden="true">{feature.icon}</div>
-        <p className="eyebrow">{selectedFeature === 'statistics' ? 'DEINE ENTWICKLUNG' : 'BALD IN BEACH ATHLETE'}</p>
+        <p className="eyebrow">DEINE ENTWICKLUNG</p>
         <h2 id="home-detail-title">{feature.title}</h2>
         <p>{feature.text}</p>
-        {selectedFeature === 'statistics' && <StatisticsView training={training} />}
+        {selectedFeature === 'statistics' && <StatisticsView training={rating} progress={training} />}
+        {selectedFeature === 'card' && <div className="player-card-detail">
+          <div className="home-card-art" aria-label={`Gesamtwert ${Math.round(rating.overall.score)} von 99`}>
+            <span className="home-card-topline">BEACH ATHLETE <span>✦</span> PLAYER CARD</span>
+            <span className="home-card-center"><span className="home-card-crest">BA</span>
+              <span className="home-card-rating">{Math.round(rating.overall.score)} <small>GES</small></span></span>
+            <span className="home-card-name">DEINE KARTE</span>
+            <span className="home-card-divider" />
+            <span className="home-card-bottom">DEINE DATEN. DEINE ENTWICKLUNG.</span>
+          </div>
+          <div className="player-card-attributes">
+            {rating.attributes.map((attribute) => <div key={attribute.id}>
+              <span>{attribute.name}</span><strong>{Math.round(attribute.score)}</strong>
+            </div>)}
+          </div>
+          <p>Startwert 60 · maximal 99. Über 80 wächst jeder Wert um höchstens zwei Punkte pro Woche. Körpergewicht wird bei geeigneten Kraftübungen berücksichtigt; regelmäßige Mobility-Einheiten zählen zur Körperkontrolle.</p>
+        </div>}
       </section>
     )
   }
@@ -100,13 +117,11 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           <span className="home-widget-arrow" aria-hidden="true">↗</span>
         </span>
         <span className="home-stat-grid">
-          <span><strong className="is-neutral">{latestTrainingStatus === 'improved' || latestTrainingStatus === 'decline'
-            ? <PerformanceGraph status={latestTrainingStatus} />
-            : latestTrainingStatus === 'unchanged' ? '−' : '—'}</strong><small>Training</small></span>
+          <span><strong>{Math.round(rating.overall.score)}</strong><small>Training</small></span>
           <span><strong className="is-neutral">—</strong><small>Beach</small></span>
           <span><strong className="is-neutral">—</strong><small>Halle</small></span>
         </span>
-        <span className="home-widget-note">Training: {trainingTrendLabel} (letzte vergleichbare Tageswertung). Beach und Halle: Wertung folgt.</span>
+        <span className="home-widget-note">Training: {trainingTrendLabel} (letzter Vergleich) · Bewertung {Math.round(rating.overall.score)}/99. Beach und Halle: Wertung folgt.</span>
       </button>
 
       <button className="home-widget home-player-card" type="button"
@@ -122,13 +137,13 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           <span className="home-card-topline">BEACH ATHLETE <span>✦</span> PLAYER CARD</span>
           <span className="home-card-center">
             <span className="home-card-crest">BA</span>
-            <span className="home-card-rating">— <small>GES</small></span>
+            <span className="home-card-rating">{Math.round(rating.overall.score)} <small>GES</small></span>
           </span>
           <span className="home-card-name">DEINE KARTE</span>
           <span className="home-card-divider" />
           <span className="home-card-bottom">DEINE DATEN. DEINE ENTWICKLUNG.</span>
         </span>
-        <span className="home-widget-note">Attribute und Bewertung gestalten wir gemeinsam.</span>
+        <span className="home-widget-note">Fünf athletische Werte · Start bei 60 · maximal 99.</span>
       </button>
       <button className="home-widget home-archive" type="button" onClick={() => openFeature('archive')}>
         <span className="home-widget-header"><span>

@@ -226,6 +226,9 @@
 .statistics-tick-label { fill: #a6b6a9; font-size: 9px; text-anchor: end; }
 .statistics-date-label { fill: #a6b6a9; font-size: 9px; }
 .statistics-date-label.is-end { text-anchor: end; }
+.statistics-date-label.is-center { text-anchor: middle; }
+.statistics-rating-badge { color: #a5ef75; font-size: 1.2rem; font-weight: 850; }
+.statistics-rating-badge small { color: #b9c6bb; font-size: 0.7rem; font-weight: 650; }
 .statistics-empty-chart { display: grid; place-items: center; min-height: 145px; padding: 20px; border: 1px dashed #526457; border-radius: 12px; color: #aab8ac; background: #101713; font-size: 0.8rem; text-align: center; }
 .statistics-trend { display: inline-flex; align-items: center; gap: 6px; color: #c8d5c9; font-size: 0.76rem; font-weight: 650; white-space: nowrap; }
 .statistics-trend .home-performance-graph { width: 30px; height: 16px; }
@@ -354,6 +357,12 @@
   height: 1px;
   background: #f4e7bd8c;
 }
+
+.player-card-detail { display: grid; gap: 18px; max-width: 540px; }
+.player-card-detail > p { margin: 0; color: #b9c6bb; font-size: 0.83rem; line-height: 1.5; }
+.player-card-attributes { display: grid; gap: 8px; }
+.player-card-attributes > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; border: 1px solid #344638; border-radius: 10px; background: #141c17; font-size: 0.85rem; }
+.player-card-attributes strong { color: #a5ef75; font-size: 1.15rem; }
 
 .home-detail {
   min-height: 58svh;

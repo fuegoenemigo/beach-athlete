@@ -4,10 +4,14 @@ import TrainingLineChart from './TrainingLineChart.jsx'
 const formatPercent = (value) => `${value > 0 ? '+' : ''}${value.toLocaleString('de-DE', {
   maximumFractionDigits: 1,
 })} %`
-const formatIndex = (value) => value.toLocaleString('de-DE', { maximumFractionDigits: 1 })
 const shortDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', {
   day: 'numeric', month: 'numeric', year: 'numeric',
 })
+const displayScore = (value) => Math.round(value)
+
+export function RatingBadge({ rating }) {
+  return <span className="statistics-rating-badge">{displayScore(rating.score)} <small>/ 99</small></span>
+}
 
 export function TrainingTrend({ result }) {
   if (!result || result.status === 'unrated') return <span className="statistics-trend is-unrated">Noch keine Wertung</span>
@@ -29,57 +33,54 @@ function ExerciseList({ exercises }) {
   </ul>
 }
 
-export default function TrainingStatistics({ progress, onOpenCategory }) {
+export default function TrainingStatistics({ rating, onOpenCategory }) {
   return <div className="training-statistics">
-    <p>Jede Übung wird mit ihrer letzten Ausführung derselben ID verglichen. Im Krafttraining entstehen daraus Muskelgruppenwerte; anschließend werden die Muskelgruppen zum Krafttrainingstrend zusammengefasst.</p>
-    <p>Die Diagramme starten bei 100 und zeigen deinen persönlichen Verlauf. Tippe auf eine Kategorie, um ihre Details zu öffnen.</p>
+    <p>Fünf athletische Werte entstehen aus deinen vier Trainingsbereichen. Alle starten bei 60 und verändern sich mit wiederholten, vergleichbaren Einträgen. Tippe auf einen Wert für Details.</p>
     <div className="training-statistics-categories">
-      {progress.categories.map((category) => <button type="button" className="training-stat-card"
-        key={category.name} onClick={() => onOpenCategory(category.name)}
-        aria-label={`${category.name} öffnen`}>
-        <span className="training-stat-card-heading"><strong>{category.name}</strong>
+      {rating.attributes.map((attribute) => <button type="button" className="training-stat-card"
+        key={attribute.id} onClick={() => onOpenCategory(attribute.id)}
+        aria-label={`${attribute.name} öffnen`}>
+        <span className="training-stat-card-heading"><strong>{attribute.name}</strong>
           <span aria-hidden="true">↗</span></span>
-        <TrainingLineChart label={category.name} series={category.series} />
-        <TrainingTrend result={category} />
+        <TrainingLineChart label={attribute.name} series={attribute.series} score={attribute.score} />
+        <RatingBadge rating={attribute} />
       </button>)}
     </div>
     <details className="training-stat-method">
-      <summary>Wie wird der Fortschritt berechnet?</summary>
-      <p>Pro Tag werden zuerst die Übungen jeder Muskelgruppe gemittelt, danach die Muskelgruppen im Krafttraining. Die anderen Kategorien mitteln vergleichbare Übungen direkt. Der Gesamtwert mittelt die an diesem Tag bewertbaren Kategorien gleichgewichtet.</p>
-      <p>Bei Kraftübungen zählt der beste geschätzte Kraftwert: Last × (1 + Wiederholungen ÷ 30). Bei Übungen ohne Gewicht zählen Wiederholungen. Sprünge nutzen die gemessene Höhe, Core-Halteübungen die Dauer.</p>
-      <p>Ausdauer vergleicht Tempo bei gleicher Distanz oder Strecke bei gleichem geführten Protokoll. Bei wiederholten Sprints zählt die durchschnittliche Sprintzeit. Unterschiedliche Messarten werden nicht miteinander verrechnet.</p>
-      <p>Mehr als +1 % gilt als Verbesserung, weniger als −1 % als Rückgang. Dazwischen zeigt die App Stagnation. Reine Anwesenheit und Mobility-Dauer erhalten keinen Leistungswert.</p>
+      <summary>Wie entsteht die Bewertung?</summary>
+      <p>Die Karte ist ein motivierender App-Wert, keine medizinische oder sportwissenschaftliche Diagnose. Geeignete Übungen erhalten grobe Referenzwerte; andere zählen über ihren Vergleich mit der eigenen früheren Ausführung.</p>
+      <p>Pro Trainingstag nähert sich ein Attribut um 18 % dem berechneten Zielwert. Es fällt nie unter 60. Oberhalb von 80 sind höchstens zwei zusätzliche Punkte pro Kalenderwoche möglich.</p>
+      <p>Für Kraft werden gemessene Last und Wiederholungen bei ausgewählten Grundübungen zum Körpergewicht ins Verhältnis gesetzt. Sprünge, feste Sprintstrecken, Core-Halteübungen und abgeschlossene Ausdauerprotokolle zählen entsprechend ihrer Messart.</p>
+      <p>Ein Mobility-Tag zählt, wenn mindestens zwei Mobility-Übungen oder insgesamt zwei Minuten Mobility dokumentiert wurden. Regelmäßigkeit innerhalb von 28 Tagen hebt den Körperkontrollwert begrenzt an. Volleyball-Ergebnisse und bloße Anwesenheit zählen nicht.</p>
     </details>
   </div>
 }
 
-export function StrengthStatistics({ category }) {
+export function StrengthStatistics({ rating, progress }) {
   return <div className="training-statistics">
-    <p>Krafttraining fasst die vergleichbaren Übungen zunächst je Muskelgruppe zusammen. Jede Muskelgruppe zählt anschließend gleich viel für den Krafttrainingstrend.</p>
-    <div className="training-stat-summary"><TrainingTrend result={category} />
-      {category.series.length > 0 && <span>Trendindex {formatIndex(category.series.at(-1).value)}</span>}</div>
-    {category.groups.length ? <div className="training-stat-groups">
-      {category.groups.map((group) => <details className="training-stat-group" key={group.name}>
+    <p>Die Muskelgruppen tragen gleichgewichtet zu deiner Kraftbewertung bei.</p>
+    <div className="training-stat-summary"><RatingBadge rating={rating} /></div>
+    {rating.groups.length ? <div className="training-stat-groups">
+      {rating.groups.map((group) => <details className="training-stat-group" key={group.name}>
         <summary>
           <span className="training-stat-card-heading"><strong>{group.name}</strong><span aria-hidden="true">＋</span></span>
-          <TrainingLineChart label={group.name} series={group.series} />
-          <TrainingTrend result={group} />
+          <TrainingLineChart label={group.name} series={group.series} score={group.score} />
+          <RatingBadge rating={group} />
         </summary>
         <div className="training-stat-group-content"><h3>Übungen</h3>
-          <ExerciseList exercises={group.exercises} /></div>
+          <ExerciseList exercises={progress.groups.find((item) => item.name === group.name)?.exercises ?? []} /></div>
       </details>)}
-    </div> : <p>Noch keine vergleichbaren Kraftübungen für Muskelgruppen vorhanden.</p>}
+    </div> : <p>Alle Muskelgruppen beginnen bei 60. Nach einer bewertbaren Kraftübung erscheint hier ihr Verlauf.</p>}
   </div>
 }
 
-export function CategoryStatistics({ category }) {
+export function CategoryStatistics({ rating, exercises }) {
   return <div className="training-statistics">
-    <p>Vergleichbare Übungen dieser Kategorie werden pro Tag gleichgewichtet zusammengefasst.</p>
-    <TrainingLineChart label={category.name} series={category.series} />
-    <div className="training-stat-summary"><TrainingTrend result={category} />
-      {category.series.length > 0 && <span>Trendindex {formatIndex(category.series.at(-1).value)}</span>}</div>
+    <p>Der Wert startet bei 60 und nähert sich mit vergleichbaren Trainingstagen deiner dokumentierten Leistung an.</p>
+    <TrainingLineChart label={rating.name} series={rating.series} score={rating.score} />
+    <div className="training-stat-summary"><RatingBadge rating={rating} /></div>
     <h3>Übungen</h3>
-    <ExerciseList exercises={category.exercises} />
-    {category.name === 'Core und Mobility' && <p>Eine längere Mobility-Dauer gilt nicht automatisch als Fortschritt. Dafür ist noch keine eindeutige Leistungsgröße erfasst.</p>}
+    <ExerciseList exercises={exercises} />
+    {rating.id === 'control' && <p>Regelmäßige Mobility-Tage erhöhen diesen Wert zusätzlich. Die Dauer eines einzelnen Dehnens gilt nicht als Beweglichkeitsmessung.</p>}
   </div>
 }

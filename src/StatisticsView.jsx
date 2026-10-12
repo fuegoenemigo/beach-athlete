@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import TrainingLineChart from './TrainingLineChart.jsx'
-import TrainingStatistics, { CategoryStatistics, StrengthStatistics, TrainingTrend } from './TrainingStatistics.jsx'
+import TrainingStatistics, { CategoryStatistics, RatingBadge, StrengthStatistics } from './TrainingStatistics.jsx'
 import EntryWindow from './EntryWindow.jsx'
 
 const sections = [
@@ -29,13 +29,25 @@ function PreviewChart({ title, axis }) {
   </svg>
 }
 
-export default function StatisticsView({ training }) {
+function attributeExercises(progress, id) {
+  const category = progress.categories.find((item) => item.name === (
+    id === 'strength' ? 'Krafttraining' : id === 'endurance' ? 'Ausdauer'
+      : id === 'control' ? 'Core und Mobility' : 'Sprungkraft und Agilität'))
+  const exercises = category?.exercises ?? []
+  const isAgility = (item) => ['Agilität', 'Schnelligkeit'].includes(item.muscleGroup)
+    || /sprint|shuttle|slalom/i.test(item.libraryId)
+  if (id === 'jump') return exercises.filter((item) => !isAgility(item))
+  if (id === 'agility') return exercises.filter(isAgility)
+  return exercises
+}
+
+export default function StatisticsView({ training, progress }) {
   const [trainingWindow, setTrainingWindow] = useState(null)
-  const selectedCategory = training.categories.find((category) => category.name === trainingWindow?.name)
+  const selectedAttribute = training.attributes.find((attribute) => attribute.id === trainingWindow?.name)
   const selectedSport = sections.find((section) => section.id === trainingWindow?.name)
   const windowTitle = trainingWindow?.level === 'categories' ? 'Training'
-    : trainingWindow?.level === 'strength' ? 'Krafttraining · Muskelgruppen'
-      : trainingWindow?.level === 'sport' ? selectedSport?.title : trainingWindow?.name
+    : trainingWindow?.level === 'strength' ? 'Kraft · Muskelgruppen'
+      : trainingWindow?.level === 'sport' ? selectedSport?.title : selectedAttribute?.name
 
   return <><div className="statistics-sections">
     {sections.map((section) => <section className="statistics-section" key={section.id}>
@@ -46,8 +58,8 @@ export default function StatisticsView({ training }) {
         <span className="statistics-section-heading"><strong>{section.title}</strong>
           <span aria-hidden="true">↗</span></span>
         {section.id === 'training' ? <>
-          <TrainingLineChart label="Training gesamt" series={training.overall.series} />
-          <TrainingTrend result={training.overall} />
+          <TrainingLineChart label="Training gesamt" series={training.overall.series} score={training.overall.score} />
+          <RatingBadge rating={training.overall} />
         </> : <>
           <PreviewChart title={section.title} axis={section.axis} />
           <span className="statistics-preview-note">Vorschau · noch keine berechneten Werte</span>
@@ -62,14 +74,15 @@ export default function StatisticsView({ training }) {
         className="statistics-window-back" onClick={() => setTrainingWindow({ level: 'categories' })}>
         ← Zu den Hauptkategorien
       </button>}
-      {trainingWindow.level === 'categories' && <TrainingStatistics progress={training}
-        onOpenCategory={(name) => setTrainingWindow({
-          level: name === 'Krafttraining' ? 'strength' : 'category', name,
+      {trainingWindow.level === 'categories' && <TrainingStatistics rating={training}
+        onOpenCategory={(id) => setTrainingWindow({
+          level: id === 'strength' ? 'strength' : 'category', name: id,
         })} />}
-      {trainingWindow.level === 'strength' && selectedCategory
-        && <StrengthStatistics category={selectedCategory} />}
-      {trainingWindow.level === 'category' && selectedCategory
-        && <CategoryStatistics category={selectedCategory} />}
+      {trainingWindow.level === 'strength' && selectedAttribute
+        && <StrengthStatistics rating={selectedAttribute} progress={progress.categories[0]} />}
+      {trainingWindow.level === 'category' && selectedAttribute
+        && <CategoryStatistics rating={selectedAttribute}
+          exercises={attributeExercises(progress, selectedAttribute.id)} />}
       {trainingWindow.level === 'sport' && selectedSport && <div className="statistics-section-detail">
         <p>{selectedSport.note}</p>
         <div className="statistics-detail-placeholder">{selectedSport.detail}</div>

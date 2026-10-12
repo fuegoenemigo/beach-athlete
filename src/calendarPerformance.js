@@ -6,7 +6,7 @@ const positive = (value) => value !== '' && value != null && Number(value) > 0
 const seconds = (value, unit) => Number(value) * (unit === 'min' ? 60 : 1)
 const meters = (value, unit) => Number(value) * (unit === 'km' ? 1000 : 1)
 
-function bestMetric(exercise) {
+export function bestMetric(exercise) {
   const type = exerciseMeasurement(exercise)
   const entries = (exercise.entries ?? []).filter((entry) => isConfirmedSet(entry, type))
   if (!entries.length) return null
