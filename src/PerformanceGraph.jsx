@@ -1,9 +1,9 @@
 export default function PerformanceGraph({ status }) {
   const paths = {
     improved: 'M2 15 L12 14 L20 12 L28 13 L36 9 L46 6',
-    'strong-improved': 'M2 18 L13 18 L22 16 L30 14 L37 9 L46 1',
+    'strong-improved': 'M5 18 L12 16 L17 17 L24 12 L29 14 L35 7 L39 8 L43 2',
     decline: 'M2 5 L12 6 L20 8 L28 7 L36 11 L46 14',
-    'strong-decline': 'M2 2 L13 2 L22 4 L30 6 L37 11 L46 19',
+    'strong-decline': 'M5 2 L12 4 L17 3 L24 8 L29 6 L35 13 L39 12 L43 18',
   }
   const path = paths[status]
   if (!path) return null

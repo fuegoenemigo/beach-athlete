@@ -141,6 +141,8 @@
 .home-performance-graph.is-decline { color: #ff687a; }
 .home-performance-graph.is-strong-improved { color: #a2ffad; filter: drop-shadow(0 0 5px currentColor); }
 .home-performance-graph.is-strong-decline { color: #ff5368; filter: drop-shadow(0 0 5px currentColor); }
+.home-calendar-performance .home-performance-graph.is-strong-improved,
+.home-calendar-performance .home-performance-graph.is-strong-decline { width: min(100%, 40px); }
 .home-calendar-legend { display: flex; flex-wrap: wrap; gap: 7px 12px; margin-top: 14px; color: #bac7bd; font-size: 0.7rem; }
 .home-calendar-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .home-calendar-legend .home-performance-graph { width: 26px; height: 14px; }
