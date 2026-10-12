@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import TrainingLineChart from './TrainingLineChart.jsx'
+import TrainingStatistics, { TrainingTrend } from './TrainingStatistics.jsx'
 
 const sections = [
   { id: 'training', title: 'Training', axis: 'Trainingsleistung',
-    note: 'Die Wertung einzelner Übungen und ihre Zusammenfassung stimmen wir noch ab.',
-    detail: 'Hier können später Übungsentwicklung, Kategorien und vergleichbare Trainingstage erscheinen.' },
+    note: 'Übungen, Muskelgruppen und Hauptkategorien bilden den gemeinsamen Trainingstrend.' },
   { id: 'beach', title: 'Beachvolleyball', axis: 'Persönliche Bewertung',
     note: 'Gegnerstärke, Intensität und Spielergebnisse brauchen eine gemeinsame Bewertungsregel.',
     detail: 'Hier können später Spieltage, Turniere und Einflussfaktoren einzeln ausgewertet werden.' },
@@ -27,7 +28,7 @@ function PreviewChart({ title, axis }) {
   </svg>
 }
 
-export default function StatisticsView() {
+export default function StatisticsView({ training }) {
   const [expandedSection, setExpandedSection] = useState(null)
 
   return <div className="statistics-sections">
@@ -37,14 +38,20 @@ export default function StatisticsView() {
         onClick={() => setExpandedSection((current) => current === section.id ? null : section.id)}>
         <span className="statistics-section-heading"><strong>{section.title}</strong>
           <span aria-hidden="true">{expandedSection === section.id ? '−' : '＋'}</span></span>
-        <PreviewChart title={section.title} axis={section.axis} />
-        <span className="statistics-preview-note">Vorschau · noch keine berechneten Werte</span>
+        {section.id === 'training' ? <>
+          <TrainingLineChart label="Training gesamt" series={training.overall.series} />
+          <TrainingTrend result={training.overall} />
+        </> : <>
+          <PreviewChart title={section.title} axis={section.axis} />
+          <span className="statistics-preview-note">Vorschau · noch keine berechneten Werte</span>
+        </>}
       </button>
       <div id={`statistics-detail-${section.id}`}
         className="statistics-section-detail" hidden={expandedSection !== section.id}>
         <h3>{section.title} im Detail</h3>
         <p>{section.note}</p>
-        <div className="statistics-detail-placeholder">{section.detail}</div>
+        {section.id === 'training' ? <TrainingStatistics progress={training} />
+          : <div className="statistics-detail-placeholder">{section.detail}</div>}
       </div>
     </section>)}
   </div>

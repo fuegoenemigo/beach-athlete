@@ -1,5 +1,6 @@
 import { exerciseMeasurement, hasLegacyValues, isConfirmedSet, isOpenTraining,
   isSportTrainingAttendance } from './trainingModel.js'
+import { aggregateTrainingComparisons, changeStatus } from './trainingAggregation.js'
 
 const positive = (value) => value !== '' && value != null && Number(value) > 0
 const seconds = (value, unit) => Number(value) * (unit === 'min' ? 60 : 1)
@@ -69,14 +70,12 @@ function evaluateDay(exercises, previousById) {
     const baseline = previous && bestMetric(previous.exercise)
     if (!baseline || baseline.key !== current.key || !positive(baseline.value)) continue
     comparisons.push({ libraryId: exercise.libraryId, name: exercise.name,
+      category: exercise.category, muscleGroup: exercise.muscleGroup,
       previousDate: previous.date, changePercent: ((current.value - baseline.value) / baseline.value) * 100 })
   }
-  if (!comparisons.length) return { status: 'unrated', comparisons, total: exercises.size }
-  const changePercent = comparisons.reduce((sum, item) => sum + item.changePercent, 0) / comparisons.length
-  const roundedChange = Math.round(changePercent * 100) / 100
-  const status = roundedChange < -1 ? 'decline' : roundedChange <= 1 ? 'unchanged'
-    : 'improved'
-  return { status, changePercent, comparisons, total: exercises.size }
+  const aggregate = aggregateTrainingComparisons(comparisons)
+  return { status: changeStatus(aggregate.changePercent), changePercent: aggregate.changePercent,
+    comparisons, categories: aggregate.categories, total: exercises.size }
 }
 
 export function trainingDayPerformances(sessions) {
@@ -88,7 +87,8 @@ export function trainingDayPerformances(sessions) {
   const byDate = new Map()
   for (const session of ordered) {
     if (!byDate.has(session.date)) byDate.set(session.date, new Map())
-    for (const exercise of completedExercises(session)) byDate.get(session.date).set(exercise.libraryId, exercise)
+    for (const exercise of completedExercises(session)) byDate.get(session.date).set(exercise.libraryId,
+      { ...exercise, category: exercise.category ?? session.category })
   }
   const results = new Map()
   const previousById = new Map()

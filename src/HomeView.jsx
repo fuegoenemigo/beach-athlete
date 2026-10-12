@@ -3,14 +3,14 @@ import HomeCalendar from './HomeCalendar.jsx'
 import ArchiveView from './ArchiveView.jsx'
 import StatisticsView from './StatisticsView.jsx'
 import PerformanceGraph from './PerformanceGraph.jsx'
-import { trainingDayPerformances } from './calendarPerformance.js'
+import { trainingProgress } from './trainingProgress.js'
 import './HomeView.css'
 
 const FEATURES = {
   statistics: {
     icon: '📊',
     title: 'Statistiken',
-    text: 'Training, Beach und Halle bekommen eigene Zeitverläufe. Die Bewertungsregeln und echten Datenpunkte legen wir gemeinsam fest.',
+    text: 'Dein Training zeigt jetzt einen berechneten Verlauf. Die Bewertungsregeln für Beach und Halle legen wir anschließend gemeinsam fest.',
   },
   card: {
     icon: '🏅',
@@ -23,10 +23,10 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
   const [selectedFeature, setSelectedFeature] = useState(initialView)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
-  const latestTrainingStatus = [...trainingDayPerformances(sessions).values()]
-    .filter((performance) => performance.status !== 'unrated').at(-1)?.status
+  const training = trainingProgress(sessions)
+  const latestTrainingStatus = training.overall.status
   const trainingTrendLabel = { improved: 'Verbesserung', decline: 'Rückgang',
-    unchanged: 'gleich' }[latestTrainingStatus] ?? 'noch keine Wertung'
+    unchanged: 'Stagnation' }[latestTrainingStatus] ?? 'noch keine Wertung'
 
   function openFeature(feature) {
     setFocusedArchiveTarget(null)
@@ -77,10 +77,10 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           ← Zur Startseite
         </button>
         <div className="home-detail-icon" aria-hidden="true">{feature.icon}</div>
-        <p className="eyebrow">BALD IN BEACH ATHLETE</p>
+        <p className="eyebrow">{selectedFeature === 'statistics' ? 'DEINE ENTWICKLUNG' : 'BALD IN BEACH ATHLETE'}</p>
         <h2 id="home-detail-title">{feature.title}</h2>
         <p>{feature.text}</p>
-        {selectedFeature === 'statistics' && <StatisticsView />}
+        {selectedFeature === 'statistics' && <StatisticsView training={training} />}
       </section>
     )
   }
