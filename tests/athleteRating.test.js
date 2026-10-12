@@ -95,3 +95,38 @@ test('consistently exceptional results can eventually reach an overall 90', () =
   assert.ok(rating.overall.score >= 90)
   assert.ok(rating.attributes.every((item) => item.score >= 80))
 })
+
+test('an attribute loses one point only after each full eleven-day inactivity period', () => {
+  const sessions = [day('2026-10-01', [bench(140)])]
+  const initial = athleteRating(sessions, {}, '2026-10-01').attributes[0].score
+  const tenDays = athleteRating(sessions, {}, '2026-10-11')
+  const elevenDays = athleteRating(sessions, {}, '2026-10-12')
+  const twentyTwoDays = athleteRating(sessions, {}, '2026-10-23')
+  assert.equal(tenDays.attributes[0].score, initial)
+  assert.equal(elevenDays.attributes[0].score, initial - 1)
+  assert.equal(twentyTwoDays.attributes[0].score, initial - 2)
+  assert.deepEqual(twentyTwoDays.attributes[0].series.slice(-2).map((point) => point.date),
+    ['2026-10-12', '2026-10-23'])
+  assert.equal(twentyTwoDays.overall.score,
+    twentyTwoDays.attributes.reduce((sum, item) => sum + item.score, 0) / 5)
+})
+
+test('matching training on the due date resets its own clock but another category does not', () => {
+  const first = day('2026-10-01', [bench(140)])
+  const onDueDate = athleteRating([first, day('2026-10-12', [bench(140)])], {}, '2026-10-12')
+  const justBefore = athleteRating([first, day('2026-10-11', [bench(140)])], {}, '2026-10-11')
+  assert.equal(onDueDate.attributes[0].score, justBefore.attributes[0].score)
+  const differentCategory = athleteRating([first, day('2026-10-12', [jump(60)])], {}, '2026-10-12')
+  assert.equal(differentCategory.attributes[0].score,
+    athleteRating([first], {}, '2026-10-12').attributes[0].score)
+})
+
+test('lost strength points are not instantly restored by the first workout after a long break', () => {
+  const first = day('2026-10-01', [bench(140)])
+  const returnDay = day('2026-10-24', [bench(140)])
+  const returned = athleteRating([first, returnDay], {}, '2026-10-24')
+  const uninterrupted = athleteRating([first, day('2026-10-11', [bench(140)]),
+    day('2026-10-21', [bench(140)]), returnDay], {}, '2026-10-24')
+  assert.ok(returned.attributes[0].score < uninterrupted.attributes[0].score)
+  assert.ok(returned.attributes[0].score >= 60)
+})

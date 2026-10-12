@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import HomeCalendar from './HomeCalendar.jsx'
 import ArchiveView from './ArchiveView.jsx'
 import StatisticsView from './StatisticsView.jsx'
@@ -23,8 +23,16 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
   const [selectedFeature, setSelectedFeature] = useState(initialView)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
+  const [ratingDate, setRatingDate] = useState(() => new Date().toLocaleDateString('sv-SE'))
+  useEffect(() => {
+    const refreshDate = () => setRatingDate(new Date().toLocaleDateString('sv-SE'))
+    const timer = window.setInterval(refreshDate, 60_000)
+    document.addEventListener('visibilitychange', refreshDate)
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refreshDate) }
+  }, [])
   const training = useMemo(() => trainingProgress(sessions), [sessions])
-  const rating = useMemo(() => athleteRating(sessions, athleteProfile), [sessions, athleteProfile])
+  const rating = useMemo(() => athleteRating(sessions, athleteProfile, ratingDate),
+    [sessions, athleteProfile, ratingDate])
   const latestTrainingStatus = training.overall.status
   const trainingTrendLabel = { improved: 'Verbesserung', decline: 'Rückgang',
     unchanged: 'Stagnation' }[latestTrainingStatus] ?? 'noch keine Wertung'
@@ -96,7 +104,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
               <span>{attribute.name}</span><strong>{Math.round(attribute.score)}</strong>
             </div>)}
           </div>
-          <p>Startwert 60 · maximal 99. Über 80 wächst jeder Wert um höchstens zwei Punkte pro Woche. Körpergewicht wird bei geeigneten Kraftübungen berücksichtigt; regelmäßige Mobility-Einheiten zählen zur Körperkontrolle.</p>
+          <p>Startwert 60 · maximal 99. Über 80 wächst jeder Wert um höchstens zwei Punkte pro Woche. Nach je elf vollen Tagen ohne passendes Training sinkt der jeweilige Wert um einen Punkt, nie unter 60. Körpergewicht wird bei geeigneten Kraftübungen berücksichtigt; regelmäßige Mobility-Einheiten zählen zur Körperkontrolle.</p>
         </div>}
       </section>
     )

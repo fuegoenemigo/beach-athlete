@@ -13,6 +13,7 @@ export const RATING_ATTRIBUTES = [
 const START = 60
 const MAX = 99
 const LEARNING_RATE = 0.18
+const INACTIVITY_DAYS = 11
 const STRENGTH_REFERENCES = {
   'volleyball:bench': 0.8, 'volleyball:incline-bench': 0.7,
   'volleyball:squat': 1.6, 'volleyball:deadlift': 1.3,
@@ -42,6 +43,19 @@ function previousDate(date) {
   const day = new Date(`${date}T12:00:00Z`)
   day.setUTCDate(day.getUTCDate() - 1)
   return day.toISOString().slice(0, 10)
+}
+
+function addDays(date, days) {
+  const day = new Date(`${date}T12:00:00Z`)
+  day.setUTCDate(day.getUTCDate() + days)
+  return day.toISOString().slice(0, 10)
+}
+
+function recordScore(trackState, date, value) {
+  if (!trackState.series.length) trackState.series.push({ date: previousDate(date),
+    value: trackState.startScore })
+  if (trackState.series.at(-1).date === date) trackState.series.at(-1).value = value
+  else trackState.series.push({ date, value })
 }
 
 function update(trackState, date, target) {
@@ -136,13 +150,44 @@ function datedSessions(sessions) {
       || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
 }
 
-export function athleteRating(sessions, athleteProfile = {}) {
+export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date().toLocaleDateString('sv-SE')) {
   const attributes = new Map(RATING_ATTRIBUTES.map(({ id, name }) => [id, track(name)]))
   const groups = new Map()
   const baselines = new Map()
   const mobilityDays = []
   const overall = track('Gesamtwert')
   const byDay = new Map()
+  const nextInactivityDate = new Map()
+
+  function recordOverall(date) {
+    overall.score = average([...attributes.values()].map((attribute) => attribute.score))
+    recordScore(overall, date, overall.score)
+  }
+
+  function applyInactivityThrough(date, activeIds = new Set()) {
+    const due = new Map()
+    for (const [id, nextDate] of nextInactivityDate) {
+      let dueDate = nextDate
+      while (dueDate < date || (dueDate === date && !activeIds.has(id))) {
+        if (!due.has(dueDate)) due.set(dueDate, [])
+        due.get(dueDate).push(id)
+        dueDate = addDays(dueDate, INACTIVITY_DAYS)
+      }
+      nextInactivityDate.set(id, dueDate)
+    }
+    for (const [dueDate, ids] of [...due].sort(([a], [b]) => a.localeCompare(b))) {
+      let changed = false
+      for (const id of ids) {
+        const attribute = attributes.get(id)
+        const decayed = clamp(attribute.score - 1)
+        if (decayed === attribute.score) continue
+        attribute.score = decayed
+        recordScore(attribute, dueDate, decayed)
+        changed = true
+      }
+      if (changed) recordOverall(dueDate)
+    }
+  }
   for (const session of datedSessions(sessions)) {
     if (!byDay.has(session.date)) byDay.set(session.date, new Map())
     for (const exercise of session.exercises ?? []) {
@@ -153,6 +198,10 @@ export function athleteRating(sessions, athleteProfile = {}) {
   }
 
   for (const [date, exercises] of byDay) {
+    const activeIds = new Set([...exercises.values()].map((exercise) => attributeFor(exercise))
+      .filter(Boolean).map((id) => id === 'mobility' ? 'control' : id))
+    applyInactivityThrough(date, activeIds)
+    for (const id of activeIds) nextInactivityDate.set(id, addDays(date, INACTIVITY_DAYS))
     const dayTargets = new Map()
     let mobilitySeconds = 0
     let mobilityExercises = 0
@@ -186,15 +235,17 @@ export function athleteRating(sessions, athleteProfile = {}) {
 
     for (const [id, groupTargets] of dayTargets) {
       if (id === 'strength') {
+        const earlierMean = groups.size ? average([...groups.values()].map((group) => group.score)) : START
         for (const [name, targets] of groupTargets) {
           if (!groups.has(name)) groups.set(name, track(name, attributes.get(id).score))
           update(groups.get(name), date, average(targets))
         }
         const strength = attributes.get(id)
-        if (!strength.series.length) strength.series.push({ date: previousDate(date), value: START })
-        strength.score = clamp(average([...groups.values()].map((group) => group.score)))
+        const currentMean = average([...groups.values()].map((group) => group.score))
+        const inactivityGap = Math.max(0, earlierMean - strength.score)
+        strength.score = clamp(currentMean - inactivityGap * (1 - LEARNING_RATE))
         strength.observations += 1
-        strength.series.push({ date, value: strength.score })
+        recordScore(strength, date, strength.score)
       } else if (id !== 'control') update(attributes.get(id), date,
         average([...groupTargets.values()].map(average)))
     }
@@ -208,11 +259,10 @@ export function athleteRating(sessions, athleteProfile = {}) {
       update(control, date, target)
     }
     if ([...attributes.values()].some((attribute) => attribute.series.at(-1)?.date === date)) {
-      if (!overall.series.length) overall.series.push({ date: previousDate(date), value: START })
-      overall.score = average([...attributes.values()].map((attribute) => attribute.score))
-      overall.series.push({ date, value: overall.score })
+      recordOverall(date)
     }
   }
+  applyInactivityThrough(asOfDate)
   return { overall, attributes: RATING_ATTRIBUTES.map(({ id }) => ({ id, ...attributes.get(id),
     groups: id === 'strength' ? [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, 'de')) : [] })) }
 }

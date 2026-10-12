@@ -50,6 +50,7 @@ export default function TrainingStatistics({ rating, onOpenCategory }) {
       <summary>Wie entsteht die Bewertung?</summary>
       <p>Die Karte ist ein motivierender App-Wert, keine medizinische oder sportwissenschaftliche Diagnose. Geeignete Übungen erhalten grobe Referenzwerte; andere zählen über ihren Vergleich mit der eigenen früheren Ausführung.</p>
       <p>Pro Trainingstag nähert sich ein Attribut um 18 % dem berechneten Zielwert. Es fällt nie unter 60. Oberhalb von 80 sind höchstens zwei zusätzliche Punkte pro Kalenderwoche möglich.</p>
+      <p>Ohne passendes abgeschlossenes Training sinkt ein bereits gestiegener Wert nach je elf vollen Tagen um einen Punkt. Ein passendes Training setzt die Frist für diesen Wert zurück; am Trainingstag wird kein neuer Inaktivitätspunkt abgezogen. Andere Trainingsarten setzen sie nicht zurück.</p>
       <p>Für Kraft werden gemessene Last und Wiederholungen bei ausgewählten Grundübungen zum Körpergewicht ins Verhältnis gesetzt. Sprünge, feste Sprintstrecken, Core-Halteübungen und abgeschlossene Ausdauerprotokolle zählen entsprechend ihrer Messart.</p>
       <p>Ein Mobility-Tag zählt, wenn mindestens zwei Mobility-Übungen oder insgesamt zwei Minuten Mobility dokumentiert wurden. Regelmäßigkeit innerhalb von 28 Tagen hebt den Körperkontrollwert begrenzt an. Volleyball-Ergebnisse und bloße Anwesenheit zählen nicht.</p>
     </details>
