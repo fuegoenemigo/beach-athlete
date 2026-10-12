@@ -20,6 +20,7 @@ import {
   isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
 } from './trainingModel.js'
 import { formatTimer, timerStorageKey } from './trainingTimer.js'
+import { strengthRoleFor } from './strengthClassification.js'
 import { guidedEnduranceSpec, guidedMainReference, mainDurationSeconds,
   tracksDeviceDistance, deviceDistanceMeters,
   confirmGuidedMain } from './enduranceFlow.js'
@@ -165,10 +166,12 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [customName, setCustomName] = useState('')
   const [customType, setCustomType] = useState('strength')
   const [customGroup, setCustomGroup] = useState('Brust')
+  const [customStrengthRole, setCustomStrengthRole] = useState('compound')
   const [libraryCategory, setLibraryCategory] = useState('Krafttraining')
   const [libraryName, setLibraryName] = useState('')
   const [libraryType, setLibraryType] = useState('strength')
   const [libraryGroup, setLibraryGroup] = useState('Brust')
+  const [libraryStrengthRole, setLibraryStrengthRole] = useState('compound')
   const [renamingIndex, setRenamingIndex] = useState(null)
   const [renameValue, setRenameValue] = useState('')
   useEffect(() => {
@@ -193,11 +196,14 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     return () => { window.cancelAnimationFrame(frame); window.cancelAnimationFrame(scrollFrame) }
   }, [navigationTarget])
   const activeSession = sessions.find((session) => session.id === activeSessionId)
-  const managedLibrary = exerciseLibrary.map((item, sourceIndex) => ({
-    ...enrichExercise({ ...item, category: canonicalCategory(item.category, item.name) }),
-    id: exerciseIdentity(item),
-    sourceIndex,
-  }))
+  const managedLibrary = exerciseLibrary.map((item, sourceIndex) => {
+    const enriched = enrichExercise({ ...item, category: canonicalCategory(item.category, item.name) })
+    return { ...enriched,
+      muscleGroup: enriched.muscleGroup === 'Ganzkörper'
+        ? enriched.category === 'Core und Mobility' ? 'Mobility' : 'Ohne Muskelgruppe'
+        : enriched.muscleGroup,
+      id: exerciseIdentity(item), sourceIndex }
+  })
   const visibleLibrary = [...managedLibrary, ...DEFAULT_EXERCISES.filter((item) =>
     !managedLibrary.some((existing) => existing.category === item.category
       && existing.name === item.name))]
@@ -503,7 +509,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       setFlowMessage('Diese Übung gibt es in der Kategorie bereits.'); return
     }
     const item = { id: crypto.randomUUID(), name, category: selectedExerciseCategory,
-      type: customType, muscleGroup: customGroup }
+      type: customType, muscleGroup: customGroup,
+      ...(selectedExerciseCategory === 'Krafttraining'
+        ? { strengthRole: customStrengthRole } : {}) }
     setExerciseLibrary((previous) => [...previous, item])
     if (item.category === 'Ausdauer') {
       applyPlan(guidedCardioPlanForExercise(item))
@@ -592,6 +600,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setPlanDraft((draft) => ({ ...draft, exercises: [...draft.exercises, {
       libraryId: exerciseIdentity(item), name: item.name, type: exerciseMeasurement(item),
       category: item.category, ...(item.loadMode ? { loadMode: item.loadMode } : {}),
+      ...(item.strengthRole ? { strengthRole: item.strengthRole } : {}),
       ...(item.muscleGroup ? { muscleGroup: item.muscleGroup } : {}),
     }], categories: [...new Set([draft.category, ...(draft.categories ?? []), item.category])] }))
     setPlanChoice('')
@@ -629,7 +638,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       setNotice('Diese Übung gibt es in der Kategorie bereits.'); return
     }
     setExerciseLibrary((previous) => [...previous, { id: crypto.randomUUID(), name,
-      category: libraryCategory, type: libraryType, muscleGroup: libraryGroup }])
+      category: libraryCategory, type: libraryType, muscleGroup: libraryGroup,
+      ...(libraryCategory === 'Krafttraining'
+        ? { strengthRole: libraryStrengthRole } : {}) }])
     setLibraryName('')
     setNotice('Übung zur Bibliothek hinzugefügt.')
   }
@@ -676,6 +687,20 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setPlanDraft((draft) => draft ? { ...draft, exercises: draft.exercises.map((reference) =>
       reference.libraryId === id ? { ...reference, muscleGroup: group } : reference) } : null)
   }
+  function changeLibraryStrengthRole(index, strengthRole) {
+    const item = exerciseLibrary[index]
+    const id = exerciseIdentity(item)
+    setExerciseLibrary((previous) => previous.map((entry, i) => i === index
+      ? { ...entry, id, strengthRole } : entry))
+    setSessions((previous) => previous.map((session) => ({ ...session,
+      exercises: session.exercises.map((exercise) => exercise.libraryId === id
+        ? { ...exercise, strengthRole } : exercise),
+    })))
+    setTrainingPlans((previous) => previous.map((plan) => ({ ...plan,
+      exercises: plan.exercises.map((reference) => reference.libraryId === id
+        ? { ...reference, strengthRole } : reference),
+    })))
+  }
   function reassignLibraryItem(index, category) {
     const item = exerciseLibrary[index]
     if (visibleLibrary.some((entry) => entry.sourceIndex !== index
@@ -685,7 +710,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     }
     setExerciseLibrary((previous) => previous.map((entry, i) => i === index
       ? { ...entry, id: exerciseIdentity(item), category,
-        muscleGroup: category === 'Krafttraining' ? item.muscleGroup || 'Ganzkörper'
+        muscleGroup: category === 'Krafttraining'
+          ? MUSCLE_GROUPS.includes(item.muscleGroup) ? item.muscleGroup : 'Ohne Muskelgruppe'
           : groupsFor(visibleLibrary, category)[0]?.[0] ?? 'Allgemein' }
       : entry))
     setNotice('Ältere Übung der neuen Hauptkategorie zugeordnet.')
@@ -835,6 +861,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       customName={customName} setCustomName={setCustomName}
       customType={customType} setCustomType={setCustomType}
       customGroup={customGroup} setCustomGroup={setCustomGroup}
+      customStrengthRole={customStrengthRole} setCustomStrengthRole={setCustomStrengthRole}
       onAddExercise={addExercise} onOpenExercise={openExercise} onApplyPlan={applyPlan}
       onCreateCustom={createCustomExercise} onUpdateSession={updateSession}
       onUpdateExercise={updateExercise} onRemoveExercise={removeExercise} onConfirmSet={confirmSet}
@@ -976,6 +1003,14 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           ...(libraryCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
           .map((group) => <option key={group}>{group}</option>)}
       </select>
+      {libraryCategory === 'Krafttraining' && <>
+        <label className="field-label" htmlFor="library-strength-role">Übungsart</label>
+        <select id="library-strength-role" className="field" value={libraryStrengthRole}
+          onChange={(event) => setLibraryStrengthRole(event.target.value)}>
+          <option value="compound">Grundübung</option>
+          <option value="isolation">Isolationsübung</option>
+        </select>
+      </>}
       <button type="button" className="secondary-button" onClick={addLibraryItem}>＋ Zur Bibliothek</button>
       <div className="training-library-list">
         {groupsFor(visibleLibrary, libraryCategory).map(([group, items]) => <div key={group}>
@@ -984,7 +1019,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
             const index = item.sourceIndex
             return <div className="training-library-item" key={exerciseIdentity(item)}>
               {index === undefined ? <>
-                <span>{item.name}</span><span className="history-meta">Empfohlene Übung</span>
+                <span>{item.name}</span><span className="history-meta">Empfohlene Übung
+                  {libraryCategory === 'Krafttraining'
+                    ? ` · ${strengthRoleFor(item) === 'compound' ? 'Grundübung' : 'Isolationsübung'}` : ''}</span>
               </> : renamingIndex === index ? <>
                 <input className="field" aria-label="Neuer Übungsname" value={renameValue}
                   onChange={(event) => setRenameValue(event.target.value)} />
@@ -1000,6 +1037,12 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
                     ...(libraryCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
                     .map((muscle) => <option key={muscle}>{muscle}</option>)}
                 </select>
+                {libraryCategory === 'Krafttraining' && <select className="field training-group-select"
+                  aria-label={`Übungsart für ${item.name}`} value={strengthRoleFor(item)}
+                  onChange={(event) => changeLibraryStrengthRole(index, event.target.value)}>
+                  <option value="compound">Grundübung</option>
+                  <option value="isolation">Isolationsübung</option>
+                </select>}
                 <button type="button" className="text-button" onClick={() => { setRenamingIndex(index); setRenameValue(item.name) }}>Umbenennen</button>
                 <button type="button" className="text-button" onClick={() => {
                   if (!window.confirm(`„${item.name}“ aus der Bibliothek entfernen? Bestehende Einheiten bleiben erhalten.`)) return

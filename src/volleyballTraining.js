@@ -1,3 +1,5 @@
+import { strengthRoleFor } from './strengthClassification.js'
+
 // Stable IDs keep suggested exercises and plans available without rewriting existing backups.
 const exercise = (id, name, category, type, extra = {}) => ({
   id: `volleyball:${id}`, name, category, type, ...extra,
@@ -55,8 +57,8 @@ const GYM_EXERCISES = [
   gym('overhead-triceps', 'Überkopf-Trizepsstrecken', 'Krafttraining', 'strength', 'Trizeps'),
   gym('skull-crusher', 'Skull Crushers', 'Krafttraining', 'strength', 'Trizeps'),
   gym('close-bench', 'Enges Bankdrücken', 'Krafttraining', 'strength', 'Trizeps'),
-  gym('kettlebell-swing', 'Kettlebell Swings', 'Krafttraining', 'strength', 'Ganzkörper'),
-  gym('farmers-carry', 'Farmer’s Carry', 'Krafttraining', 'carry', 'Ganzkörper'),
+  gym('kettlebell-swing', 'Kettlebell Swings', 'Krafttraining', 'strength', 'Beine'),
+  gym('farmers-carry', 'Farmer’s Carry', 'Krafttraining', 'carry', 'Rücken'),
   // Rumpf und Beweglichkeit.
   gym('crunch', 'Crunches', 'Core und Mobility', 'reps', 'Core'),
   gym('reverse-crunch', 'Reverse Crunches', 'Core und Mobility', 'reps', 'Core'),
@@ -138,20 +140,22 @@ export const DEFAULT_EXERCISES = [
   exercise('lateral-bound', 'Seitliche Bounds', 'Sprungkraft und Agilität', 'reps', { muscleGroup: 'Agilität', loadMode: 'bodyweight' }),
   exercise('sprint', 'Sprint', 'Sprungkraft und Agilität', 'distance', { muscleGroup: 'Schnelligkeit' }),
   exercise('shuttle', 'Shuttle-Lauf mit Richtungswechsel', 'Sprungkraft und Agilität', 'distance', { muscleGroup: 'Agilität' }),
-  exercise('mobility', 'Mobilitätsroutine', 'Core und Mobility', 'duration', { muscleGroup: 'Ganzkörper' }),
+  exercise('mobility', 'Mobilitätsroutine', 'Core und Mobility', 'duration', { muscleGroup: 'Mobility' }),
   exercise('beach', 'Beachvolleyball-Training', 'Beach-Training', 'duration'),
   exercise('indoor', 'Hallenvolleyball-Training', 'Hallentraining', 'duration'),
   exercise('bike', 'Radfahren', 'Ausdauer', 'distance', { muscleGroup: 'Ausdauer', defaultDurationUnit: 'min' }),
   exercise('repeat-sprint', 'Wiederholter 30-m-Sprint', 'Ausdauer', 'distance', { muscleGroup: 'Intervalle' }),
   exercise('aerobic-run', 'Lockerer Dauerlauf', 'Ausdauer', 'distance', { muscleGroup: 'Grundlage' }),
   ...GYM_EXERCISES,
-]
+].map((item) => item.category === 'Krafttraining'
+  ? { ...item, strengthRole: strengthRoleFor(item) } : item)
 
 const byId = new Map(DEFAULT_EXERCISES.map((item) => [item.id, item]))
 const ref = (id, target, timing = {}) => {
   const item = byId.get(id.includes(':') ? id : `volleyball:${id}`)
   return { libraryId: item.id, name: item.name, category: item.category,
     type: item.type, muscleGroup: item.muscleGroup, loadMode: item.loadMode,
+    strengthRole: item.strengthRole,
     intervalWorkMinutes: item.intervalWorkMinutes,
     performanceRole: item.performanceRole, defaultDurationUnit: item.defaultDurationUnit,
     target, ...timing }
@@ -574,5 +578,9 @@ export function searchTrainingPlans(plans, query) {
 export function enrichExercise(item) {
   const builtin = DEFAULT_EXERCISES.find((candidate) => candidate.name === item.name
     && candidate.category === item.category)
-  return builtin ? { ...builtin, ...item, loadMode: item.loadMode ?? builtin.loadMode } : item
+  return builtin ? { ...builtin, ...item,
+    muscleGroup: item.muscleGroup === 'Ganzkörper' ? builtin.muscleGroup
+      : item.muscleGroup ?? builtin.muscleGroup,
+    strengthRole: item.strengthRole ?? builtin.strengthRole,
+    loadMode: item.loadMode ?? builtin.loadMode } : item
 }

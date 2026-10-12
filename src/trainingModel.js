@@ -43,7 +43,7 @@ export function canonicalCategory(category, subcategory = '') {
 }
 
 export const MUSCLE_GROUPS = [
-  'Brust', 'Rücken', 'Schultern', 'Beine', 'Bizeps', 'Trizeps', 'Core', 'Ganzkörper',
+  'Brust', 'Rücken', 'Beine', 'Schultern', 'Bizeps', 'Trizeps',
 ]
 
 export const SPORTS = [
@@ -102,6 +102,7 @@ export function createLoggedExercise(item) {
     category: item.category, type: exerciseMeasurement(item),
     ...(dumbbellCount(item) ? { dumbbellCount: dumbbellCount(item) } : {}),
     ...(item.muscleGroup ? { muscleGroup: item.muscleGroup } : {}),
+    ...(item.strengthRole ? { strengthRole: item.strengthRole } : {}),
     ...(isBodyweightOnly(item) ? { loadMode: 'bodyweightOnly' }
       : item.loadMode ? { loadMode: item.loadMode } : {}),
     ...(item.intervalWorkMinutes ? { intervalWorkMinutes: item.intervalWorkMinutes } : {}),

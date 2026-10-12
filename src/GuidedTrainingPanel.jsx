@@ -1,4 +1,5 @@
 import { RatingStepper } from './VolleyballInputs.jsx'
+import { strengthRoleFor } from './strengthClassification.js'
 import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingTimer from './TrainingTimer.jsx'
 import {
@@ -83,6 +84,7 @@ export default function GuidedTrainingPanel({
   step, setStep, activeExerciseId, group, setGroup,
   editingSetId, setEditingSetId, flowMessage, newCategory, setNewCategory,
   customName, setCustomName, customType, setCustomType, customGroup, setCustomGroup,
+  customStrengthRole, setCustomStrengthRole,
   onAddExercise, onOpenExercise, onApplyPlan, onCreateCustom, onUpdateSession,
   onUpdateExercise, onRemoveExercise, onConfirmSet, onFinishExercise,
   onTimerDuration,
@@ -179,7 +181,10 @@ export default function GuidedTrainingPanel({
             .sort((a, b) => a.name.localeCompare(b.name, 'de-DE'))
             .map((item) => <div className="training-exercise-row" key={item.id}>
               <button type="button" className="training-choice"
-                onClick={() => onAddExercise(item)}>{item.name}<span>›</span></button>
+                onClick={() => onAddExercise(item)}>{item.name}
+                {exerciseCategory === 'Krafttraining'
+                  && <small>{strengthRoleFor(item) === 'compound' ? 'Grundübung' : 'Isolationsübung'}</small>}
+                <span>›</span></button>
               <ExerciseInfo exercise={item} />
             </div>)}</div>
         </>}
@@ -202,6 +207,14 @@ export default function GuidedTrainingPanel({
                 ...(exerciseCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
                 .map((muscle) => <option key={muscle}>{muscle}</option>)}
             </select></>
+          {exerciseCategory === 'Krafttraining' && <>
+            <label className="field-label" htmlFor="custom-strength-role">Übungsart</label>
+            <select id="custom-strength-role" className="field" value={customStrengthRole}
+              onChange={(event) => setCustomStrengthRole(event.target.value)}>
+              <option value="compound">Grundübung</option>
+              <option value="isolation">Isolationsübung</option>
+            </select>
+          </>}
           <button type="button" className="secondary-button" onClick={onCreateCustom}>Anlegen und ersten Satz öffnen</button>
         </details>
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}

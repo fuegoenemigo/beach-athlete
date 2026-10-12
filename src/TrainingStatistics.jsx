@@ -50,7 +50,7 @@ export default function TrainingStatistics({ rating, onOpenCategory }) {
       <summary>Wie entsteht die Bewertung?</summary>
       <p>Die Karte ist ein motivierender App-Wert, keine medizinische oder sportwissenschaftliche Diagnose. Geeignete Übungen erhalten grobe Referenzwerte; andere zählen über ihren Vergleich mit der eigenen früheren Ausführung.</p>
       <p>Pro Trainingstag nähert sich ein Attribut um 18 % dem berechneten Zielwert. Es fällt nie unter 60. Oberhalb von 80 sind höchstens zwei zusätzliche Punkte pro Kalenderwoche möglich.</p>
-      <p>Ohne passendes abgeschlossenes Training sinkt ein bereits gestiegener Wert nach je elf vollen Tagen um einen Punkt. Ein passendes Training setzt die Frist für diesen Wert zurück; am Trainingstag wird kein neuer Inaktivitätspunkt abgezogen. Andere Trainingsarten setzen sie nicht zurück.</p>
+      <p>Ohne passendes abgeschlossenes Training sinkt ein bereits gestiegener Wert nach je elf vollen Tagen um einen Punkt. Bei Kraft läuft diese Frist getrennt für Brust, Rücken, Beine und Arme; ihr neuer Durchschnitt bestimmt den Kraftwert. Ein Training setzt nur die passende Frist zurück.</p>
       <p>Für Kraft werden gemessene Last und Wiederholungen bei ausgewählten Grundübungen zum Körpergewicht ins Verhältnis gesetzt. Sprünge, feste Sprintstrecken, Core-Halteübungen und abgeschlossene Ausdauerprotokolle zählen entsprechend ihrer Messart.</p>
       <p>Ein Mobility-Tag zählt, wenn mindestens zwei Mobility-Übungen oder insgesamt zwei Minuten Mobility dokumentiert wurden. Regelmäßigkeit innerhalb von 28 Tagen hebt den Körperkontrollwert begrenzt an. Volleyball-Ergebnisse und bloße Anwesenheit zählen nicht.</p>
     </details>
@@ -59,7 +59,7 @@ export default function TrainingStatistics({ rating, onOpenCategory }) {
 
 export function StrengthStatistics({ rating, progress }) {
   return <div className="training-statistics">
-    <p>Die Muskelgruppen tragen gleichgewichtet zu deiner Kraftbewertung bei.</p>
+    <p>Brust, Rücken, Beine und Arme zählen gleich stark. Brust, Rücken und Beine werden mit zwei Grundübungen oder einer Grundübung und zwei Isolationsübungen bewertet. Das ergibt 50/50 oder 50/25/25; bei weiteren Übungen bleibt das Verhältnis Grundübung zu Isolation 2:1. Arme benötigen je eine Übung für Schultern, Bizeps und Trizeps.</p>
     <div className="training-stat-summary"><RatingBadge rating={rating} /></div>
     {rating.groups.length ? <div className="training-stat-groups">
       {rating.groups.map((group) => <details className="training-stat-group" key={group.name}>
@@ -68,8 +68,14 @@ export function StrengthStatistics({ rating, progress }) {
           <TrainingLineChart label={group.name} series={group.series} score={group.score} />
           <RatingBadge rating={group} />
         </summary>
-        <div className="training-stat-group-content"><h3>Übungen</h3>
-          <ExerciseList exercises={progress.groups.find((item) => item.name === group.name)?.exercises ?? []} /></div>
+        <div className="training-stat-group-content">
+          {!group.qualified && <p className="helper-text">{group.name === 'Arme'
+            ? `Für die Wertung fehlt noch: ${group.missingArmMuscles.join(', ') || 'keine Untergruppe'}.`
+            : `Erfasst: ${group.compoundCount} Grundübungen und ${group.isolationCount} Isolationsübungen. Für die Wertung brauchst du zwei Grundübungen oder eine Grundübung und zwei Isolationsübungen.`}</p>}
+          <h3>Übungen</h3>
+          <ExerciseList exercises={progress.groups.filter((item) => group.name === 'Arme'
+            ? ['Schultern', 'Bizeps', 'Trizeps'].includes(item.name)
+            : item.name === group.name).flatMap((item) => item.exercises)} /></div>
       </details>)}
     </div> : <p>Alle Muskelgruppen beginnen bei 60. Nach einer bewertbaren Kraftübung erscheint hier ihr Verlauf.</p>}
   </div>

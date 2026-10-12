@@ -18,10 +18,12 @@ export function bestMetric(exercise) {
       return reps.length ? { key: 'reps', value: Math.max(...reps.map((entry) => Number(entry.reps))) } : null
     }
     const weighted = entries.filter((entry) => positive(entry.reps)
-      && (positive(entry.weightKg) || (exercise.loadMode === 'bodyweight' && positive(entry.bodyweightKg))))
+      && (positive(entry.weightKg) || (exercise.loadMode === 'bodyweight'
+        && exercise.category !== 'Krafttraining' && positive(entry.bodyweightKg))))
     if (weighted.length) return weighted.map((entry) => {
       const load = effectiveTrainingWeight(entry, exercise)
-        + (exercise.loadMode === 'bodyweight' ? Number(entry.bodyweightKg || 0) : 0)
+        + (exercise.loadMode === 'bodyweight' && exercise.category !== 'Krafttraining'
+          ? Number(entry.bodyweightKg || 0) : 0)
       return { key: dumbbellCount(exercise) && entry.weightBasis === 'perDumbbell'
         ? 'estimatedStrength:perDumbbell' : 'estimatedStrength',
       value: load * (1 + Number(entry.reps) / 30) }
