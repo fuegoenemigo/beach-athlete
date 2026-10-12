@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import HomeCalendar from './HomeCalendar.jsx'
 import ArchiveView from './ArchiveView.jsx'
+import StatisticsView from './StatisticsView.jsx'
+import PerformanceGraph from './PerformanceGraph.jsx'
+import { trainingDayPerformances } from './calendarPerformance.js'
 import './HomeView.css'
 
 const FEATURES = {
   statistics: {
     icon: '📊',
     title: 'Statistiken',
-    text: 'Hier werden später deine erfassten Daten ausgewertet. Kennzahlen, Zeiträume und Diagramme bauen wir auf den fertigen Erfassungsbereichen auf.',
+    text: 'Training, Beach und Halle bekommen eigene Zeitverläufe. Die Bewertungsregeln und echten Datenpunkte legen wir gemeinsam fest.',
   },
   card: {
     icon: '🏅',
@@ -20,6 +23,10 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
   const [selectedFeature, setSelectedFeature] = useState(initialView)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
+  const latestTrainingStatus = [...trainingDayPerformances(sessions).values()]
+    .filter((performance) => performance.status !== 'unrated').at(-1)?.status
+  const trainingTrendLabel = { improved: 'Verbesserung', decline: 'Rückgang',
+    unchanged: 'gleich' }[latestTrainingStatus] ?? 'noch keine Wertung'
 
   function openFeature(feature) {
     setFocusedArchiveTarget(null)
@@ -73,6 +80,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
         <p className="eyebrow">BALD IN BEACH ATHLETE</p>
         <h2 id="home-detail-title">{feature.title}</h2>
         <p>{feature.text}</p>
+        {selectedFeature === 'statistics' && <StatisticsView />}
       </section>
     )
   }
@@ -92,11 +100,13 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           <span className="home-widget-arrow" aria-hidden="true">↗</span>
         </span>
         <span className="home-stat-grid">
-          <span><strong>—</strong><small>Training</small></span>
-          <span><strong>—</strong><small>Beach</small></span>
-          <span><strong>—</strong><small>Halle</small></span>
+          <span><strong className="is-neutral">{latestTrainingStatus === 'improved' || latestTrainingStatus === 'decline'
+            ? <PerformanceGraph status={latestTrainingStatus} />
+            : latestTrainingStatus === 'unchanged' ? '−' : '—'}</strong><small>Training</small></span>
+          <span><strong className="is-neutral">—</strong><small>Beach</small></span>
+          <span><strong className="is-neutral">—</strong><small>Halle</small></span>
         </span>
-        <span className="home-widget-note">Auswertungen folgen, sobald die Erfassung steht.</span>
+        <span className="home-widget-note">Training: {trainingTrendLabel} (letzte vergleichbare Tageswertung). Beach und Halle: Wertung folgt.</span>
       </button>
 
       <button className="home-widget home-player-card" type="button"

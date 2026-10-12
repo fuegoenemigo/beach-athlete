@@ -4,6 +4,7 @@ import { calendarDayActivity, isRecoveryDay, RECOVERY_DAY } from './calendarActi
 import { trainingDayPerformances } from './calendarPerformance.js'
 import { isOpenTraining } from './trainingModel.js'
 import EntryWindow from './EntryWindow.jsx'
+import PerformanceGraph from './PerformanceGraph.jsx'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const performanceLabels = { decline: 'Rückgang', unchanged: 'Gleich', improved: 'Verbesserung' }
@@ -34,17 +35,6 @@ function SteelDumbbell() {
     <rect x="21" y="4" width="6" height="14" rx="1.5" fill="#c6d0d7" />
     <rect x="27" y="7" width="4" height="8" rx="1.2" fill="#9baab4" />
     <path d="M6 5h4m12 0h4" stroke="#f5f8fa" strokeWidth="1" strokeLinecap="round" />
-  </svg>
-}
-
-function PerformanceGraph({ status }) {
-  if (status !== 'improved' && status !== 'decline') return null
-  const path = status === 'improved'
-    ? 'M2 17 L11 14 L18 15 L27 9 L34 11 L46 3'
-    : 'M2 3 L11 7 L18 5 L27 12 L34 10 L46 17'
-  return <svg className={`home-performance-graph is-${status}`} viewBox="0 0 48 20"
-    fill="none" aria-hidden="true" focusable="false">
-    <path d={path} stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 }
 

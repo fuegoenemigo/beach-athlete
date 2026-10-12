@@ -192,14 +192,40 @@
 }
 
 .home-stat-grid strong {
+  display: grid;
+  place-items: center;
+  min-height: 30px;
   color: var(--green);
   font-size: 1.5rem;
 }
+.home-stat-grid strong.is-neutral { color: #b5bab8; }
+
+.home-stat-grid .home-performance-graph { width: min(100%, 44px); }
 
 .home-stat-grid small {
   color: #b9c4bb;
   font-size: 0.75rem;
 }
+
+.statistics-sections { display: grid; gap: 16px; margin-top: 24px; }
+.statistics-section { overflow: hidden; border: 1px solid #344638; border-radius: 17px; background: #141c17; }
+.statistics-section-toggle { display: grid; gap: 10px; width: 100%; padding: 16px; border: 0; color: #f3f5f3; background: transparent; text-align: left; }
+.statistics-section-toggle:hover { background: #1b281e; }
+.statistics-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 1.05rem; }
+.statistics-section-heading > span { color: var(--green); font-size: 1.3rem; }
+.statistics-preview-chart { display: block; width: 100%; height: auto; max-height: 180px; border-radius: 12px; background: #101713; }
+.statistics-axis { stroke: #8b9b8d; stroke-width: 1.4; }
+.statistics-grid-line { stroke: #3a483d; stroke-width: 1; stroke-dasharray: 3 5; }
+.statistics-example-line { fill: none; stroke: #8fa99a; stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 5 5; opacity: 0.65; }
+.statistics-axis-label { fill: #9eafa2; font-size: 10px; text-anchor: middle; }
+.statistics-preview-label { fill: #a6b6a9; font-size: 11px; text-anchor: middle; }
+.statistics-preview-note { color: #aab8ac; font-size: 0.75rem; }
+.statistics-section-detail { display: grid; gap: 10px; padding: 16px; border-top: 1px solid #344638; }
+.statistics-section-detail[hidden] { display: none; }
+.statistics-section-detail h3, .statistics-section-detail p { margin: 0; }
+.statistics-section-detail h3 { font-size: 1rem; }
+.statistics-section-detail p, .statistics-detail-placeholder { color: #b9c6bb; font-size: 0.83rem; line-height: 1.5; }
+.statistics-detail-placeholder { padding: 12px; border: 1px dashed #526457; border-radius: 10px; background: #19221b; }
 
 .home-player-card {
   background: linear-gradient(145deg, #292a1e, #151a15 70%);
