@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import HomeCalendar from './HomeCalendar.jsx'
 import ArchiveView from './ArchiveView.jsx'
-import { relativeStrengthByExercise } from './relativeStrength.js'
 import './HomeView.css'
 
 const FEATURES = {
@@ -13,7 +12,7 @@ const FEATURES = {
   card: {
     icon: '🏅',
     title: 'Spielerkarte & Profil',
-    text: 'Deine Profildaten und ersten relativen Kraftwerte. Die vollständige Spielerkarte gestalten wir anschließend.',
+    text: 'Hier hinterlegst du deine Körperdaten. Die Auswertung und Gestaltung deiner Spielerkarte legen wir anschließend gemeinsam fest.',
   },
 }
 
@@ -21,10 +20,6 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
   const [selectedFeature, setSelectedFeature] = useState(initialView)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
-  const strengthResults = relativeStrengthByExercise(sessions, athleteProfile)
-  const formatNumber = (value, digits = 2) => value.toLocaleString('de-DE', {
-    minimumFractionDigits: digits, maximumFractionDigits: digits,
-  })
 
   function openFeature(feature) {
     setFocusedArchiveTarget(null)
@@ -54,7 +49,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
         <p>{feature.text}</p>
         {selectedFeature === 'card' && <div className="home-profile-card">
           <h3>Körperdaten</h3>
-          <p>Das Körpergewicht wird bei Eigengewichtsübungen angezeigt und für relative Kraftwerte verwendet. Die Größe hilft später bei volleyballspezifischen Reichhöhen.</p>
+          <p>Das Körpergewicht wird bei Eigengewichtsübungen angezeigt. Größe und Gewicht stehen für die spätere Auswertung deiner Entwicklung bereit.</p>
           <label className="field-label" htmlFor="profile-bodyweight">Körpergewicht (kg)</label>
           <input id="profile-bodyweight" className="field" type="number" inputMode="decimal"
             min="1" step="0.1" placeholder="Noch nicht hinterlegt"
@@ -74,20 +69,6 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
                 && Number(value) <= 300))
                 setAthleteProfile((profile) => ({ ...profile, heightCm: value }))
             }} />
-        </div>}
-        {selectedFeature === 'card' && <div className="home-profile-card">
-          <h3>Relative Kraft</h3>
-          <p>Pro geeigneter Kraftübung zählt der beste Satz mit 1–10 Wiederholungen: geschätzter Kraftwert aus dem eingetragenen Trainingsgewicht ÷ Körpergewicht. Das ist ein persönlicher Trainingsvergleich, keine allgemeine Fitnessnote. Übungen wie Klimmzüge oder Liegestütze sowie reine Wiederholungsübungen bleiben für eigene Auswertungen.</p>
-          {!athleteProfile.bodyweightKg && <p>Trage dein Körpergewicht ein, damit die Werte berechnet werden können.</p>}
-          {athleteProfile.bodyweightKg && !strengthResults.length && <p>Für die erste Wertung brauchst du eine abgeschlossene Kraftübung mit eingetragenem Gewicht und 1–10 Wiederholungen.</p>}
-          {strengthResults.length > 0 && <ul className="home-strength-list">
-            {strengthResults.map((result) => <li key={result.libraryId}>
-              <span><strong>{result.name}</strong><small>{formatNumber(result.estimateKg, 1)} kg geschätzt · {formatNumber(result.bodyweightKg, 1)} kg Körpergewicht{result.usesCurrentBodyweight ? ' (aktuelles Profilgewicht)' : ''}</small></span>
-              <span className="home-strength-value">{formatNumber(result.ratio)}×<small>{result.previousRatio == null ? 'Erster Wert'
-                : `${result.ratio >= result.previousRatio ? '+' : ''}${formatNumber((result.ratio / result.previousRatio - 1) * 100, 1)} % zum letzten Wert`}</small></span>
-            </li>)}
-          </ul>}
-          <p>Für ältere Einträge ohne gespeichertes Tagesgewicht gilt dein aktuelles Profilgewicht. Wenn du dein Gewicht änderst, können sich deren Quotienten verändern. Die Körpergröße fließt nicht in diesen Kraftwert ein.</p>
         </div>}
       </section>
     )
