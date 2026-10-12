@@ -11,6 +11,7 @@ import HomeView from "./HomeView.jsx";
 import VolleyballView from "./VolleyballView.jsx";
 import { DEFAULT_EXERCISES } from "./volleyballTraining.js";
 import { activityDestination } from "./activityHistory.js";
+import { adjacentArea, swipeDirection } from "./swipeNavigation.js";
 
 
 
@@ -94,6 +95,8 @@ function App() {
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [activityTarget, setActivityTarget] = useState(null);
   const activityNavigationId = useRef(0);
+  const pageSwipeStart = useRef(null);
+  const suppressPageClickUntil = useRef(0);
   const [exerciseLibrary, setExerciseLibrary] = useState(loadExerciseLibrary);
   const [trainingPlans, setTrainingPlans] = useState(loadTrainingPlans);
   const [athleteProfile, setAthleteProfile] = useState(loadAthleteProfile);
@@ -281,6 +284,28 @@ function App() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  function startPageSwipe(event) {
+    pageSwipeStart.current = null;
+    if (event.touches.length !== 1 || event.target.closest(
+      '.home-calendar, input, textarea, select, [contenteditable="true"], [role="slider"]')) return;
+    const touch = event.touches[0];
+    if (touch.clientX < 24 || touch.clientX > window.innerWidth - 24) return;
+    pageSwipeStart.current = { x: touch.clientX, y: touch.clientY };
+  }
+
+  function finishPageSwipe(event) {
+    const start = pageSwipeStart.current;
+    pageSwipeStart.current = null;
+    if (!start || event.changedTouches.length !== 1) return;
+    const touch = event.changedTouches[0];
+    const direction = swipeDirection(start, { x: touch.clientX, y: touch.clientY });
+    const next = adjacentArea(activeArea, direction);
+    if (next !== activeArea) {
+      suppressPageClickUntil.current = Date.now() + 350;
+      selectArea(next);
+    }
+  }
+
   if (!cloudState.authorized) {
     return (
       <main className="app app-access-gate">
@@ -405,6 +430,14 @@ function App() {
       {criticalNotice && <p className="notice-message" role="alert">{criticalNotice}</p>}
       {notice && <p className="notice-message transient-notice" role="status">{notice}</p>}
 
+      <div className="app-swipe-content" onTouchStart={startPageSwipe}
+        onTouchEnd={finishPageSwipe} onTouchCancel={() => { pageSwipeStart.current = null; }}
+        onClickCapture={(event) => {
+          if (Date.now() < suppressPageClickUntil.current) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+        }}>
       {activeArea === "home" && <HomeView key={homeViewKey}
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
         sessions={sessions} volleyballDays={volleyballDays} initialView={homeInitialView}
@@ -436,6 +469,7 @@ function App() {
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
           onOpenArchive={() => openHomeView("archive")}
           navigationTarget={activityTarget?.type === "indoor" ? activityTarget : null} />
+      </div>
       </div>
       <footer className="app-footer">
         BEACH ATHLETE <span>•</span> DEIN WEG, DEINE DATEN

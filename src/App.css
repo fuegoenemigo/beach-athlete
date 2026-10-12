@@ -58,6 +58,8 @@ textarea:focus-visible {
   padding: calc(28px + env(safe-area-inset-top, 0px)) 0 calc(32px + env(safe-area-inset-bottom, 0px));
 }
 
+.app-swipe-content { touch-action: pan-y; }
+
 .main-navigation {
   display: grid;
   grid-template-columns: 68px repeat(3, minmax(0, 1fr));

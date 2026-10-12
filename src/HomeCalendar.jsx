@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { activityEntries, activityTitle, localDate } from './activityHistory.js'
 import { calendarDayActivity, isRecoveryDay, RECOVERY_DAY } from './calendarActivities.js'
 import { trainingDayPerformances } from './calendarPerformance.js'
 import { isOpenTraining } from './trainingModel.js'
 import EntryWindow from './EntryWindow.jsx'
 import PerformanceGraph from './PerformanceGraph.jsx'
+import { swipeDirection } from './swipeNavigation.js'
 
 const WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const performanceLabels = { 'strong-decline': 'Starker Rückgang', decline: 'Rückgang',
@@ -44,6 +45,8 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
   const [month, setMonth] = useState(() => localDate().slice(0, 7))
   const [selectedDate, setSelectedDate] = useState(null)
   const [showEntryChoices, setShowEntryChoices] = useState(false)
+  const calendarSwipeStart = useRef(null)
+  const suppressDayClickUntil = useRef(0)
   const entries = activityEntries(sessions, volleyballDays)
   const trainingPerformance = trainingDayPerformances(sessions)
   const byDate = new Map()
@@ -58,6 +61,24 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
   const volleyballDateTaken = volleyballDays.some((day) => day.date === selectedDate)
   const trainingOpen = sessions.some(isOpenTraining)
 
+  function startCalendarSwipe(event) {
+    calendarSwipeStart.current = event.touches.length === 1
+      ? { x: event.touches[0].clientX, y: event.touches[0].clientY } : null
+  }
+
+  function finishCalendarSwipe(event) {
+    const start = calendarSwipeStart.current
+    calendarSwipeStart.current = null
+    if (!start || event.changedTouches.length !== 1) return
+    const touch = event.changedTouches[0]
+    const direction = swipeDirection(start, { x: touch.clientX, y: touch.clientY })
+    if (!direction) return
+    suppressDayClickUntil.current = Date.now() + 350
+    setMonth((current) => shiftMonth(current, direction === 'left' ? 1 : -1))
+    setSelectedDate(null)
+    setShowEntryChoices(false)
+  }
+
   return <><section className={`home-widget home-calendar${expanded ? ' home-calendar-expanded' : ''}`} aria-label="Sportkalender">
     <div className="home-widget-header"><div>
       <span className="home-widget-kicker">DEIN MONAT</span>
@@ -68,7 +89,15 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
       <strong>{monthLabel}</strong>
       <button type="button" aria-label="Nächster Monat" onClick={() => { setMonth(shiftMonth(month, 1)); setSelectedDate(null); setShowEntryChoices(false) }}>›</button>
     </div>
-    <div className="home-calendar-grid">
+    <div className="home-calendar-grid" onTouchStart={startCalendarSwipe}
+      onTouchEnd={finishCalendarSwipe}
+      onTouchCancel={() => { calendarSwipeStart.current = null; }}
+      onClickCapture={(event) => {
+        if (Date.now() < suppressDayClickUntil.current) {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+      }}>
       {WEEKDAYS.map((day) => <span className="home-weekday" key={day}>{day}</span>)}
       {monthCells(month).map((date, index) => {
         if (!date) return <span key={`empty-${index}`} />
