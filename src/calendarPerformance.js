@@ -1,5 +1,6 @@
 import { exerciseMeasurement, hasLegacyValues, isConfirmedSet, isOpenTraining,
-  isSportTrainingAttendance } from './trainingModel.js'
+  isSportTrainingAttendance, effectiveTrainingWeight, isBodyweightOnly,
+  dumbbellCount } from './trainingModel.js'
 import { aggregateTrainingComparisons, changeStatus } from './trainingAggregation.js'
 
 const positive = (value) => value !== '' && value != null && Number(value) > 0
@@ -12,12 +13,19 @@ export function bestMetric(exercise) {
   if (!entries.length) return null
 
   if (type === 'strength' || type === 'reps') {
+    if (isBodyweightOnly(exercise)) {
+      const reps = entries.filter((entry) => positive(entry.reps))
+      return reps.length ? { key: 'reps', value: Math.max(...reps.map((entry) => Number(entry.reps))) } : null
+    }
     const weighted = entries.filter((entry) => positive(entry.reps)
       && (positive(entry.weightKg) || (exercise.loadMode === 'bodyweight' && positive(entry.bodyweightKg))))
-    if (weighted.length) return { key: 'estimatedStrength', value: Math.max(...weighted.map((entry) => {
-      const load = Number(entry.weightKg || 0) + (exercise.loadMode === 'bodyweight' ? Number(entry.bodyweightKg || 0) : 0)
-      return load * (1 + Number(entry.reps) / 30)
-    })) }
+    if (weighted.length) return weighted.map((entry) => {
+      const load = effectiveTrainingWeight(entry, exercise)
+        + (exercise.loadMode === 'bodyweight' ? Number(entry.bodyweightKg || 0) : 0)
+      return { key: dumbbellCount(exercise) && entry.weightBasis === 'perDumbbell'
+        ? 'estimatedStrength:perDumbbell' : 'estimatedStrength',
+      value: load * (1 + Number(entry.reps) / 30) }
+    }).reduce((best, item) => item.value > best.value ? item : best)
     const reps = entries.filter((entry) => positive(entry.reps))
     return reps.length ? { key: 'reps', value: Math.max(...reps.map((entry) => Number(entry.reps))) } : null
   }

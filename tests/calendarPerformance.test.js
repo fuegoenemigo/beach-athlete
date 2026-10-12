@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { trainingDayPerformances } from '../src/calendarPerformance.js'
+import { bestMetric, trainingDayPerformances } from '../src/calendarPerformance.js'
 
 const strength = (id, kg) => ({ libraryId: id, name: 'Bankdrücken', category: 'Krafttraining',
   type: 'strength', entries: [{ completed: true, reps: '8', weightKg: String(kg) }] })
@@ -32,6 +32,21 @@ test('calendar compares the same exercise ID to its last older date without a ti
   assert.equal(scores.get('2026-10-11').status, 'improved')
   assert.equal(scores.get('2026-10-11').comparisons.length, 2)
   assert.ok(Math.abs(scores.get('2026-10-11').changePercent - 10) < 0.001)
+})
+
+test('a new dumbbell pair uses both weights without comparing against ambiguous old entries', () => {
+  const dumbbells = (weight, basis) => ({ libraryId: 'gym:dumbbell-bench',
+    name: 'Kurzhantel-Bankdrücken', category: 'Krafttraining', type: 'strength',
+    entries: [{ completed: true, reps: '8', weightKg: String(weight),
+      ...(basis ? { weightBasis: basis } : {}) }] })
+  assert.equal(bestMetric(dumbbells(26, 'perDumbbell')).value, 52 * (1 + 8 / 30))
+  const scores = trainingDayPerformances([
+    session('legacy', '2026-10-10', [dumbbells(40)]),
+    session('new', '2026-10-11', [dumbbells(26, 'perDumbbell')]),
+    session('newer', '2026-10-12', [dumbbells(28, 'perDumbbell')]),
+  ])
+  assert.equal(scores.get('2026-10-11').status, 'unrated')
+  assert.equal(scores.get('2026-10-12').status, 'improved')
 })
 
 test('positive improvement uses one status regardless of magnitude', () => {

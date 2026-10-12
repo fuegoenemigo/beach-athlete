@@ -5,6 +5,7 @@ import {
   previousExercise, previousSetFor, formatTrainingEntry, canonicalCategory,
   hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
   suggestedTrainingSet,
+  dumbbellCount, effectiveTrainingWeight,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   createSportTrainingSession, isSportTrainingAttendance,
 } from '../src/trainingModel.js'
@@ -155,6 +156,49 @@ test('a matching prior set appears as a suggestion and is saved only on confirma
   assert.equal(saved.notes, undefined)
   assert.equal(next.reps, '')
   assert.equal(confirmAndAdvanceSet([next], 'strength'), null)
+})
+
+test('dumbbell sets store one-hantel input explicitly and leave legacy weights untouched', () => {
+  const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'gym:dumbbell-bench'))
+  assert.equal(dumbbellCount(exercise), 2)
+  const draft = { ...createTrainingSet('strength'), reps: '8', weightKg: '26', completed: false }
+  const [saved] = confirmAndAdvanceSet([draft], 'strength', '75', null, exercise)
+  assert.equal(saved.weightKg, '26')
+  assert.equal(saved.weightBasis, 'perDumbbell')
+  assert.equal(effectiveTrainingWeight(saved, exercise), 52)
+  assert.equal(formatTrainingEntry(saved, 'strength', exercise), '8 Wdh. · 26 kg je Hantel')
+  const legacy = { reps: '8', weightKg: '40', completed: true }
+  assert.equal(effectiveTrainingWeight(legacy, exercise), 40)
+  assert.equal(suggestedTrainingSet(createTrainingSet('strength'), legacy,
+    'strength', exercise).weightKg, '')
+  assert.equal(suggestedTrainingSet(createTrainingSet('strength'), saved,
+    'strength', exercise).weightKg, '26')
+})
+
+test('one-arm dumbbell exercises keep the entered single-hantel load', () => {
+  const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'gym:dumbbell-row'))
+  const [saved] = confirmAndAdvanceSet([{ ...createTrainingSet('strength'),
+    reps: '8', weightKg: '26', completed: false }], 'strength', '75', null, exercise)
+  assert.equal(dumbbellCount(exercise), 1)
+  assert.equal(effectiveTrainingWeight(saved, exercise), 26)
+  assert.equal(formatTrainingEntry(saved, 'strength', exercise), '8 Wdh. · 26 kg (eine Hantel)')
+})
+
+test('pure bodyweight exercises use repetitions without suggesting old extra weight', () => {
+  const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'volleyball:pullup'))
+  assert.equal(exercise.loadMode, 'bodyweightOnly')
+  const previous = { reps: '12', weightKg: '10', completed: true }
+  const draft = suggestedTrainingSet(createTrainingSet('strength'), previous,
+    'strength', exercise)
+  assert.equal(draft.reps, '12')
+  assert.equal(draft.weightKg, '')
+  const [saved] = confirmAndAdvanceSet([{ ...draft, completed: false }],
+    'strength', '75', previous, exercise)
+  assert.equal(saved.reps, '12')
+  assert.equal(saved.weightKg, '')
 })
 
 test('typed values override prior values field by field and missing set numbers stay empty', () => {

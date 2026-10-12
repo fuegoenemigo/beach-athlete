@@ -5,6 +5,7 @@ import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   exerciseMeasurement, formatTrainingEntry, previousExercise, previousSetFor, isConfirmedSet,
   hasLegacyValues, canonicalCategory, defaultMeasurement, suggestedTrainingSet,
+  dumbbellCount, isBodyweightOnly,
 } from './trainingModel.js'
 
 const legacyLabels = {
@@ -32,6 +33,9 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
     step={step} onChange={(value) => onChange({ [field]: value })} />
   const timed = ['duration', 'distance', 'carry'].includes(type)
   const bodyweight = exercise.loadMode === 'bodyweight'
+    || exercise.loadMode === 'bodyweightOnly' || isBodyweightOnly(exercise)
+  const bodyweightOnly = isBodyweightOnly(exercise)
+  const dumbbells = dumbbellCount(exercise)
   const interval = Boolean(exercise.intervalWorkMinutes)
   const bodyweightKg = entry.bodyweightKg || athleteProfile.bodyweightKg
   return <>
@@ -40,8 +44,12 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
       {['strength', 'jump', 'reps'].includes(type) && bodyweight && <p className="training-bodyweight">
         Eigengewicht: {bodyweightKg ? `${bodyweightKg} kg` : 'noch nicht im Profil hinterlegt'}
       </p>}
-      {(type === 'strength' || type === 'jump' || type === 'carry' || (type === 'reps' && bodyweight))
-        && number(bodyweight ? 'Zusätzliches Gewicht (kg, optional)' : 'Gewicht (kg, optional)', 'weightKg')}
+      {!bodyweightOnly && (type === 'strength' || type === 'jump' || type === 'carry'
+        || (type === 'reps' && bodyweight))
+        && number(bodyweight ? 'Zusätzliches Gewicht (kg, optional)'
+          : dumbbells === 2 ? 'Gewicht je Hantel (kg, optional)'
+            : dumbbells === 1 ? 'Gewicht der Hantel (kg, optional)'
+              : 'Gewicht (kg, optional)', 'weightKg')}
       {type === 'jump' && number('Sprunghöhe (cm, optional)', 'heightCm')}
       {['distance', 'carry'].includes(type) && number(interval ? 'Distanz (optional)' : 'Distanz', 'distanceValue')}
       {['distance', 'carry'].includes(type) && <label className="training-field">Einheit

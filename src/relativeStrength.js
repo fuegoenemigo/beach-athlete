@@ -1,4 +1,5 @@
-import { exerciseMeasurement, isConfirmedSet, isOpenTraining } from './trainingModel.js'
+import { exerciseMeasurement, isConfirmedSet, isOpenTraining,
+  effectiveTrainingWeight, dumbbellCount, isBodyweightOnly } from './trainingModel.js'
 
 const positive = (value) => value !== '' && value != null
   && Number.isFinite(Number(value)) && Number(value) > 0
@@ -11,6 +12,7 @@ function sessionResults(session, profileWeight) {
   for (const exercise of session.exercises ?? []) {
     if (!exercise.libraryId || exercise.category !== 'Krafttraining'
       || exerciseMeasurement(exercise) !== 'strength'
+      || isBodyweightOnly(exercise)
       || (exercise.loadMode === 'bodyweight'
         && !loadedBodyweightLifts.has(exercise.libraryId))) continue
     const entries = (exercise.entries ?? []).filter((entry) =>
@@ -18,8 +20,9 @@ function sessionResults(session, profileWeight) {
       && Number(entry.reps) >= 1 && Number(entry.reps) <= 10)
     if (!entries.length) continue
     const best = entries.reduce((current, entry) => {
-      const estimate = Number(entry.reps) === 1 ? Number(entry.weightKg)
-        : Number(entry.weightKg) * (1 + Number(entry.reps) / 30)
+      const weight = effectiveTrainingWeight(entry, exercise)
+      const estimate = Number(entry.reps) === 1 ? weight
+        : weight * (1 + Number(entry.reps) / 30)
       return !current || estimate > current.estimate ? { entry, estimate } : current
     }, null)
     const bodyweight = positive(best.entry.bodyweightKg)
@@ -28,7 +31,8 @@ function sessionResults(session, profileWeight) {
     results.push({ libraryId: exercise.libraryId, name: exercise.name,
       date: session.date, estimateKg: best.estimate,
       ratio: best.estimate / bodyweight,
-      bodyweightKg: bodyweight, usesCurrentBodyweight: !positive(best.entry.bodyweightKg) })
+      bodyweightKg: bodyweight, usesCurrentBodyweight: !positive(best.entry.bodyweightKg),
+      weightBasis: dumbbellCount(exercise) ? best.entry.weightBasis ?? 'legacy' : 'standard' })
   }
   return results
 }
@@ -43,7 +47,8 @@ export function relativeStrengthByExercise(sessions, athleteProfile) {
   for (const session of ordered) {
     for (const result of sessionResults(session, profileWeight)) {
       const previous = latest.get(result.libraryId)
-      latest.set(result.libraryId, { ...result, previousRatio: previous?.ratio ?? null })
+      latest.set(result.libraryId, { ...result,
+        previousRatio: previous?.weightBasis === result.weightBasis ? previous.ratio : null })
     }
   }
   return [...latest.values()].sort((a, b) => a.name.localeCompare(b.name, 'de'))

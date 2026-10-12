@@ -72,6 +72,22 @@ test('saved bodyweight changes relative strength and the overall is always the m
   assert.equal(lighter.overall.score, mean)
 })
 
+test('bodyweight-only strength is rated by clean repetitions without extra weight', () => {
+  const pullup = (reps, weightKg = '') => ({ libraryId: 'volleyball:pullup',
+    name: 'Klimmzüge', category: 'Krafttraining', muscleGroup: 'Rücken',
+    type: 'strength', loadMode: 'bodyweightOnly',
+    entries: [{ completed: true, reps: String(reps), weightKg, bodyweightKg: '75' }] })
+  const regular = athleteRating([day('2026-10-12', [pullup(3)])],
+    { bodyweightKg: '75' }, '2026-10-12')
+  const exceptional = athleteRating([day('2026-10-12', [pullup(20)])],
+    { bodyweightKg: '75' }, '2026-10-12')
+  const withOldExtraWeight = athleteRating([day('2026-10-12', [pullup(20, '20')])],
+    { bodyweightKg: '75' }, '2026-10-12')
+  assert.equal(regular.attributes[0].score, 60)
+  assert.ok(exceptional.attributes[0].score > 60)
+  assert.equal(withOldExtraWeight.attributes[0].score, exceptional.attributes[0].score)
+})
+
 test('several sessions on one day produce only one rating update', () => {
   const sessions = [day('2026-10-12', [jump(60)]),
     { ...day('2026-10-12', [jump(70)]), id: 'later', createdAt: '2026-10-12T20:00:00Z' }]

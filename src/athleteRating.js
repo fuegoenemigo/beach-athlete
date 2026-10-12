@@ -1,6 +1,6 @@
 import { bestMetric } from './calendarPerformance.js'
 import { canonicalCategory, exerciseMeasurement, isConfirmedSet, isOpenTraining,
-  isSportTrainingAttendance } from './trainingModel.js'
+  isSportTrainingAttendance, isBodyweightOnly } from './trainingModel.js'
 
 export const RATING_ATTRIBUTES = [
   { id: 'strength', name: 'Kraft' },
@@ -20,6 +20,11 @@ const STRENGTH_REFERENCES = {
   'volleyball:row': 0.8, 'volleyball:press': 0.55,
   'gym:front-squat': 1.6, 'gym:barbell-row': 0.8,
   'gym:close-bench': 0.7,
+}
+const BODYWEIGHT_REP_STANDARDS = {
+  'volleyball:pullup': { regular: 3, exceptional: 20 },
+  'volleyball:pushup': { regular: 12, exceptional: 35 },
+  'gym:dips': { regular: 8, exceptional: 28 },
 }
 
 const clamp = (value) => Math.max(START, Math.min(MAX, value))
@@ -95,7 +100,7 @@ function confirmedEntries(exercise) {
 
 function comparableMetric(exercise, metric, profileWeight) {
   if (canonicalCategory(exercise.category) !== 'Krafttraining'
-    || metric.key !== 'estimatedStrength') return metric
+    || !metric.key.startsWith('estimatedStrength')) return metric
   const savedWeight = confirmedEntries(exercise).find((entry) => positive(entry.bodyweightKg))
     ?.bodyweightKg
   const bodyweight = savedWeight ?? profileWeight
@@ -103,7 +108,12 @@ function comparableMetric(exercise, metric, profileWeight) {
 }
 
 function benchmark(exercise, metric, profileWeight) {
-  if (canonicalCategory(exercise.category) === 'Krafttraining' && metric.key === 'estimatedStrength') {
+  if (isBodyweightOnly(exercise) && metric.key === 'reps') {
+    const { regular, exceptional } = BODYWEIGHT_REP_STANDARDS[exercise.libraryId]
+    return clamp(START + 35 * (metric.value - regular) / (exceptional - regular))
+  }
+  if (canonicalCategory(exercise.category) === 'Krafttraining'
+    && metric.key.startsWith('estimatedStrength')) {
     const reference = STRENGTH_REFERENCES[exercise.libraryId]
     const entries = confirmedEntries(exercise)
     const weight = entries.find((entry) => positive(entry.bodyweightKg))?.bodyweightKg

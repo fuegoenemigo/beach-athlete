@@ -44,3 +44,15 @@ test('unfinished trainings do not contribute relative strength', () => {
       status: 'ongoing' }]
   assert.equal(relativeStrengthByExercise(sessions, { bodyweightKg: 75 })[0].date, '2026-10-01')
 })
+
+test('dumbbell pair strength counts both weights and separates earlier ambiguous records', () => {
+  const old = set('old', 40, 8, 75)
+  const current = { ...set('new', 26, 8, 75), weightBasis: 'perDumbbell' }
+  const sessions = [
+    session('old', '2026-10-01', [exercise('gym:dumbbell-bench', [old])]),
+    session('new', '2026-10-10', [exercise('gym:dumbbell-bench', [current])]),
+  ]
+  const [result] = relativeStrengthByExercise(sessions, { bodyweightKg: '75' })
+  assert.equal(result.estimateKg, 52 * (1 + 8 / 30))
+  assert.equal(result.previousRatio, null)
+})
