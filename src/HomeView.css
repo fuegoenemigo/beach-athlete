@@ -418,6 +418,7 @@
 .home-profile-card p:not(.eyebrow) { color: var(--muted); line-height: 1.5; }
 .home-profile-card .field-label { margin-top: 14px; }
 .home-profile-card + .home-data-security { margin-top: 18px; }
+.home-data-security a { color: #a5ef75; text-decoration: underline; text-underline-offset: 3px; }
 
 .home-functional-detail { padding: 18px; }
 .home-functional-detail .home-back { margin-bottom: 12px; }

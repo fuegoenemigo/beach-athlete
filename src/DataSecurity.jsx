@@ -14,6 +14,8 @@ export default function DataSecurity({ cloudState, onResolve, onRetry, onExport,
       <CloudAccount state={cloudState} onResolve={onResolve} onRetry={onRetry}
         onExport={onExport} />
 
+      <p>Kontakt zur privaten Testversion und zu deinen Daten: Marc Korus · <a href="mailto:marc.j.korus@gmx.de">marc.j.korus@gmx.de</a>.</p>
+
       {storageDamaged && (
         <div className="cloud-conflict" role="alert">
           <p>Lokale Daten konnten nicht gelesen werden. Sie wurden nicht überschrieben. Exportiere die Rohdaten und bewahre die Datei auf.</p>
