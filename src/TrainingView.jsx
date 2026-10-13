@@ -236,7 +236,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           && candidate.category === (reference.category ?? plan.category))
         ?? { ...reference, id: reference.libraryId, category: reference.category ?? plan.category }
       const exercise = createLoggedExercise({ ...item, ...reference,
-        id: item.id, target: reference.target ?? item.target })
+        id: item.id, loadMode: reference.loadMode ?? item.loadMode,
+        target: reference.target ?? item.target })
       if (guided) return { ...exercise, guidedEndurance: true,
         guidedProtocolId: plan.id,
         targetDurationSeconds: mainDurationSeconds(guided) }

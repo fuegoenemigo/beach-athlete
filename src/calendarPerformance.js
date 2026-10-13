@@ -56,7 +56,12 @@ export function bestMetric(exercise) {
   }
   if (type === 'duration' && exercise.muscleGroup === 'Core') {
     const holds = entries.filter((entry) => positive(entry.durationValue))
-    return holds.length ? { key: 'coreHold', value: Math.max(...holds.map((entry) => seconds(entry.durationValue, entry.durationUnit))) } : null
+    return holds.length ? { key: 'coreHold', value: Math.max(...holds.map((entry) => {
+      const bodyweight = Number(entry.bodyweightKg || 0)
+      const extra = effectiveTrainingWeight(entry, exercise)
+      return seconds(entry.durationValue, entry.durationUnit)
+        * (bodyweight > 0 && extra > 0 ? 1 + extra / bodyweight : 1)
+    })) } : null
   }
   if (type === 'distance' || type === 'carry') {
     if (exercise.guidedEndurance) {

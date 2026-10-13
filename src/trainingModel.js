@@ -157,7 +157,9 @@ export function suggestedTrainingSet(draft, previous, type, exercise = {}) {
     : type === 'reps' ? exercise.loadMode === 'bodyweight' ? ['reps', 'weightKg'] : ['reps']
     : type === 'jump' ? ['reps', 'heightCm', 'weightKg']
       : type === 'carry' ? ['distanceValue', 'durationValue', 'weightKg']
-        : type === 'distance' ? ['distanceValue', 'durationValue'] : ['durationValue']
+      : type === 'distance' ? ['distanceValue', 'durationValue']
+        : type === 'duration' && exercise.loadMode === 'bodyweight'
+          ? ['durationValue', 'weightKg'] : ['durationValue']
   const suggested = { ...draft }
   for (const field of fields) {
     if (field === 'weightKg' && dumbbellCount(exercise)
@@ -283,5 +285,6 @@ export function formatTrainingEntry(entry, type, exercise = {}) {
     entry.distanceValue ? `${entry.distanceValue} ${entry.distanceUnit || 'm'}` : '', duration,
     type === 'carry' ? load : '',
   ].filter(Boolean).join(' · ')
-  return duration
+  return [duration, exercise.loadMode === 'bodyweight' ? load : '']
+    .filter(Boolean).join(' · ')
 }

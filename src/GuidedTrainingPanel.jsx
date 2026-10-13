@@ -43,10 +43,11 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
   return <>
     <div className="training-activity-fields">
       {['strength', 'reps', 'jump'].includes(type) && number('Wiederholungen', 'reps', '1')}
-      {['strength', 'jump', 'reps'].includes(type) && bodyweight && <p className="training-bodyweight">
+      {['strength', 'jump', 'reps', 'duration'].includes(type) && bodyweight && <p className="training-bodyweight">
         Eigengewicht: {bodyweightKg ? `${bodyweightKg} kg` : 'noch nicht im Profil hinterlegt'}
       </p>}
       {(type === 'strength' || type === 'jump' || type === 'carry'
+        || (type === 'duration' && bodyweight)
         || (type === 'reps' && bodyweight))
         && number(bodyweight && dumbbells === 2 ? 'Zusatzgewicht je Hantel (kg, optional)'
           : bodyweight && dumbbells === 1 ? 'Zusatzgewicht der Hantel (kg, optional)'

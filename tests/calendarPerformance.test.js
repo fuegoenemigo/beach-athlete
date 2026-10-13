@@ -64,6 +64,20 @@ test('added weight improves a bodyweight exercise without breaking its rep histo
   assert.equal(scores.get('2026-10-11').status, 'improved')
 })
 
+test('a weighted plank stays comparable to the previous unweighted hold', () => {
+  const plank = (extra) => ({ libraryId: 'volleyball:plank', name: 'Plank',
+    category: 'Core und Mobility', muscleGroup: 'Core', type: 'duration',
+    loadMode: 'bodyweight', entries: [{ completed: true, durationValue: '60',
+      durationUnit: 's', bodyweightKg: '75', weightKg: String(extra) }] })
+  assert.equal(bestMetric(plank(0)).value, 60)
+  assert.equal(bestMetric(plank(15)).value, 72)
+  const scores = trainingDayPerformances([
+    session('old', '2026-10-10', [plank(0)]),
+    session('new', '2026-10-11', [plank(15)]),
+  ])
+  assert.equal(scores.get('2026-10-11').status, 'strong-improved')
+})
+
 test('an eight percent improvement uses the moderate calendar graph', () => {
   const scores = trainingDayPerformances([
     session('old', '2026-10-10', [strength('bench', 50)]),

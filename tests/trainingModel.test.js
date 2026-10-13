@@ -221,6 +221,21 @@ test('lunges save the load per dumbbell while squats save the whole barbell', ()
   assert.equal(effectiveTrainingWeight(squatSet, squat), 20)
 })
 
+test('timed bodyweight holds keep optional extra weight with the measured duration', () => {
+  const plank = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'volleyball:plank'))
+  const previous = { durationValue: '45', durationUnit: 's', weightKg: '5' }
+  const draft = { ...createTrainingSet('duration'), completed: false }
+  const suggested = suggestedTrainingSet(draft, previous, 'duration', plank)
+  assert.equal(suggested.weightKg, '5')
+  const [saved] = confirmAndAdvanceSet([draft], 'duration', '75', previous, plank)
+  assert.equal(saved.durationValue, '45')
+  assert.equal(saved.weightKg, '5')
+  assert.equal(saved.bodyweightKg, '75')
+  assert.equal(formatTrainingEntry(saved, 'duration', plank),
+    '45 Sek. · Eigengewicht 75 kg + 5 kg zusätzlich')
+})
+
 test('typed values override prior values field by field and missing set numbers stay empty', () => {
   const prior = { reps: '8', weightKg: '60' }
   const draft = { ...createTrainingSet('strength'), reps: '10', completed: false }
