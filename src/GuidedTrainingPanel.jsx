@@ -6,7 +6,7 @@ import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   exerciseMeasurement, formatTrainingEntry, previousExercise, previousSetFor, isConfirmedSet,
   hasLegacyValues, canonicalCategory, defaultMeasurement, suggestedTrainingSet,
-  dumbbellCount, isBodyweightRepExercise,
+  dumbbellCount, isBodyweightOnly, isExternalLoad,
 } from './trainingModel.js'
 
 const legacyLabels = {
@@ -33,11 +33,10 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
     suggestion={previous ? suggested[field] : ''}
     step={step} onChange={(value) => onChange({ [field]: value })} />
   const timed = ['duration', 'distance', 'carry'].includes(type)
+  const bodyweightOnly = isBodyweightOnly(exercise)
   const bodyweight = exercise.loadMode === 'bodyweight'
-    || exercise.loadMode === 'bodyweightOnly' || isBodyweightRepExercise(exercise)
+    && !bodyweightOnly && !isExternalLoad(exercise)
   const dumbbells = dumbbellCount(exercise)
-  const barbellSquat = ['volleyball:squat', 'gym:front-squat']
-    .includes(exercise.libraryId)
   const interval = Boolean(exercise.intervalWorkMinutes)
   const bodyweightKg = entry.bodyweightKg || athleteProfile.bodyweightKg
   return <>
@@ -46,12 +45,10 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
       {['strength', 'jump', 'reps', 'duration'].includes(type) && bodyweight && <p className="training-bodyweight">
         Eigengewicht: {bodyweightKg ? `${bodyweightKg} kg` : 'noch nicht im Profil hinterlegt'}
       </p>}
-      {(type === 'strength' || type === 'jump' || type === 'carry'
-        || (type === 'duration' && bodyweight)
+      {!bodyweightOnly && (type === 'strength' || type === 'jump' || type === 'carry'
         || (type === 'reps' && bodyweight))
         && number(bodyweight && dumbbells === 2 ? 'Zusatzgewicht je Hantel (kg, optional)'
           : bodyweight && dumbbells === 1 ? 'Zusatzgewicht der Hantel (kg, optional)'
-            : bodyweight && barbellSquat ? 'Langhantel gesamt inkl. Stange (kg, optional)'
             : bodyweight ? 'Zusatzgewicht gesamt (kg, optional)'
           : dumbbells === 2 ? 'Gewicht je Hantel (kg, optional)'
             : dumbbells === 1 ? 'Gewicht der Hantel (kg, optional)'

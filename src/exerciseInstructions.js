@@ -10,7 +10,7 @@ const INSTRUCTIONS = {
   'volleyball:row': 'Am Kabelzug oder mit Hantel: Griff zum unteren Brustkorb ziehen, Schulterblätter zusammenführen und kontrolliert lösen.',
   'volleyball:press': 'Langhantel oder Kurzhanteln auf Schulterhöhe halten und senkrecht über den Kopf drücken.',
   'volleyball:lunge': 'Aus dem Stand einen großen Schritt nach vorn machen, beide Knie beugen und über das vordere Bein zurückdrücken. Zusatzgewicht als Kilogramm je Hantel eingeben, wenn du in jeder Hand eine Hantel hältst.',
-  'volleyball:calf': 'Aufrecht stehen, Fersen anheben und langsam absenken; bei Bedarf eine Stufe oder Wadenmaschine nutzen.',
+  'volleyball:calf': 'Aufrecht stehen, Fersen anheben und langsam absenken; bei Bedarf eine Stufe nutzen und saubere Wiederholungen zählen.',
   'volleyball:pushup': 'Hände unter den Schultern am Boden, Körper als Linie halten; Brust Richtung Boden senken und hochdrücken.',
   'volleyball:rdl': 'Rumänisches Kreuzheben: Langhantel oder Kurzhanteln vor den Beinen halten, Knie leicht beugen und die Hüfte mit langem Rücken nach hinten schieben. Aus der Hüfte wieder aufrichten.',
   'volleyball:split-squat': 'Bulgarian Split Squat: Hinteren Fuß auf einer niedrigen Bank ablegen, vorderes Knie beugen und über den vorderen Fuß aufstehen. Zusatzgewicht als Kilogramm je Hantel eingeben.',
@@ -85,7 +85,7 @@ const INSTRUCTIONS = {
   'gym:farmers-carry': 'Zwei Kurzhanteln oder Kettlebells seitlich tragen, aufrecht und ruhig eine abgemessene Strecke gehen.',
 
   'gym:crunch': 'Auf der Matte in Rückenlage die Knie beugen; Schulterblätter mit angespanntem Bauch leicht vom Boden lösen.',
-  'gym:situp': 'Auf der Matte in Rückenlage Knie beugen und den Oberkörper kontrolliert bis zum Sitzen aufrichten; optional ein Zusatzgewicht vor der Brust halten.',
+  'gym:situp': 'Auf der Matte in Rückenlage Knie beugen und den Oberkörper kontrolliert bis zum Sitzen aufrichten; Wiederholungen zählen.',
   'gym:reverse-crunch': 'Auf der Matte in Rückenlage Knie anwinkeln und das Becken kontrolliert Richtung Brust einrollen.',
   'gym:hanging-leg-raise': 'An einer Stange hängen und die Beine oder gebeugten Knie kontrolliert vor dem Körper anheben.',
   'gym:dead-bug': 'Auf der Matte in Rückenlage Arme und Beine anheben; jeweils einen Arm und das gegenüberliegende Bein langsam strecken, ohne den unteren Rücken abzuheben.',

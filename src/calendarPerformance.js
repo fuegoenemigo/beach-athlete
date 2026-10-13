@@ -1,5 +1,5 @@
 import { exerciseMeasurement, hasLegacyValues, isConfirmedSet, isOpenTraining,
-  isSportTrainingAttendance, effectiveTrainingWeight, isBodyweightRepExercise,
+  isSportTrainingAttendance, effectiveTrainingWeight, isBodyweightOnly,
   dumbbellCount } from './trainingModel.js'
 import { aggregateTrainingComparisons } from './trainingAggregation.js'
 
@@ -22,27 +22,15 @@ export function bestMetric(exercise) {
   if (!entries.length) return null
 
   if (type === 'strength' || type === 'reps') {
-    if (isBodyweightRepExercise(exercise) || (type === 'reps'
-      && exercise.loadMode === 'bodyweight' && exercise.category === 'Core und Mobility')) {
+    if (isBodyweightOnly(exercise)) {
       const reps = entries.filter((entry) => positive(entry.reps))
-      if (!reps.length) return null
-      // An added load raises the body-mass-adjusted repetition score; unweighted records keep
-      // their original value so historical calendar comparisons remain meaningful.
-      return { key: 'reps', value: Math.max(...reps.map((entry) => {
-        const bodyweight = Number(entry.bodyweightKg || 0)
-        const extra = effectiveTrainingWeight(entry, exercise)
-        return bodyweight > 0 && extra > 0
-          ? Number(entry.reps) * (1 + extra / bodyweight)
-          : Number(entry.reps)
-      })) }
+      return reps.length ? { key: 'reps', value: Math.max(...reps.map((entry) =>
+        Number(entry.reps))) } : null
     }
     const weighted = entries.filter((entry) => positive(entry.reps)
-      && (positive(entry.weightKg) || (exercise.loadMode === 'bodyweight'
-        && exercise.category !== 'Krafttraining' && positive(entry.bodyweightKg))))
+      && positive(entry.weightKg))
     if (weighted.length) return weighted.map((entry) => {
       const load = effectiveTrainingWeight(entry, exercise)
-        + (exercise.loadMode === 'bodyweight' && exercise.category !== 'Krafttraining'
-          ? Number(entry.bodyweightKg || 0) : 0)
       return { key: dumbbellCount(exercise) && entry.weightBasis === 'perDumbbell'
         ? 'estimatedStrength:perDumbbell' : 'estimatedStrength',
       value: load * (1 + Number(entry.reps) / 30) }
@@ -56,12 +44,8 @@ export function bestMetric(exercise) {
   }
   if (type === 'duration' && exercise.muscleGroup === 'Core') {
     const holds = entries.filter((entry) => positive(entry.durationValue))
-    return holds.length ? { key: 'coreHold', value: Math.max(...holds.map((entry) => {
-      const bodyweight = Number(entry.bodyweightKg || 0)
-      const extra = effectiveTrainingWeight(entry, exercise)
-      return seconds(entry.durationValue, entry.durationUnit)
-        * (bodyweight > 0 && extra > 0 ? 1 + extra / bodyweight : 1)
-    })) } : null
+    return holds.length ? { key: 'coreHold', value: Math.max(...holds.map((entry) =>
+      seconds(entry.durationValue, entry.durationUnit))) } : null
   }
   if (type === 'distance' || type === 'carry') {
     if (exercise.guidedEndurance) {

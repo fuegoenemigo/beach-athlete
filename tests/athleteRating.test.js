@@ -99,7 +99,7 @@ test('squat rating normalizes external barbell load by body mass without adding 
   assert.ok(lighter.attributes[0].groups[2].score > heavier.attributes[0].groups[2].score)
 })
 
-test('bodyweight strength uses clean repetitions and rewards optional extra weight', () => {
+test('bodyweight strength uses only clean repetitions even for old weighted sets', () => {
   const pullup = (reps, weightKg = '') => ({ libraryId: 'volleyball:pullup',
     name: 'Klimmzüge', category: 'Krafttraining', muscleGroup: 'Rücken',
     type: 'strength', loadMode: 'bodyweightOnly',
@@ -112,7 +112,7 @@ test('bodyweight strength uses clean repetitions and rewards optional extra weig
   const withExtraWeight = athleteRating([day('2026-10-12', [pullup(3, '20'), row])],
     { bodyweightKg: '75' }, '2026-10-12')
   assert.ok(exceptional.attributes[0].score > regular.attributes[0].score)
-  assert.ok(withExtraWeight.attributes[0].score > regular.attributes[0].score)
+  assert.equal(withExtraWeight.attributes[0].score, regular.attributes[0].score)
 })
 
 test('a major group unlocks after one compound and two distinct isolations across days', () => {

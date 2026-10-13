@@ -70,11 +70,29 @@ const DUMBBELL_COUNTS = {
   'gym:reverse-lunge': 2, 'gym:step-up': 2,
 }
 
-const BODYWEIGHT_REP_EXERCISES = new Set(['volleyball:pullup', 'volleyball:pushup', 'gym:dips'])
+const BODYWEIGHT_ONLY = new Set([
+  'volleyball:pullup', 'volleyball:pushup', 'gym:dips',
+  'volleyball:calf', 'gym:back-extension',
+  'gym:crunch', 'gym:situp', 'gym:reverse-crunch', 'gym:hanging-leg-raise',
+  'gym:dead-bug', 'gym:bird-dog', 'gym:russian-twist', 'gym:ab-wheel',
+  'volleyball:plank', 'volleyball:side-plank', 'volleyball:l-sit',
+  'gym:hollow-hold', 'gym:deep-squat-hold',
+  'gym:jump-squat', 'gym:pogo', 'gym:tuck-jump', 'gym:drop-jump',
+  'gym:split-jump', 'gym:single-leg-hop', 'gym:block-jump',
+  'volleyball:box-jump', 'volleyball:cmj', 'volleyball:lateral-jump',
+  'volleyball:approach-jump', 'volleyball:lateral-bound',
+])
+const EXTERNAL_LOAD = new Set([
+  'volleyball:squat', 'volleyball:lunge', 'volleyball:split-squat',
+  'gym:front-squat', 'gym:goblet-squat', 'gym:hip-thrust',
+  'gym:glute-bridge', 'gym:step-up', 'gym:reverse-lunge',
+])
 
 export const dumbbellCount = (exercise) => DUMBBELL_COUNTS[exercise.libraryId ?? exercise.id] ?? 0
-export const isBodyweightRepExercise = (exercise) =>
-  BODYWEIGHT_REP_EXERCISES.has(exercise.libraryId ?? exercise.id)
+export const isBodyweightOnly = (exercise) =>
+  BODYWEIGHT_ONLY.has(exercise.libraryId ?? exercise.id)
+  || exercise.loadMode === 'bodyweightOnly'
+export const isExternalLoad = (exercise) => EXTERNAL_LOAD.has(exercise.libraryId ?? exercise.id)
 
 export function effectiveTrainingWeight(entry, exercise) {
   const weight = Number(entry.weightKg || 0)
@@ -106,8 +124,8 @@ export function createLoggedExercise(item) {
     ...(dumbbellCount(item) ? { dumbbellCount: dumbbellCount(item) } : {}),
     ...(item.muscleGroup ? { muscleGroup: item.muscleGroup } : {}),
     ...(item.strengthRole ? { strengthRole: item.strengthRole } : {}),
-    ...(isBodyweightRepExercise(item) ? { loadMode: 'bodyweight' }
-      : item.loadMode ? { loadMode: item.loadMode } : {}),
+    ...(isBodyweightOnly(item) ? { loadMode: 'bodyweightOnly' }
+      : !isExternalLoad(item) && item.loadMode ? { loadMode: item.loadMode } : {}),
     ...(item.intervalWorkMinutes ? { intervalWorkMinutes: item.intervalWorkMinutes } : {}),
     ...(item.targetDurationSeconds ? { targetDurationSeconds: item.targetDurationSeconds } : {}),
     ...(item.intervalCount ? { intervalCount: item.intervalCount } : {}),
@@ -153,13 +171,13 @@ export function isConfirmedSet(entry, type) {
 
 export function suggestedTrainingSet(draft, previous, type, exercise = {}) {
   if (!draft || !previous) return draft
-  const fields = type === 'strength' ? ['reps', 'weightKg']
-    : type === 'reps' ? exercise.loadMode === 'bodyweight' ? ['reps', 'weightKg'] : ['reps']
-    : type === 'jump' ? ['reps', 'heightCm', 'weightKg']
+  const fields = type === 'strength' ? isBodyweightOnly(exercise) ? ['reps'] : ['reps', 'weightKg']
+    : type === 'reps' ? ['reps']
+    : type === 'jump' ? isBodyweightOnly(exercise) ? ['reps', 'heightCm']
+      : ['reps', 'heightCm', 'weightKg']
       : type === 'carry' ? ['distanceValue', 'durationValue', 'weightKg']
       : type === 'distance' ? ['distanceValue', 'durationValue']
-        : type === 'duration' && exercise.loadMode === 'bodyweight'
-          ? ['durationValue', 'weightKg'] : ['durationValue']
+        : ['durationValue']
   const suggested = { ...draft }
   for (const field of fields) {
     if (field === 'weightKg' && dumbbellCount(exercise)
@@ -185,7 +203,8 @@ export function confirmAndAdvanceSet(entries, type, bodyweightKg = '', previous 
   const values = suggestedTrainingSet(draft, previous, type, exercise)
   if (!values || !hasMeasuredValue(values, type)) return null
   return [...entries.map((entry) => entry.id === draft.id
-    ? { ...values, completed: true, confirmedAt: new Date().toISOString(),
+    ? { ...values, ...(isBodyweightOnly(exercise) ? { weightKg: '' } : {}),
+      completed: true, confirmedAt: new Date().toISOString(),
       ...(dumbbellCount(exercise) && values.weightKg !== ''
         ? { weightBasis: 'perDumbbell' } : {}),
       ...(bodyweightKg ? { bodyweightKg } : {}) } : entry),
@@ -263,7 +282,8 @@ export function previousSetFor(previous, setIndex) {
 export function formatTrainingEntry(entry, type, exercise = {}) {
   const duration = entry.durationValue
     ? `${entry.durationValue} ${entry.durationUnit === 'min' ? 'Min.' : 'Sek.'}` : ''
-  const load = ['bodyweight', 'bodyweightOnly'].includes(exercise.loadMode)
+  const load = isBodyweightOnly(exercise) ? ''
+    : exercise.loadMode === 'bodyweight' && !isExternalLoad(exercise)
     ? [entry.bodyweightKg ? `Eigengewicht ${entry.bodyweightKg} kg` : '',
       entry.weightKg ? `+ ${entry.weightKg} kg zusätzlich${entry.weightBasis === 'perDumbbell'
         ? dumbbellCount(exercise) === 2 ? ' je Hantel' : ' (eine Hantel)' : ''}` : '']
@@ -285,6 +305,5 @@ export function formatTrainingEntry(entry, type, exercise = {}) {
     entry.distanceValue ? `${entry.distanceValue} ${entry.distanceUnit || 'm'}` : '', duration,
     type === 'carry' ? load : '',
   ].filter(Boolean).join(' · ')
-  return [duration, exercise.loadMode === 'bodyweight' ? load : '']
-    .filter(Boolean).join(' · ')
+  return duration
 }

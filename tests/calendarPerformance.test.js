@@ -50,32 +50,32 @@ test('a new dumbbell pair uses both weights without comparing against ambiguous 
   assert.equal(scores.get('2026-10-12').status, 'improved')
 })
 
-test('added weight improves a bodyweight exercise without breaking its rep history', () => {
+test('only repetitions change the score of a bodyweight exercise', () => {
   const pullup = (reps, extra) => ({ libraryId: 'volleyball:pullup',
     name: 'Klimmzüge', category: 'Krafttraining', type: 'strength',
     loadMode: 'bodyweight', entries: [{ completed: true, reps: String(reps),
       weightKg: String(extra), bodyweightKg: '75' }] })
   assert.equal(bestMetric(pullup(8, 0)).value, 8)
-  assert.ok(bestMetric(pullup(8, 10)).value > 8)
+  assert.equal(bestMetric(pullup(8, 10)).value, 8)
   const scores = trainingDayPerformances([
     session('old', '2026-10-10', [pullup(8, 0)]),
     session('new', '2026-10-11', [pullup(8, 10)]),
   ])
-  assert.equal(scores.get('2026-10-11').status, 'improved')
+  assert.equal(scores.get('2026-10-11').status, 'unchanged')
 })
 
-test('a weighted plank stays comparable to the previous unweighted hold', () => {
+test('only duration changes the score of a bodyweight hold', () => {
   const plank = (extra) => ({ libraryId: 'volleyball:plank', name: 'Plank',
     category: 'Core und Mobility', muscleGroup: 'Core', type: 'duration',
     loadMode: 'bodyweight', entries: [{ completed: true, durationValue: '60',
       durationUnit: 's', bodyweightKg: '75', weightKg: String(extra) }] })
   assert.equal(bestMetric(plank(0)).value, 60)
-  assert.equal(bestMetric(plank(15)).value, 72)
+  assert.equal(bestMetric(plank(15)).value, 60)
   const scores = trainingDayPerformances([
     session('old', '2026-10-10', [plank(0)]),
     session('new', '2026-10-11', [plank(15)]),
   ])
-  assert.equal(scores.get('2026-10-11').status, 'strong-improved')
+  assert.equal(scores.get('2026-10-11').status, 'unchanged')
 })
 
 test('an eight percent improvement uses the moderate calendar graph', () => {

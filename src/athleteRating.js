@@ -1,6 +1,6 @@
 import { bestMetric } from './calendarPerformance.js'
 import { canonicalCategory, exerciseMeasurement, isConfirmedSet, isOpenTraining,
-  isSportTrainingAttendance, isBodyweightRepExercise, effectiveTrainingWeight } from './trainingModel.js'
+  isSportTrainingAttendance, isBodyweightOnly, effectiveTrainingWeight } from './trainingModel.js'
 import { STRENGTH_GROUPS, ARM_SUBGROUPS, strengthGroupFor, strengthGroupQualified,
   strengthMuscleFor, strengthRoleFor, weightedStrengthMean } from './strengthClassification.js'
 import { STRENGTH_LOAD_STANDARDS, STRENGTH_REP_STANDARDS } from './strengthStandards.js'
@@ -99,7 +99,8 @@ function comparableMetric(exercise, metric, profileWeight) {
 }
 
 function benchmark(exercise, metric, profileWeight) {
-  if (isBodyweightRepExercise(exercise) && metric.key === 'reps') {
+  if (isBodyweightOnly(exercise) && metric.key === 'reps'
+    && STRENGTH_REP_STANDARDS[exercise.libraryId]) {
     const [regular, exceptional] = STRENGTH_REP_STANDARDS[exercise.libraryId]
     return strengthTarget(START + 35 * (metric.value - regular) / (exceptional - regular))
   }
@@ -109,16 +110,6 @@ function benchmark(exercise, metric, profileWeight) {
       ?? profileWeight
     if (exercise.libraryId === 'gym:assisted-pullup' && metric.key === 'reps')
       return strengthTarget(Math.min(80, START + 20 * (metric.value - 8) / 12))
-    if (['volleyball:calf', 'gym:back-extension'].includes(exercise.libraryId)
-      && positive(weight)) {
-      const requiredReps = exercise.libraryId === 'volleyball:calf' ? 15 : 12
-      const exceptional = exercise.libraryId === 'volleyball:calf' ? 0.8 : 0.65
-      const best = Math.max(0, ...entries.filter((entry) => positive(entry.reps)
-        && Number(entry.reps) >= requiredReps).map((entry) =>
-        effectiveTrainingWeight(entry, exercise) / Number(weight)
-          * (1 + Number(entry.reps) / 30) / (1 + requiredReps / 30)))
-      return strengthTarget(START + 35 * best / exceptional)
-    }
     if (exercise.libraryId === 'gym:farmers-carry' && positive(weight)) {
       const best = Math.max(0, ...entries.filter((entry) => positive(entry.distanceValue)
         && positive(entry.durationValue) && positive(entry.weightKg)

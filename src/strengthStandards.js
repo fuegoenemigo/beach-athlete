@@ -60,8 +60,10 @@ export const STRENGTH_REP_STANDARDS = {
   'volleyball:pullup': [3, 20],
   'volleyball:pushup': [12, 35],
   'gym:dips': [8, 28],
+  'volleyball:calf': [15, 40],
+  'gym:back-extension': [12, 30],
 }
 
 export const STRENGTH_SPECIAL_IDS = new Set([
-  'volleyball:calf', 'gym:back-extension', 'gym:assisted-pullup', 'gym:farmers-carry',
+  'gym:assisted-pullup', 'gym:farmers-carry',
 ])
