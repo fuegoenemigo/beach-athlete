@@ -66,12 +66,15 @@ const DUMBBELL_COUNTS = {
   'gym:lateral-raise': 2, 'gym:dumbbell-curl': 2,
   'gym:hammer-curl': 2, 'gym:concentration-curl': 1,
   'gym:goblet-squat': 1,
+  'volleyball:lunge': 2, 'volleyball:split-squat': 2,
+  'gym:reverse-lunge': 2, 'gym:step-up': 2,
 }
 
-const BODYWEIGHT_ONLY = new Set(['volleyball:pullup', 'volleyball:pushup', 'gym:dips'])
+const BODYWEIGHT_REP_EXERCISES = new Set(['volleyball:pullup', 'volleyball:pushup', 'gym:dips'])
 
 export const dumbbellCount = (exercise) => DUMBBELL_COUNTS[exercise.libraryId ?? exercise.id] ?? 0
-export const isBodyweightOnly = (exercise) => BODYWEIGHT_ONLY.has(exercise.libraryId ?? exercise.id)
+export const isBodyweightRepExercise = (exercise) =>
+  BODYWEIGHT_REP_EXERCISES.has(exercise.libraryId ?? exercise.id)
 
 export function effectiveTrainingWeight(entry, exercise) {
   const weight = Number(entry.weightKg || 0)
@@ -103,7 +106,7 @@ export function createLoggedExercise(item) {
     ...(dumbbellCount(item) ? { dumbbellCount: dumbbellCount(item) } : {}),
     ...(item.muscleGroup ? { muscleGroup: item.muscleGroup } : {}),
     ...(item.strengthRole ? { strengthRole: item.strengthRole } : {}),
-    ...(isBodyweightOnly(item) ? { loadMode: 'bodyweightOnly' }
+    ...(isBodyweightRepExercise(item) ? { loadMode: 'bodyweight' }
       : item.loadMode ? { loadMode: item.loadMode } : {}),
     ...(item.intervalWorkMinutes ? { intervalWorkMinutes: item.intervalWorkMinutes } : {}),
     ...(item.targetDurationSeconds ? { targetDurationSeconds: item.targetDurationSeconds } : {}),
@@ -150,7 +153,7 @@ export function isConfirmedSet(entry, type) {
 
 export function suggestedTrainingSet(draft, previous, type, exercise = {}) {
   if (!draft || !previous) return draft
-  const fields = type === 'strength' ? isBodyweightOnly(exercise) ? ['reps'] : ['reps', 'weightKg']
+  const fields = type === 'strength' ? ['reps', 'weightKg']
     : type === 'reps' ? exercise.loadMode === 'bodyweight' ? ['reps', 'weightKg'] : ['reps']
     : type === 'jump' ? ['reps', 'heightCm', 'weightKg']
       : type === 'carry' ? ['distanceValue', 'durationValue', 'weightKg']
@@ -260,7 +263,9 @@ export function formatTrainingEntry(entry, type, exercise = {}) {
     ? `${entry.durationValue} ${entry.durationUnit === 'min' ? 'Min.' : 'Sek.'}` : ''
   const load = ['bodyweight', 'bodyweightOnly'].includes(exercise.loadMode)
     ? [entry.bodyweightKg ? `Eigengewicht ${entry.bodyweightKg} kg` : '',
-      entry.weightKg ? `+ ${entry.weightKg} kg zusätzlich` : ''].filter(Boolean).join(' ')
+      entry.weightKg ? `+ ${entry.weightKg} kg zusätzlich${entry.weightBasis === 'perDumbbell'
+        ? dumbbellCount(exercise) === 2 ? ' je Hantel' : ' (eine Hantel)' : ''}` : '']
+      .filter(Boolean).join(' ')
     : entry.weightKg ? `${entry.weightKg} kg${entry.weightBasis === 'perDumbbell'
       ? dumbbellCount(exercise) === 2 ? ' je Hantel' : ' (eine Hantel)' : ''}` : ''
   if (type === 'strength') return [

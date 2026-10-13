@@ -1,5 +1,5 @@
 import { exerciseMeasurement, hasLegacyValues, isConfirmedSet, isOpenTraining,
-  isSportTrainingAttendance, effectiveTrainingWeight, isBodyweightOnly,
+  isSportTrainingAttendance, effectiveTrainingWeight, isBodyweightRepExercise,
   dumbbellCount } from './trainingModel.js'
 import { aggregateTrainingComparisons } from './trainingAggregation.js'
 
@@ -22,9 +22,19 @@ export function bestMetric(exercise) {
   if (!entries.length) return null
 
   if (type === 'strength' || type === 'reps') {
-    if (isBodyweightOnly(exercise)) {
+    if (isBodyweightRepExercise(exercise) || (type === 'reps'
+      && exercise.loadMode === 'bodyweight' && exercise.category === 'Core und Mobility')) {
       const reps = entries.filter((entry) => positive(entry.reps))
-      return reps.length ? { key: 'reps', value: Math.max(...reps.map((entry) => Number(entry.reps))) } : null
+      if (!reps.length) return null
+      // An added load raises the body-mass-adjusted repetition score; unweighted records keep
+      // their original value so historical calendar comparisons remain meaningful.
+      return { key: 'reps', value: Math.max(...reps.map((entry) => {
+        const bodyweight = Number(entry.bodyweightKg || 0)
+        const extra = effectiveTrainingWeight(entry, exercise)
+        return bodyweight > 0 && extra > 0
+          ? Number(entry.reps) * (1 + extra / bodyweight)
+          : Number(entry.reps)
+      })) }
     }
     const weighted = entries.filter((entry) => positive(entry.reps)
       && (positive(entry.weightKg) || (exercise.loadMode === 'bodyweight'

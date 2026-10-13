@@ -50,6 +50,20 @@ test('a new dumbbell pair uses both weights without comparing against ambiguous 
   assert.equal(scores.get('2026-10-12').status, 'improved')
 })
 
+test('added weight improves a bodyweight exercise without breaking its rep history', () => {
+  const pullup = (reps, extra) => ({ libraryId: 'volleyball:pullup',
+    name: 'Klimmzüge', category: 'Krafttraining', type: 'strength',
+    loadMode: 'bodyweight', entries: [{ completed: true, reps: String(reps),
+      weightKg: String(extra), bodyweightKg: '75' }] })
+  assert.equal(bestMetric(pullup(8, 0)).value, 8)
+  assert.ok(bestMetric(pullup(8, 10)).value > 8)
+  const scores = trainingDayPerformances([
+    session('old', '2026-10-10', [pullup(8, 0)]),
+    session('new', '2026-10-11', [pullup(8, 10)]),
+  ])
+  assert.equal(scores.get('2026-10-11').status, 'improved')
+})
+
 test('an eight percent improvement uses the moderate calendar graph', () => {
   const scores = trainingDayPerformances([
     session('old', '2026-10-10', [strength('bench', 50)]),

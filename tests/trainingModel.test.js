@@ -186,19 +186,39 @@ test('one-arm dumbbell exercises keep the entered single-hantel load', () => {
   assert.equal(formatTrainingEntry(saved, 'strength', exercise), '8 Wdh. · 26 kg (eine Hantel)')
 })
 
-test('pure bodyweight exercises use repetitions without suggesting old extra weight', () => {
+test('bodyweight exercises accept optional extra weight and repeat the previous set', () => {
   const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
     item.id === 'volleyball:pullup'))
-  assert.equal(exercise.loadMode, 'bodyweightOnly')
+  assert.equal(exercise.loadMode, 'bodyweight')
   const previous = { reps: '12', weightKg: '10', completed: true }
   const draft = suggestedTrainingSet(createTrainingSet('strength'), previous,
     'strength', exercise)
   assert.equal(draft.reps, '12')
-  assert.equal(draft.weightKg, '')
+  assert.equal(draft.weightKg, '10')
   const [saved] = confirmAndAdvanceSet([{ ...draft, completed: false }],
     'strength', '75', previous, exercise)
   assert.equal(saved.reps, '12')
-  assert.equal(saved.weightKg, '')
+  assert.equal(saved.weightKg, '10')
+  assert.equal(saved.bodyweightKg, '75')
+  assert.equal(formatTrainingEntry(saved, 'strength', exercise),
+    '12 Wdh. · Eigengewicht 75 kg + 10 kg zusätzlich')
+})
+
+test('lunges save the load per dumbbell while squats save the whole barbell', () => {
+  const lunge = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'volleyball:lunge'))
+  const squat = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'volleyball:squat'))
+  const draft = [{ ...createTrainingSet('strength'), reps: '8', weightKg: '20',
+    completed: false }]
+  const [lungeSet] = confirmAndAdvanceSet(draft, 'strength', '75', null, lunge)
+  const [squatSet] = confirmAndAdvanceSet(draft, 'strength', '75', null, squat)
+  assert.equal(lungeSet.weightBasis, 'perDumbbell')
+  assert.equal(effectiveTrainingWeight(lungeSet, lunge), 40)
+  assert.equal(formatTrainingEntry(lungeSet, 'strength', lunge),
+    '8 Wdh. · Eigengewicht 75 kg + 20 kg zusätzlich je Hantel')
+  assert.equal(squatSet.weightBasis, undefined)
+  assert.equal(effectiveTrainingWeight(squatSet, squat), 20)
 })
 
 test('typed values override prior values field by field and missing set numbers stay empty', () => {

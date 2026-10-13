@@ -87,7 +87,19 @@ test('saved bodyweight changes relative strength and the overall is always the m
   assert.equal(lighter.overall.score, mean)
 })
 
-test('bodyweight-only strength is rated by clean repetitions without extra weight', () => {
+test('squat rating normalizes external barbell load by body mass without adding it to the bar', () => {
+  const legs = (bodyweight) => [
+    lift('volleyball:squat', 'Beine', 100, bodyweight),
+    lift('gym:front-squat', 'Beine', 80, bodyweight),
+  ]
+  const lighter = athleteRating([day('2026-10-12', legs('75'))],
+    { bodyweightKg: '75' }, '2026-10-12')
+  const heavier = athleteRating([day('2026-10-12', legs('100'))],
+    { bodyweightKg: '100' }, '2026-10-12')
+  assert.ok(lighter.attributes[0].groups[2].score > heavier.attributes[0].groups[2].score)
+})
+
+test('bodyweight strength uses clean repetitions and rewards optional extra weight', () => {
   const pullup = (reps, weightKg = '') => ({ libraryId: 'volleyball:pullup',
     name: 'Klimmzüge', category: 'Krafttraining', muscleGroup: 'Rücken',
     type: 'strength', loadMode: 'bodyweightOnly',
@@ -97,10 +109,10 @@ test('bodyweight-only strength is rated by clean repetitions without extra weigh
     { bodyweightKg: '75' }, '2026-10-12')
   const exceptional = athleteRating([day('2026-10-12', [pullup(20), row])],
     { bodyweightKg: '75' }, '2026-10-12')
-  const withOldExtraWeight = athleteRating([day('2026-10-12', [pullup(20, '20'), row])],
+  const withExtraWeight = athleteRating([day('2026-10-12', [pullup(3, '20'), row])],
     { bodyweightKg: '75' }, '2026-10-12')
   assert.ok(exceptional.attributes[0].score > regular.attributes[0].score)
-  assert.equal(withOldExtraWeight.attributes[0].score, exceptional.attributes[0].score)
+  assert.ok(withExtraWeight.attributes[0].score > regular.attributes[0].score)
 })
 
 test('a major group unlocks after one compound and two distinct isolations across days', () => {

@@ -1,5 +1,5 @@
 import { exerciseMeasurement, isConfirmedSet, isOpenTraining,
-  effectiveTrainingWeight, dumbbellCount, isBodyweightOnly } from './trainingModel.js'
+  effectiveTrainingWeight, dumbbellCount, isBodyweightRepExercise } from './trainingModel.js'
 
 const positive = (value) => value !== '' && value != null
   && Number.isFinite(Number(value)) && Number(value) > 0
@@ -12,7 +12,7 @@ function sessionResults(session, profileWeight) {
   for (const exercise of session.exercises ?? []) {
     if (!exercise.libraryId || exercise.category !== 'Krafttraining'
       || exerciseMeasurement(exercise) !== 'strength'
-      || isBodyweightOnly(exercise)
+      || isBodyweightRepExercise(exercise)
       || (exercise.loadMode === 'bodyweight'
         && !loadedBodyweightLifts.has(exercise.libraryId))) continue
     const entries = (exercise.entries ?? []).filter((entry) =>

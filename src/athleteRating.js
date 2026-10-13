@@ -1,6 +1,6 @@
 import { bestMetric } from './calendarPerformance.js'
 import { canonicalCategory, exerciseMeasurement, isConfirmedSet, isOpenTraining,
-  isSportTrainingAttendance, isBodyweightOnly, effectiveTrainingWeight } from './trainingModel.js'
+  isSportTrainingAttendance, isBodyweightRepExercise, effectiveTrainingWeight } from './trainingModel.js'
 import { STRENGTH_GROUPS, ARM_SUBGROUPS, strengthGroupFor, strengthGroupQualified,
   strengthMuscleFor, strengthRoleFor, weightedStrengthMean } from './strengthClassification.js'
 import { STRENGTH_LOAD_STANDARDS, STRENGTH_REP_STANDARDS } from './strengthStandards.js'
@@ -99,7 +99,7 @@ function comparableMetric(exercise, metric, profileWeight) {
 }
 
 function benchmark(exercise, metric, profileWeight) {
-  if (isBodyweightOnly(exercise) && metric.key === 'reps') {
+  if (isBodyweightRepExercise(exercise) && metric.key === 'reps') {
     const [regular, exceptional] = STRENGTH_REP_STANDARDS[exercise.libraryId]
     return strengthTarget(START + 35 * (metric.value - regular) / (exceptional - regular))
   }
