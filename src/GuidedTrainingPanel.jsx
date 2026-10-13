@@ -110,7 +110,11 @@ export default function GuidedTrainingPanel({
   const available = library.filter((item) => item.category === exerciseCategory
     && !(exerciseCategory === 'Ausdauer' && item.performanceRole === 'support'))
   const groups = [...new Set(available.map((item) => item.muscleGroup || 'Allgemein'))]
-    .sort((a, b) => a.localeCompare(b, 'de-DE'))
+    .sort((a, b) => exerciseCategory === 'Krafttraining'
+      ? (MUSCLE_GROUPS.includes(a) ? MUSCLE_GROUPS.indexOf(a) : MUSCLE_GROUPS.length)
+        - (MUSCLE_GROUPS.includes(b) ? MUSCLE_GROUPS.indexOf(b) : MUSCLE_GROUPS.length)
+        || a.localeCompare(b, 'de-DE')
+      : a.localeCompare(b, 'de-DE'))
   const needsGroup = groups.length > 1
   const planOptions = plans.filter((plan) =>
     canonicalCategory(plan.category, plan.name) === session.category)
@@ -180,7 +184,11 @@ export default function GuidedTrainingPanel({
           <h3>{group && needsGroup ? `Übungen: ${group}` : 'Übung wählen'}</h3>
           <div className="training-choice-list">{available
             .filter((item) => !needsGroup || (item.muscleGroup || 'Allgemein') === group)
-            .sort((a, b) => a.name.localeCompare(b.name, 'de-DE'))
+            .sort((a, b) => exerciseCategory === 'Krafttraining'
+              ? Number(strengthRoleFor(a) === 'isolation')
+                - Number(strengthRoleFor(b) === 'isolation')
+                || a.name.localeCompare(b.name, 'de-DE')
+              : a.name.localeCompare(b.name, 'de-DE'))
             .map((item) => <div className="training-exercise-row" key={item.id}>
               <button type="button" className="training-choice"
                 onClick={() => onAddExercise(item)}>{item.name}
