@@ -7,7 +7,7 @@ import {
   suggestedTrainingSet,
   dumbbellCount, effectiveTrainingWeight,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
-  createSportTrainingSession, isSportTrainingAttendance,
+  createSportTrainingSession, isSportTrainingAttendance, trainingWithAddedExercise,
 } from '../src/trainingModel.js'
 import { chooseInitialSync, dataHash, isAthleteData } from '../src/syncPolicy.js'
 import { DEFAULT_EXERCISES, STANDARD_PLANS, FOCUS_PLANS, ADDITIONAL_PLANS, VOLLEYBALL_PLANS,
@@ -69,6 +69,29 @@ test('only one new training can remain open at a time without removing older dat
   assert.equal(isOpenTraining(first), true)
   assert.equal(isOpenTraining(existing[0]), false)
   assert.equal(addTrainingIfNoOpen(existing, second).at(-1).id, 'second')
+})
+
+test('individual training collects exercise categories independently of the plan filter', () => {
+  const session = { id: 'mixed', date: '2026-10-13', status: 'ongoing',
+    category: 'Krafttraining', categories: ['Krafttraining'], planId: null, exercises: [] }
+  const cardio = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.category === 'Ausdauer' && item.performanceRole !== 'support'))
+  const strength = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.category === 'Krafttraining'))
+  const core = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.category === 'Core und Mobility'))
+  const cardioFlow = { exerciseId: cardio.id, freeTraining: true, phase: 'warmup' }
+  const afterCardio = { ...session, ...trainingWithAddedExercise(session, cardio, cardioFlow) }
+  assert.equal(afterCardio.category, 'Ausdauer')
+  assert.deepEqual(afterCardio.categories, ['Ausdauer'])
+  assert.deepEqual(afterCardio.enduranceFlow, cardioFlow)
+  const afterStrength = { ...afterCardio, enduranceFlow: null,
+    ...trainingWithAddedExercise(afterCardio, strength) }
+  const mixed = { ...afterStrength, ...trainingWithAddedExercise(afterStrength, core) }
+  assert.deepEqual(mixed.categories, ['Ausdauer', 'Krafttraining', 'Core und Mobility'])
+  assert.deepEqual(mixed.exercises.map((exercise) => exercise.category), mixed.categories)
+  assert.equal(isAthleteData({ sessions: [mixed], exerciseLibrary: [],
+    volleyballDays: [] }), true)
 })
 
 test('older sessions and backups remain readable without invented sets', () => {

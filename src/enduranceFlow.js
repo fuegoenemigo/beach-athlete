@@ -148,13 +148,15 @@ export function confirmGuidedMain(session, now, entryId) {
   const flow = session.enduranceFlow
   const entry = completedMainEntry(flow, now, entryId)
   if (!entry || !(session.exercises ?? []).some((exercise) =>
-    exercise.libraryId === flow.spec.mainLibraryId)) return session
+    flow.exerciseId ? exercise.id === flow.exerciseId
+      : exercise.libraryId === flow.spec.mainLibraryId)) return session
   return { ...session,
     enduranceFlow: { ...flow, phase: 'cooldown', mainConfirmed: true,
       mainCompletedAt: new Date(now).toISOString(),
       clock: { startedAt: now, elapsedMs: 0, running: true } },
     exercises: session.exercises.map((exercise) =>
-      exercise.libraryId === flow.spec.mainLibraryId
+      (flow.exerciseId ? exercise.id === flow.exerciseId
+        : exercise.libraryId === flow.spec.mainLibraryId)
         ? { ...exercise, guidedEndurance: true, done: true, entries: [entry] }
         : exercise),
   }

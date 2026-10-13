@@ -10,7 +10,8 @@ import { RatingStepper } from './VolleyballInputs.jsx'
 const freshClock = () => ({ startedAt: Date.now(), elapsedMs: 0, running: true })
 
 export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, onUpdateSession,
-  onUpdateResult, onUpdateReading, onConfirmMain, onSave, onClose, onCancel, flowMessage }) {
+  onUpdateResult, onUpdateReading, onConfirmMain, onContinue,
+  onSave, onClose, onCancel, flowMessage }) {
   const flow = session.enduranceFlow
   const spec = flow.spec
   const intensity = spec.intensity ?? [...FOCUS_PLANS, ...ADDITIONAL_PLANS, ...VOLLEYBALL_PLANS]
@@ -23,11 +24,13 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
   const mainName = spec.kind === 'interval' ? 'Intervalltraining'
     : spec.kind === 'sprint' ? 'Sprintserie' : 'Hauptübung'
   const activeStep = flow.phase === 'warmup' ? 0 : ['ready', 'main'].includes(flow.phase) ? 1 : 2
-  const guidedExercise = session.exercises.find((exercise) => exercise.guidedEndurance)
+  const guidedExercise = session.exercises.find((exercise) => flow.exerciseId
+    ? exercise.id === flow.exerciseId : exercise.guidedEndurance)
   const result = guidedExercise?.entries.find((entry) => entry.guidedCompletion)
   const measuredMeters = deviceDistanceMeters(flow)
   const readingUnit = flow.deviceUnit === 'm' ? 'm' : 'km'
-  const progress = flow.phase === 'summary' ? enduranceProgress(session, sessions) : null
+  const progress = flow.phase === 'summary' && !flow.freeTraining
+    ? enduranceProgress(session, sessions) : null
 
   useEffect(() => {
     if (!running) return undefined
@@ -277,9 +280,11 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
         {' '}Gespeichert wird die bestätigte Hauptübung von {formatTimer(spec.kind === 'sprint'
           ? Number(result?.durationValue || 0) : mainDurationSeconds(spec))}.
         Aufwärmen und Auslaufen zählen nicht zur Distanz der Hauptübung.</p>
-      <label className="field-label" htmlFor="guided-endurance-date">Trainingsdatum</label>
-      <input id="guided-endurance-date" className="field" type="date" value={session.date}
-        onChange={(event) => { if (event.target.value) onUpdateSession({ date: event.target.value }) }} />
+      {!flow.freeTraining && <>
+        <label className="field-label" htmlFor="guided-endurance-date">Trainingsdatum</label>
+        <input id="guided-endurance-date" className="field" type="date" value={session.date}
+          onChange={(event) => { if (event.target.value) onUpdateSession({ date: event.target.value }) }} />
+      </>}
       {flow.distanceTracking ? <div className="endurance-device-reading">
         <h3>Ermittelte Distanz der Hauptübung</h3>
         <p className="endurance-distance-result"><strong>{measuredMeters ?? '–'} m</strong>
@@ -307,6 +312,7 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
               onUpdateResult({ distanceValue: value, distanceUnit: 'km' })
           }} />
       </> : null}
+      {!flow.freeTraining && <>
       <RatingStepper id="guided-endurance-intensity" label="Anstrengung der Hauptübung (1–10, optional)"
         value={session.intensity ?? ''} onChange={(intensity) => onUpdateSession({ intensity })} />
       {progress && <div className="endurance-progress-guidance">
@@ -323,9 +329,13 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
       <label className="field-label" htmlFor="guided-endurance-notes">Notiz zur Einheit (optional)</label>
       <textarea id="guided-endurance-notes" className="field notes-field" rows="2"
         value={session.notes ?? ''} onChange={(event) => onUpdateSession({ notes: event.target.value })} />
+      </>}
       {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}
       <button type="button" className="primary-button"
-        onClick={completed ? onClose : onSave}>{completed ? 'Schließen' : 'Training speichern'}</button>
+        disabled={flow.freeTraining && flow.distanceTracking && measuredMeters == null}
+        onClick={flow.freeTraining ? onContinue : completed ? onClose : onSave}>
+        {flow.freeTraining ? 'Weitere Übung wählen' : completed ? 'Schließen' : 'Training speichern'}
+      </button>
     </>}
 
     {!completed && <div className="training-finish-actions">

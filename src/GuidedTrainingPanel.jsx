@@ -5,7 +5,7 @@ import TrainingTimer from './TrainingTimer.jsx'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   exerciseMeasurement, formatTrainingEntry, previousExercise, previousSetFor, isConfirmedSet,
-  hasLegacyValues, canonicalCategory, defaultMeasurement, suggestedTrainingSet,
+  hasLegacyValues, defaultMeasurement, suggestedTrainingSet, isSportTrainingCategory,
   dumbbellCount, isBodyweightOnly, isExternalLoad,
 } from './trainingModel.js'
 
@@ -82,12 +82,12 @@ function PreviousExerciseReference({ number, value }) {
 }
 
 export default function GuidedTrainingPanel({
-  session, sessions, library, plans, athleteProfile, exerciseCategory, setExerciseCategory,
+  session, sessions, library, athleteProfile, exerciseCategory, setExerciseCategory,
   step, setStep, activeExerciseId, group, setGroup,
   editingSetId, setEditingSetId, flowMessage, newCategory, setNewCategory,
   customName, setCustomName, customType, setCustomType, customGroup, setCustomGroup,
   customStrengthRole, setCustomStrengthRole,
-  onAddExercise, onOpenExercise, onApplyPlan, onCreateCustom, onUpdateSession,
+  onAddExercise, onOpenExercise, onCreateCustom, onUpdateSession,
   onUpdateExercise, onRemoveExercise, onConfirmSet, onFinishExercise,
   onTimerDuration,
   onSave, onClose, onRecategorize, onCancel,
@@ -116,17 +116,18 @@ export default function GuidedTrainingPanel({
         || a.localeCompare(b, 'de-DE')
       : a.localeCompare(b, 'de-DE'))
   const needsGroup = groups.length > 1
-  const planOptions = plans.filter((plan) =>
-    canonicalCategory(plan.category, plan.name) === session.category)
+  const categoryChoices = session.planId ? session.categories ?? [session.category]
+    : TRAINING_CATEGORIES.filter((category) => !isSportTrainingCategory(category))
   const nextPlannedExercise = session.planId && session.exercises.find((item) => !item.done
     && !(item.entries ?? []).some((entry) => isConfirmedSet(entry,
       exerciseMeasurement({ ...item, category: session.category }))))
 
   return <section className="diary-panel active-workout training-flow">
-    <p className="eyebrow">{formatDate(session.date)} · {session.category}</p>
+    <p className="eyebrow">{formatDate(session.date)} · {session.planId
+      ? session.category : 'Individuelles Training'}</p>
     <div className="training-flow-steps" aria-label="Fortschritt der Trainingserfassung">
       <span className={step === 'exercise' ? 'current' : ''}>1 Übung</span>
-      <span className={step === 'set' ? 'current' : ''}>2 {session.category === 'Ausdauer' ? 'Phasen' : 'Sätze'}</span>
+      <span className={step === 'set' ? 'current' : ''}>2 {exercise?.category === 'Ausdauer' ? 'Phasen' : 'Sätze'}</span>
       <span className={step === 'summary' ? 'current' : ''}>3 Abschluss</span>
     </div>
 
@@ -140,14 +141,17 @@ export default function GuidedTrainingPanel({
         </select>
         <button type="button" className="secondary-button" onClick={() => onRecategorize(newCategory)}>Kategorie übernehmen</button>
       </div> : <>
-        {(session.categories ?? [session.category]).length > 1 && <div className="training-category-tabs">
-          {(session.categories ?? [session.category]).map((category) => <button type="button"
+        {!session.planId && <h3>Hauptkategorie wählen</h3>}
+        {(categoryChoices.length > 1 || !session.planId) && <div className="training-category-tabs">
+          {categoryChoices.map((category) => <button type="button"
             key={category} className={exerciseCategory === category ? 'training-choice selected' : 'training-choice'}
             onClick={() => { setExerciseCategory(category); setGroup('');
               setCustomType(defaultMeasurement(category))
-              setCustomGroup(library.find((item) => item.category === category)?.muscleGroup || 'Allgemein') }}>
+              setCustomGroup(category === 'Krafttraining' ? MUSCLE_GROUPS[0]
+                : library.find((item) => item.category === category)?.muscleGroup || 'Allgemein') }}>
             {category}</button>)}
         </div>}
+        {!exerciseCategory && <p className="helper-text">Wähle zuerst eine Hauptkategorie. Du kannst sie nach jeder Übung wieder wechseln.</p>}
         {nextPlannedExercise && <div className="training-exercise-row training-next-planned">
           <button type="button" className="training-choice"
             onClick={() => onOpenExercise(nextPlannedExercise)}>
@@ -160,19 +164,16 @@ export default function GuidedTrainingPanel({
           {session.exercises.map((item) => {
             const itemType = exerciseMeasurement({ ...item, category: session.category })
             const count = (item.entries ?? []).filter((entry) => isConfirmedSet(entry, itemType)).length
+            if (item.guidedEndurance && item.done) return <div className="training-done-row" key={item.id}>
+              <span>{item.name}</span><span>Geführte Übung abgeschlossen ✓</span>
+            </div>
             return <button type="button" className="training-done-row" key={item.id}
               onClick={() => onOpenExercise(item)}>
               <span>{item.name}</span><span>{count ? `${count} Sätze ✓` : 'Offen'} ›</span>
             </button>
           })}
         </div>}
-        {!session.exercises.length && planOptions.length > 0 && <details className="training-custom">
-          <summary>Trainingsvorlage verwenden</summary>
-          {planOptions.map((plan) => <button type="button" className="training-choice" key={plan.id}
-            onClick={() => onApplyPlan(plan)}>{plan.name} · {plan.guidedEndurance
-              ? '1 Übung · 3 Phasen' : `${plan.exercises.length} Übungen`}</button>)}
-        </details>}
-        {needsGroup && <>
+        {exerciseCategory && needsGroup && <>
           <h3>{exerciseCategory === 'Krafttraining' ? 'Muskelgruppe wählen' : 'Schwerpunkt wählen'}</h3>
           <div className="training-choice-grid">{groups.map((muscle) =>
             <button type="button" key={muscle}
@@ -180,7 +181,7 @@ export default function GuidedTrainingPanel({
               onClick={() => { setGroup(muscle); setCustomGroup(muscle) }}>
               {muscle}</button>)}</div>
         </>}
-        {(!needsGroup || group) && <>
+        {exerciseCategory && (!needsGroup || group) && <>
           <h3>{group && needsGroup ? `Übungen: ${group}` : 'Übung wählen'}</h3>
           <div className="training-choice-list">{available
             .filter((item) => !needsGroup || (item.muscleGroup || 'Allgemein') === group)
@@ -198,7 +199,7 @@ export default function GuidedTrainingPanel({
               <ExerciseInfo exercise={item} />
             </div>)}</div>
         </>}
-        <details className="training-custom"><summary>Eigene Übung anlegen</summary>
+        {exerciseCategory && <details className="training-custom"><summary>Eigene Übung anlegen</summary>
           <label className="field-label" htmlFor="custom-name">Übungsname</label>
           <input id="custom-name" className="field" value={customName}
             onChange={(event) => setCustomName(event.target.value)} />
@@ -226,7 +227,7 @@ export default function GuidedTrainingPanel({
             </select>
           </>}
           <button type="button" className="secondary-button" onClick={onCreateCustom}>Anlegen und ersten Satz öffnen</button>
-        </details>
+        </details>}
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}
         <div className="training-finish-actions">
           <button type="button" className="primary-button" onClick={() => setStep('summary')}>Training beenden</button>
@@ -318,7 +319,8 @@ export default function GuidedTrainingPanel({
         {session.exercises.map((item) => {
           const itemType = exerciseMeasurement({ ...item, category: session.category })
           const count = (item.entries ?? []).filter((entry) => isConfirmedSet(entry, itemType)).length
-          return <p key={item.id}>{item.name}: {count} bestätigte Sätze</p>
+          return <p key={item.id}>{item.name}: {item.guidedEndurance && item.done
+            ? 'geführte Übung abgeschlossen' : `${count} bestätigte Sätze`}</p>
         })}
       </div>
       {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}

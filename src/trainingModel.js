@@ -31,6 +31,16 @@ export function addTrainingIfNoOpen(sessions, session) {
   return sessions.some(isOpenTraining) ? sessions : [...sessions, session]
 }
 
+export function trainingWithAddedExercise(session, exercise, enduranceFlow = null) {
+  const firstIndividualExercise = !session.planId && !(session.exercises ?? []).length
+  const category = firstIndividualExercise ? exercise.category : session.category
+  return { category,
+    categories: [...new Set([...(firstIndividualExercise ? [category]
+      : session.categories ?? [session.category]), exercise.category])],
+    exercises: [...(session.exercises ?? []), exercise],
+    ...(enduranceFlow ? { enduranceFlow } : {}) }
+}
+
 export function canonicalCategory(category, subcategory = '') {
   if (['Sprungkraft & Explosivität', 'Schnelligkeit & Agilität'].includes(category))
     return 'Sprungkraft und Agilität'

@@ -158,6 +158,28 @@ test('the full main workout is recorded once, only after time and user confirmat
   exerciseLibrary: [], volleyballDays: [] }), true)
 })
 
+test('a guided cardio result changes only its selected exercise in a mixed session', () => {
+  const plan = guidedPlans.find((item) => item.id === 'gym:plan-treadmill-base')
+  const spec = guidedEnduranceSpec(plan)
+  const first = createLoggedExercise({ ...plan.exercises[0], id: spec.mainLibraryId })
+  const second = createLoggedExercise({ ...plan.exercises[0], id: spec.mainLibraryId })
+  const session = { id: 'mixed-cardio', date: '2026-10-13', category: 'Ausdauer',
+    categories: ['Ausdauer', 'Krafttraining'], status: 'ongoing',
+    exercises: [{ ...first, guidedEndurance: true, done: true,
+      entries: [{ id: 'first-result', completed: true, guidedCompletion: true,
+        durationValue: '1500', durationUnit: 's' }] },
+    { ...second, guidedEndurance: true, entries: [] }],
+    enduranceFlow: { spec, exerciseId: second.id, freeTraining: true,
+      phase: 'main', mainConfirmed: false,
+      clock: { startedAt: 0, elapsedMs: 0, running: true } } }
+  const completed = confirmGuidedMain(session, mainDurationSeconds(spec) * 1000, 'second-result')
+  assert.equal(completed.exercises[0].entries[0].id, 'first-result')
+  assert.equal(completed.exercises[1].entries[0].id, 'second-result')
+  assert.equal(completed.exercises[1].done, true)
+  assert.equal(isAthleteData({ sessions: [completed], exerciseLibrary: [],
+    volleyballDays: [] }), true)
+})
+
 test('steady endurance also completes as one main workout without warmup or cooldown entries', () => {
   const plan = guidedPlans.find((item) => item.id === 'gym:plan-treadmill-base')
   const spec = guidedEnduranceSpec(plan)

@@ -12,7 +12,7 @@ import { groupedTrainingPlans, isBuiltInPlan, removeTrainingPlan,
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   defaultMeasurement, exerciseIdentity, exerciseMeasurement,
-  createLoggedExercise, createTrainingSet, hasLegacyValues,
+  createLoggedExercise, createTrainingSet, hasLegacyValues, trainingWithAddedExercise,
   canonicalCategory,
   hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
   previousExercise, previousSetFor, suggestedTrainingSet,
@@ -286,7 +286,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const exercises = plan ? exercisesFromPlan(plan) : []
     const guided = guidedEnduranceSpec(plan)
     const category = plan && (plan.categories ?? [plan.category]).includes(newCategory)
-      ? newCategory : plan?.category ?? newCategory
+      ? newCategory : plan?.category ?? 'Krafttraining'
     const session = {
       id: crypto.randomUUID(), date: entryDate,
       category, categories: plan?.categories ?? [category], subcategory: '',
@@ -306,29 +306,44 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setFlowStep(exercises.length ? 'set' : 'exercise')
     setFlowMessage('')
     setSelectedGroup('')
-    setSelectedExerciseCategory(exercises[0]?.category ?? category)
+    setSelectedExerciseCategory(plan ? exercises[0]?.category ?? category : null)
     setCustomGroup(groupsFor(visibleLibrary, exercises[0]?.category ?? category)[0]?.[0] ?? 'Allgemein')
     setCustomType(defaultMeasurement(category))
     setNotice('')
   }
   function addExercise(item) {
     if (item.category === 'Ausdauer') {
-      if (activeSession.category !== 'Ausdauer' || activeSession.exercises.length) {
-        setFlowMessage('Starte diese Cardio-Übung als eigene geführte Ausdauereinheit. Schließe zuerst die aktuelle Einheit ab.'); return
-      }
       const plan = visiblePlans.find((candidate) => guidedEnduranceSpec(candidate)
         && candidate.guidedEndurance.mainLibraryId === item.id)
         ?? guidedCardioPlanForExercise(item)
-      if (plan) { applyPlan(plan); return }
+      if (plan) { startGuidedExercise(item, plan); return }
     }
     const exercise = createLoggedExercise(item)
     exercise.entries = [{ ...createTrainingSet(exercise.type,
       exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
       completed: false }]
-    updateSession({ exercises: [...activeSession.exercises, exercise] })
+    updateSession(trainingWithAddedExercise(activeSession, exercise))
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
     setEditingSetId(null)
+    setFlowMessage('')
+    setNotice('')
+  }
+  function startGuidedExercise(item, plan) {
+    const spec = guidedEnduranceSpec(plan)
+    if (!spec) {
+      setFlowMessage('Für diese Ausdauerübung ist kein geführter Ablauf verfügbar.'); return
+    }
+    const exercise = { ...createLoggedExercise(item), guidedEndurance: true,
+      guidedProtocolId: plan.id, entries: [] }
+    updateSession(trainingWithAddedExercise(activeSession, exercise, {
+      spec, planId: plan.id, exerciseId: exercise.id, freeTraining: true,
+      phase: 'warmup', clock: null, mainConfirmed: false,
+      distanceTracking: tracksDeviceDistance(spec), deviceUnit: 'km',
+      warmupDeviceReading: '', mainDeviceReading: '',
+    }))
+    setActiveExerciseId(null)
+    setSelectedExerciseCategory('Ausdauer')
     setFlowMessage('')
     setNotice('')
   }
@@ -344,27 +359,6 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setFlowStep('set')
     setEditingSetId(null)
     setFlowMessage('')
-  }
-  function applyPlan(plan) {
-    if (activeSession.exercises.length) {
-      setFlowMessage('Eine Vorlage kannst du nur vor der ersten Übung laden.'); return
-    }
-    const exercises = exercisesFromPlan(plan)
-    const guided = guidedEnduranceSpec(plan)
-    if (exercises.length) {
-      const first = exercises[0]
-      updateSession({ planId: plan.id, planName: plan.name,
-        categories: plan.categories ?? [plan.category], exercises,
-        ...(guided ? { enduranceFlow: { spec: guided, phase: 'warmup',
-          clock: null, mainConfirmed: false,
-          distanceTracking: tracksDeviceDistance(guided), deviceUnit: 'km',
-          warmupDeviceReading: '', mainDeviceReading: '' } } : {}) })
-      setActiveExerciseId(first.id)
-      setSelectedExerciseCategory(first.category)
-      setFlowStep('set')
-      setEditingSetId(null)
-      setFlowMessage('')
-    }
   }
   function confirmSet() {
     const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
@@ -416,7 +410,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       ? confirmGuidedMain(session, now, entryId) : session))
   }
   function updateGuidedResult(changes) {
-    const exercise = activeSession?.exercises.find((item) => item.guidedEndurance)
+    const exercise = activeSession?.exercises.find((item) => activeSession.enduranceFlow?.exerciseId
+      ? item.id === activeSession.enduranceFlow.exerciseId : item.guidedEndurance)
     if (!exercise) return
     updateExercise(exercise.id, { entries: exercise.entries.map((entry) =>
       entry.guidedCompletion ? { ...entry, ...changes } : entry) })
@@ -430,13 +425,29 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         : { ...session.enduranceFlow, [field]: value }
       const distance = deviceDistanceMeters(flow)
       return { ...session, enduranceFlow: flow,
-        exercises: session.exercises.map((exercise) => ({ ...exercise,
-          entries: (exercise.entries ?? []).map((entry) => entry.guidedCompletion
-            ? { ...entry, distanceValue: distance == null ? '' : String(distance / 1000),
-              deviceStartReading: flow.warmupDeviceReading,
-              deviceEndReading: flow.mainDeviceReading,
-              deviceReadingUnit: flow.deviceUnit } : entry) })) }
+        exercises: session.exercises.map((exercise) => {
+          if (flow.exerciseId && exercise.id !== flow.exerciseId) return exercise
+          return { ...exercise, entries: (exercise.entries ?? []).map((entry) =>
+            entry.guidedCompletion
+              ? { ...entry, distanceValue: distance == null ? '' : String(distance / 1000),
+                deviceStartReading: flow.warmupDeviceReading,
+                deviceEndReading: flow.mainDeviceReading,
+                deviceReadingUnit: flow.deviceUnit }
+              : entry) }
+        }) }
     }))
+    setFlowMessage('')
+  }
+  function continueAfterGuidedExercise() {
+    const flow = activeSession?.enduranceFlow
+    if (!flow?.freeTraining || flow.phase !== 'summary' || !flow.mainConfirmed) return
+    if (flow.distanceTracking && deviceDistanceMeters(flow) == null) {
+      setFlowMessage('Bitte prüfe die beiden Gerätestände vor der nächsten Übung.'); return
+    }
+    updateSession({ enduranceFlow: null })
+    setSelectedExerciseCategory('Ausdauer')
+    setSelectedGroup('')
+    setFlowStep('exercise')
     setFlowMessage('')
   }
   function finishExercise() {
@@ -495,10 +506,6 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   function createCustomExercise() {
     const name = customName.trim()
     if (!name || !activeSession) { setFlowMessage('Bitte gib einen Übungsnamen ein.'); return }
-    if (selectedExerciseCategory === 'Ausdauer'
-      && (activeSession.category !== 'Ausdauer' || activeSession.exercises.length)) {
-      setFlowMessage('Starte eine neue Cardio-Übung als eigene geführte Ausdauereinheit.'); return
-    }
     if (visibleLibrary.some((item) => item.category === selectedExerciseCategory
       && item.name.toLocaleLowerCase('de-DE') === name.toLocaleLowerCase('de-DE'))) {
       setFlowMessage('Diese Übung gibt es in der Kategorie bereits.'); return
@@ -509,14 +516,14 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         ? { strengthRole: customStrengthRole } : {}) }
     setExerciseLibrary((previous) => [...previous, item])
     if (item.category === 'Ausdauer') {
-      applyPlan(guidedCardioPlanForExercise(item))
+      startGuidedExercise(item, guidedCardioPlanForExercise(item))
       setCustomName('')
-      setNotice('Cardio-Übung angelegt und geführte Einheit gestartet.')
+      setNotice('Cardio-Übung angelegt und geführte Phase gestartet.')
       return
     }
     const exercise = createLoggedExercise(item)
     exercise.entries = [{ ...createTrainingSet(exercise.type), completed: false }]
-    updateSession({ exercises: [...activeSession.exercises, exercise] })
+    updateSession(trainingWithAddedExercise(activeSession, exercise))
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
     setEditingSetId(null)
@@ -797,10 +804,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           </li>)}
         </ol></>}
         <button type="button" className="text-button" onClick={() => setPendingPlan(null)}>
-          Andere Vorlage oder freie Einheit wählen
+          Andere Vorlage wählen
         </button>
       </> : <>
-      <label className="field-label" htmlFor="training-category">Hauptkategorie</label>
+      <label className="field-label" htmlFor="training-category">Hauptkategorie für Vorlagen</label>
       <select id="training-category" className="field" value={newCategory}
         onChange={(event) => { setNewCategory(event.target.value); setPlanSearch(''); setSportDateError('') }}>
         {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
@@ -808,7 +815,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       {isSportTrainingCategory(newCategory) ? <>
         <p className="helper-text">Hat dieses Training am gewählten Tag stattgefunden? Es werden keine Übungen, Zeiten oder Leistungswerte erfasst.</p>
       </> : <>
-      <label className="field-label" htmlFor="training-plan-search">Trainingsvorlage suchen (optional)</label>
+      <label className="field-label" htmlFor="training-plan-search">Trainingsvorlage suchen</label>
       <input id="training-plan-search" className="field" type="search" value={planSearch}
         onChange={(event) => setPlanSearch(event.target.value)}
         placeholder="z. B. Rücken, Core oder Sprungkraft" />
@@ -822,7 +829,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           <span><strong>{plan.name}</strong><small>{(plan.categories ?? [plan.category]).join(' + ')}
             {' · '}{guidedEnduranceSpec(plan) ? '1 Übung · 3 Phasen'
               : `${plan.exercises.length} Übungen`}</small></span><span aria-hidden="true">›</span>
-        </button>) : <p className="helper-text">Keine passende Vorlage gefunden. Du kannst ein freies Training starten.</p>}
+        </button>) : <p className="helper-text">Keine passende Vorlage gefunden. Wähle eine andere Kategorie oder starte ein individuelles Training.</p>}
       </div>
       </>}
       </>}
@@ -843,15 +850,17 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       <button type="button" className="primary-button" disabled={openSessions.length > 0}
         onClick={() => isSportTrainingCategory(newCategory) && !pendingPlan
           ? saveSportTraining() : startSession(pendingPlan)}>
-        {isSportTrainingCategory(newCategory) && !pendingPlan ? 'Ja, Training abgeschlossen' : '＋ Training starten'}
+        {isSportTrainingCategory(newCategory) && !pendingPlan ? 'Ja, Training abgeschlossen'
+          : pendingPlan ? '＋ Vorlage starten' : '＋ Individuelles Training starten'}
       </button>
       {sessions.some((session) => session.date === (customDate ? selectedDate : today())) &&
         <p className="helper-text">An diesem Tag gibt es bereits Einheiten. Du kannst eine weitere beginnen oder unten eine öffnen.</p>}
       </section>
     </EntryWindow>}
 
-    {activeSession && <EntryWindow title={activeSession.planName || 'Training erfassen'}
-      subtitle={`${formatDate(activeSession.date)} · ${activeSession.category}`} onClose={closeTraining}>
+    {activeSession && <EntryWindow title={activeSession.planName || 'Individuelles Training'}
+      subtitle={`${formatDate(activeSession.date)} · ${(activeSession.categories ?? [activeSession.category]).join(' + ')}`}
+      onClose={closeTraining}>
       {isSportTrainingAttendance(activeSession)
         ? <SportTrainingEditor key={activeSession.id} session={activeSession} onClose={closeTraining}
           onSave={(changes) => { updateSession(changes); closeTraining(); setNotice('Trainingsdatum gespeichert.') }} />
@@ -859,9 +868,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           onUpdateFlow={updateEnduranceFlow} onUpdateSession={updateSession}
           onUpdateResult={updateGuidedResult} onUpdateReading={updateGuidedReading}
           onConfirmMain={confirmEnduranceMain} onSave={saveTraining}
+          onContinue={continueAfterGuidedExercise}
           onClose={closeTraining} onCancel={cancelTraining} flowMessage={flowMessage} />
         : <GuidedTrainingPanel
-      session={activeSession} sessions={sessions} library={visibleLibrary} plans={visiblePlans}
+      session={activeSession} sessions={sessions} library={visibleLibrary}
       athleteProfile={athleteProfile} exerciseCategory={selectedExerciseCategory}
       setExerciseCategory={setSelectedExerciseCategory}
       step={flowStep} setStep={setFlowStep} activeExerciseId={activeExerciseId}
@@ -872,7 +882,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       customType={customType} setCustomType={setCustomType}
       customGroup={customGroup} setCustomGroup={setCustomGroup}
       customStrengthRole={customStrengthRole} setCustomStrengthRole={setCustomStrengthRole}
-      onAddExercise={addExercise} onOpenExercise={openExercise} onApplyPlan={applyPlan}
+      onAddExercise={addExercise} onOpenExercise={openExercise}
       onCreateCustom={createCustomExercise} onUpdateSession={updateSession}
       onUpdateExercise={updateExercise} onRemoveExercise={removeExercise} onConfirmSet={confirmSet}
       onTimerDuration={recordTimerDuration}
