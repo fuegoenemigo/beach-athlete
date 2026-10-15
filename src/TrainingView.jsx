@@ -4,6 +4,7 @@ import GuidedEndurancePanel from './GuidedEndurancePanel.jsx'
 import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
+import UIIcon from './UIIcon.jsx'
 import { isRecentDate } from './activityHistory.js'
 import { DEFAULT_EXERCISES, enrichExercise, guidedCardioPlanForExercise,
   searchTrainingPlans } from './volleyballTraining.js'
@@ -174,6 +175,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         setSportDateError('')
         setSelectedDate(navigationTarget.date)
         setCustomDate(true)
+        if (TRAINING_CATEGORIES.includes(navigationTarget.category)) setNewCategory(navigationTarget.category)
         setNewSessionOpen(true)
         return
       }
@@ -739,7 +741,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
 
   return <div className="training-view">
     <section className="diary-intro">
-      <p className="eyebrow">TRAININGSTAGEBUCH</p><h2>Trainieren. Erfassen. Entwickeln.</h2>
+      <span className="area-emblem tone-strength"><UIIcon name="training" /></span>
+      <p className="eyebrow">DEIN TRAININGSTAGEBUCH</p><h2>Dein Training.</h2>
       <p>Wähle deine Trainingsart. Erfasse Übungen und Werte oder bestätige ein absolviertes Volleyballtraining.</p>
     </section>
 

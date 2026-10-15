@@ -5,6 +5,8 @@ import ArchiveView from './ArchiveView.jsx'
 import StatisticsView from './StatisticsView.jsx'
 import { trainingProgress } from './trainingProgress.js'
 import { athleteRating } from './athleteRating.js'
+import HomeDashboard from './HomeDashboard.jsx'
+import UIIcon from './UIIcon.jsx'
 import './HomeView.css'
 
 const FEATURES = {
@@ -21,10 +23,11 @@ const FEATURES = {
 }
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile,
-  sessions, volleyballDays, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
+  sessions, volleyballDays, accountEmail, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
   const [selectedFeature, setSelectedFeature] = useState(initialView)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
   const [ratingDate, setRatingDate] = useState(() => new Date().toLocaleDateString('sv-SE'))
+  const [featureDate, setFeatureDate] = useState(null)
   useEffect(() => {
     const refreshDate = () => setRatingDate(new Date().toLocaleDateString('sv-SE'))
     const timer = window.setInterval(refreshDate, 60_000)
@@ -34,17 +37,41 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   const training = useMemo(() => trainingProgress(sessions), [sessions])
   const rating = useMemo(() => athleteRating(sessions, athleteProfile, ratingDate),
     [sessions, athleteProfile, ratingDate])
-  const latestTrainingStatus = training.overall.status
-  const trainingTrendLabel = { improved: 'Verbesserung', decline: 'Rückgang',
-    unchanged: 'Stagnation' }[latestTrainingStatus] ?? 'noch keine Wertung'
-
-  function openFeature(feature) {
+  function openFeature(feature, date = ratingDate) {
+    setFeatureDate(date)
     setFocusedArchiveTarget(null)
     setSelectedFeature(feature)
     window.scrollTo({ top: 0, behavior: 'auto' })
   }
 
   if (selectedFeature) {
+    if (selectedFeature === 'calendar') return <section className="home-calendar-page">
+      <button className="home-back" type="button" onClick={() => setSelectedFeature(null)}>← Zur Startseite</button>
+      <HomeCalendar sessions={sessions} volleyballDays={volleyballDays} initialDate={featureDate ?? ratingDate}
+        onOpenActivity={onOpenActivity} onCreateEntry={onCreateEntry} />
+    </section>
+    if (selectedFeature === 'more') return <EntryWindow compact title="Deine Bereiche" subtitle="BEACH ATHLETE"
+      onClose={() => setSelectedFeature(null)}>
+      <div className="home-feature-menu">
+        {[
+          ['calendar', 'calendar', 'Sportkalender', 'Alle Tage und Einträge'],
+          ['statistics', 'chart', 'Statistiken', 'Deine Entwicklung im Detail'],
+          ['card', 'card', 'Spielerkarte', 'Deine athletischen Werte'],
+          ['archive', 'archive', 'Archiv', 'Alle abgeschlossenen Einträge'],
+          ['profile', 'profile', 'Mein Profil', 'Konto und Datensicherung'],
+        ].map(([id, icon, title, description]) => <button type="button" key={id} onClick={() => openFeature(id, featureDate)}>
+          <UIIcon name={icon} /><span><strong>{title}</strong><small>{description}</small></span><UIIcon name="chevron" />
+        </button>)}
+      </div>
+      <p className="helper-text">Spieltag erfassen · {new Date(`${featureDate}T12:00:00`).toLocaleDateString('de-DE')}</p>
+      <div className="home-menu-sports">
+        <button type="button" className="secondary-button" disabled={volleyballDays.some((day) => day.date === featureDate)}
+          onClick={() => onCreateEntry('beach', featureDate)}><UIIcon name="beach" /> Beach</button>
+        <button type="button" className="secondary-button" disabled={volleyballDays.some((day) => day.date === featureDate)}
+          onClick={() => onCreateEntry('indoor', featureDate)}><UIIcon name="ball" /> Halle</button>
+      </div>
+      {volleyballDays.some((day) => day.date === featureDate) && <p className="helper-text">An diesem Datum gibt es bereits einen Spieltag. Du kannst ihn über den Kalender öffnen.</p>}
+    </EntryWindow>
     if (selectedFeature === 'profile' || selectedFeature === 'archive') return (
       <EntryWindow title={selectedFeature === 'profile' ? 'Mein Profil' : 'Archiv'}
         subtitle={selectedFeature === 'profile' ? 'DEIN KONTO' : 'DEINE EINTRÄGE'}
@@ -118,56 +145,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
     )
   }
 
-  return (
-    <div className="home-dashboard" aria-label="Startseite">
-      <HomeCalendar sessions={sessions} volleyballDays={volleyballDays}
-        onOpenActivity={onOpenActivity} onCreateEntry={onCreateEntry} />
-
-      <button className="home-widget home-statistics" type="button"
-        onClick={() => openFeature('statistics')} aria-label="Statistiken öffnen">
-        <span className="home-widget-header">
-          <span>
-            <span className="home-widget-kicker">DEINE ENTWICKLUNG</span>
-            <span className="home-widget-title">Statistiken</span>
-          </span>
-          <span className="home-widget-arrow" aria-hidden="true">↗</span>
-        </span>
-        <span className="home-stat-grid">
-          <span><strong>{Math.round(rating.overall.score)}</strong><small>Training</small></span>
-          <span><strong className="is-neutral">—</strong><small>Beach</small></span>
-          <span><strong className="is-neutral">—</strong><small>Halle</small></span>
-        </span>
-        <span className="home-widget-note">Training: {trainingTrendLabel} (letzter Vergleich) · Bewertung {Math.round(rating.overall.score)}/99. Beach und Halle: Wertung folgt.</span>
-      </button>
-
-      <button className="home-widget home-player-card" type="button"
-        onClick={() => openFeature('card')} aria-label="Spielerkarte öffnen">
-        <span className="home-widget-header">
-          <span>
-            <span className="home-widget-kicker">DEINE ENTWICKLUNG</span>
-            <span className="home-widget-title">Spielerkarte</span>
-          </span>
-          <span className="home-widget-arrow" aria-hidden="true">↗</span>
-        </span>
-        <span className="home-card-art" aria-hidden="true">
-          <span className="home-card-topline">BEACH ATHLETE <span>✦</span> PLAYER CARD</span>
-          <span className="home-card-center">
-            <span className="home-card-crest">BA</span>
-            <span className="home-card-rating">{Math.round(rating.overall.score)} <small>GES</small></span>
-          </span>
-          <span className="home-card-name">DEINE KARTE</span>
-          <span className="home-card-divider" />
-          <span className="home-card-bottom">DEINE DATEN. DEINE ENTWICKLUNG.</span>
-        </span>
-        <span className="home-widget-note">Fünf athletische Werte · Start bei 60 · maximal 99.</span>
-      </button>
-      <button className="home-widget home-archive" type="button" onClick={() => openFeature('archive')}>
-        <span className="home-widget-header"><span>
-          <span className="home-widget-kicker">ALLE ABGESCHLOSSENEN EINTRÄGE</span>
-          <span className="home-widget-title">Archiv</span>
-        </span><span className="home-widget-arrow" aria-hidden="true">↗</span></span>
-        <span className="home-widget-note">Spieltage und Trainingseinheiten nach Monaten ansehen.</span>
-      </button>
-    </div>
-  )
+  return <HomeDashboard sessions={sessions} volleyballDays={volleyballDays} today={ratingDate}
+    accountEmail={accountEmail} onFeature={openFeature}
+    onOpenActivity={onOpenActivity} onCreateEntry={onCreateEntry} />
 }

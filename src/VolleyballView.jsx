@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import UIIcon from "./UIIcon.jsx";
 import { isVolleyballDateTaken } from "./syncPolicy.js";
 import { appendTournamentGame, finishTournament } from "./tournament.js";
 import { appendRegularGame, finishRegularDay } from "./regularDay.js";
@@ -327,10 +328,11 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
 
   return (
     <div className="volleyball-view">
-    <section className="diary-panel">
+    <section className="diary-panel volleyball-intro">
+      <span className={`area-emblem ${beach ? 'tone-beach' : 'tone-indoor'}`}><UIIcon name={beach ? 'beach' : 'ball'} /></span>
       <div className="section-heading"><div>
         <p className="eyebrow">VOLLEYBALL</p>
-        <h2>{beach ? "🏖️" : "🏟️"} {label}</h2>
+        <h2>{label}.</h2>
       </div></div>
       <p>{beach ? "Erfasse Beach-Spiele mit bis zu drei Sätzen und Turniere über den ganzen Tag."
         : "Erfasse Hallenspiele mit bis zu fünf Sätzen und Turniere über den ganzen Tag."}</p>

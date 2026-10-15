@@ -41,8 +41,8 @@ function SteelDumbbell() {
   </svg>
 }
 
-export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity, onCreateEntry, expanded = false }) {
-  const [month, setMonth] = useState(() => localDate().slice(0, 7))
+export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity, onCreateEntry, expanded = false, initialDate }) {
+  const [month, setMonth] = useState(() => (initialDate ?? localDate()).slice(0, 7))
   const [selectedDate, setSelectedDate] = useState(null)
   const [showEntryChoices, setShowEntryChoices] = useState(false)
   const [showMethod, setShowMethod] = useState(false)

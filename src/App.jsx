@@ -12,6 +12,8 @@ import VolleyballView from "./VolleyballView.jsx";
 import { DEFAULT_EXERCISES } from "./volleyballTraining.js";
 import { activityDestination } from "./activityHistory.js";
 import { adjacentArea, swipeDirection } from "./swipeNavigation.js";
+import UIIcon from "./UIIcon.jsx";
+import AppChrome from "./AppChrome.jsx";
 
 
 
@@ -295,10 +297,10 @@ function App() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
-  function createCalendarEntry(type, date) {
+  function createCalendarEntry(type, date, category) {
     clearPageSlide();
     activityNavigationId.current += 1;
-    setActivityTarget({ type, date, mode: "create", navigationId: activityNavigationId.current });
+    setActivityTarget({ type, date, category, mode: "create", navigationId: activityNavigationId.current });
     setActiveArea(type);
     setNotice("");
     window.scrollTo({ top: 0, behavior: "auto" });
@@ -418,26 +420,16 @@ function App() {
   }
 
   return (
-    <main className="app" onClickCapture={() => { if (notice) setNotice(""); }}>
-      <header className="app-header">
-        <div>
-          <p className="eyebrow">DEIN TRAINING. DEINE ENTWICKLUNG.</p>
-          <h1>Beach Athlete</h1>
-        </div>
-        <span className="app-mark">BA</span>
-
-      </header>
+    <main className="app app-signed-in" data-area={activeArea} onClickCapture={() => { if (notice) setNotice(""); }}>
+      <AppChrome state={cloudState} updateAvailable={updateAvailable}
+        onInstallUpdate={installUpdate} onProfile={() => openHomeView("profile")} />
 
       <nav className="main-navigation" aria-label="Hauptnavigation">
 
         <button type="button" className="home-navigation-button"
           aria-label="Startseite" aria-pressed={activeArea === "home"}
           onClick={() => selectArea("home")}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V10Z" />
-            <path d="M9 21v-7h6v7" />
-          </svg>
+          <UIIcon name="home" /><span>Start</span>
         </button>
 
         <button
@@ -447,7 +439,7 @@ function App() {
           aria-pressed={activeArea === "beach"}
           onClick={() => selectArea("beach")}
         >
-          <span className="nav-icon" aria-hidden="true">🏖️</span>
+          <UIIcon name="beach" />
           <span className="nav-label-long">Beachvolleyball</span>
           <span className="nav-label-short">Beach</span>
         </button>
@@ -459,7 +451,7 @@ function App() {
           aria-pressed={activeArea === "indoor"}
           onClick={() => selectArea("indoor")}
         >
-          <span className="nav-icon" aria-hidden="true">🏟️</span>
+          <UIIcon name="ball" />
           <span className="nav-label-long">Hallenvolleyball</span>
           <span className="nav-label-short">Halle</span>
         </button>
@@ -471,31 +463,11 @@ function App() {
           aria-pressed={activeArea === "training"}
           onClick={() => selectArea("training")}
         >
-          <span className="nav-icon" aria-hidden="true">💪</span>
+          <UIIcon name="training" />
           <span>Training</span>
         </button>
 
       </nav>
-
-      <div className="account-shortcuts">
-        <button type="button" className="profile-shortcut" onClick={() => openHomeView("profile")}
-          aria-label="Mein Profil öffnen" title="Mein Profil">
-          <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-            <circle cx="16" cy="7" r="5" />
-            <path d="M8 29V20a5 5 0 0 1 5-5h6a5 5 0 0 1 5 5v9h-4v-9a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v9z" />
-          </svg>
-        </button>
-        <button type="button" className="sync-status"
-          onClick={() => openHomeView("profile")}
-          aria-label="Synchronisierungsstatus und Profil öffnen">
-          {cloudState.status === "ready" ? "☁ Cloud aktuell" :
-            cloudState.status === "pending" || cloudState.status === "saving" ? "☁ Synchronisierung läuft" :
-              cloudState.status === "signedOut" ? "◌ Nur auf diesem Gerät" :
-                cloudState.status === "conflict" ? "⚠ Datenkonflikt prüfen" :
-                  cloudState.status === "offline" ? "◌ Cloud offline" :
-                    cloudState.status === "unavailable" || cloudState.status === "error" ? "⚠ Daten prüfen" : "◌ Cloud prüfen"}
-        </button>
-      </div>
 
       {updateAvailable && (
         <div className="update-notice" role="status">
@@ -525,6 +497,7 @@ function App() {
       {areaVisible("home") && <div className={`app-area-page${pageSlide?.from === 'home' ? ' is-from' : ''}${pageSlide?.to === 'home' ? ' is-to' : ''}`}
         style={areaStyle('home')}><HomeView key={homeViewKey}
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
+        accountEmail={cloudState.email}
         sessions={sessions} volleyballDays={volleyballDays}
         initialView={activeArea === 'home' ? homeInitialView : null}
         archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}>
@@ -561,7 +534,7 @@ function App() {
       </div>
       </div>
       <footer className="app-footer">
-        BEACH ATHLETE <span>•</span> DEIN WEG, DEINE DATEN
+        BEACH ATHLETE <span>·</span> VERSION 0.1
       </footer>
     </main>
   );
