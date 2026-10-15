@@ -1,30 +1,23 @@
 import { useMemo, useState } from 'react'
 import { activityEntries, activityTitle, isOpenVolleyballDay } from './activityHistory.js'
 import { isOpenTraining } from './trainingModel.js'
-import { fiveDayStart, greetingName, shiftDate, weekSummary } from './homeSummary.js'
+import { greetingName, weekSummary } from './homeSummary.js'
+import HomeDayStrip from './HomeDayStrip.jsx'
 import UIIcon from './UIIcon.jsx'
 
 const format = (date, options) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', options)
-const fullDate = (date) => format(date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 const shortDate = (date) => format(date, { day: 'numeric', month: 'long' })
 
 export default function HomeDashboard({ sessions, volleyballDays, today, accountEmail,
   onFeature, onOpenActivity, onCreateEntry }) {
   const [chosenDate, setChosenDate] = useState(null)
-  const [chosenStart, setChosenStart] = useState(null)
-  const selectedDate = chosenDate ?? today
-  const start = chosenStart ?? fiveDayStart(today)
-  const dates = Array.from({ length: 5 }, (_, index) => shiftDate(start, index))
+  const selectedDate = chosenDate?.startsWith(today.slice(0, 7)) ? chosenDate : today
   const entries = useMemo(() => activityEntries(sessions, volleyballDays), [sessions, volleyballDays])
+  const entryDates = useMemo(() => new Set(entries.map((entry) => entry.date)), [entries])
   const dayEntries = entries.filter((entry) => entry.date === selectedDate)
   const openTraining = entries.find((entry) => entry.type === 'training' && isOpenTraining(entry.item))
   const week = useMemo(() => weekSummary(sessions, volleyballDays, selectedDate), [sessions, volleyballDays, selectedDate])
   const name = greetingName(accountEmail)
-
-  function moveDays(offset) {
-    setChosenStart(shiftDate(start, offset))
-    setChosenDate(shiftDate(selectedDate, offset))
-  }
 
   function beginTraining(category) {
     if (openTraining) onOpenActivity(openTraining)
@@ -39,29 +32,9 @@ export default function HomeDashboard({ sessions, volleyballDays, today, account
         aria-label="Mein Profil öffnen" title={accountEmail || 'Mein Profil'}>{name.charAt(0)}</button>
     </header>
 
-    <section className="home-five-days" aria-label="Kalender mit fünf Tagen">
-      <div className="home-five-days-heading">
-        <button type="button" className="home-month-pill" onClick={() => onFeature('calendar', selectedDate)}
-          aria-label="Monatskalender öffnen">{format(selectedDate, { month: 'long' })}<UIIcon name="down" /></button>
-        <div className="home-date-controls">
-          {selectedDate !== today && <button type="button" className="home-today-link"
-            onClick={() => { setChosenDate(null); setChosenStart(null) }}>Heute</button>}
-          <button type="button" className="home-date-arrow is-previous" aria-label="Vorherige fünf Tage" onClick={() => moveDays(-5)}><UIIcon name="chevron" /></button>
-          <button type="button" className="home-date-arrow" aria-label="Nächste fünf Tage" onClick={() => moveDays(5)}><UIIcon name="chevron" /></button>
-        </div>
-      </div>
-      <div className="home-five-days-grid">
-        {dates.map((date) => <button type="button" key={date}
-          className={`home-date${date === selectedDate ? ' is-selected' : ''}`}
-          aria-pressed={date === selectedDate} aria-current={date === today ? 'date' : undefined}
-          aria-label={`${fullDate(date)}${entries.some((entry) => entry.date === date) ? ', mit Einträgen' : ''}`}
-          onClick={() => setChosenDate(date)}>
-          <span>{format(date, { weekday: 'short' }).replace('.', '')}</span>
-          <strong>{Number(date.slice(-2))}</strong>
-          <i className={entries.some((entry) => entry.date === date) ? 'has-entries' : ''} aria-hidden="true" />
-        </button>)}
-      </div>
-    </section>
+    <HomeDayStrip key={today.slice(0, 7)} today={today} selectedDate={selectedDate}
+      entryDates={entryDates} onSelect={setChosenDate}
+      onOpenCalendar={() => onFeature('calendar', selectedDate)} />
 
     <section className="home-today-card" aria-labelledby="home-today-title">
       <div className="home-today-heading">
@@ -76,12 +49,6 @@ export default function HomeDashboard({ sessions, volleyballDays, today, account
           <UIIcon name="chevron" />
         </button>)}
       </div>}
-      <button type="button" className="home-record" onClick={() => beginTraining()}>
-        <span className="home-record-plus"><UIIcon name={openTraining ? 'training' : 'plus'} /></span>
-        <span><strong>{openTraining ? 'Training fortsetzen' : 'Training erfassen'}</strong>
-          <small>{openTraining ? 'Deine offene Einheit ist bereit.' : 'Einheit, Dauer und Übungen festhalten'}</small></span>
-        <UIIcon name="chevron" />
-      </button>
       <div className="home-quick-actions" aria-label="Schnellzugriffe">
         {[['Kraft', 'training', 'Krafttraining'], ['Ausdauer', 'run', 'Ausdauer'], ['Mobility', 'mobility', 'Core und Mobility']].map(([label, icon, category]) =>
           <button type="button" key={label} disabled={Boolean(openTraining)} onClick={() => beginTraining(category)}>

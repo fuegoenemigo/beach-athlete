@@ -1,13 +1,16 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { fiveDayStart, greetingName, mondayOf, shiftDate, weekSummary } from '../src/homeSummary.js'
+import { datesInMonth, greetingName, mondayOf, shiftDate, weekSummary } from '../src/homeSummary.js'
 
-test('the compact calendar includes today on weekdays and weekends, including year boundaries', () => {
-  for (const date of ['2026-10-12', '2026-10-15', '2026-10-17', '2026-10-18', '2027-01-01']) {
-    const start = fiveDayStart(date)
-    assert.ok(date >= start && date <= shiftDate(start, 4))
+test('the day strip contains the whole local month, including leap years and year boundaries', () => {
+  for (const [month, length] of [['2026-10', 31], ['2026-11', 30], ['2026-02', 28], ['2028-02', 29], ['2027-01', 31]]) {
+    const dates = datesInMonth(month)
+    assert.equal(dates.length, length)
+    assert.equal(dates[0], `${month}-01`)
+    assert.equal(dates.at(-1), `${month}-${length}`)
+    assert.equal(new Set(dates).size, length)
+    assert.ok(dates.every((date) => date.startsWith(`${month}-`)))
   }
-  assert.equal(fiveDayStart('2026-10-15'), '2026-10-12')
   assert.equal(mondayOf('2027-01-01'), '2026-12-28')
   assert.equal(shiftDate('2026-03-28', 2), '2026-03-30')
 })

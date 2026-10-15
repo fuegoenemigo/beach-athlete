@@ -12,9 +12,10 @@ export function mondayOf(date) {
   return shiftDate(date, -((new Date(`${date}T12:00:00`).getDay() + 6) % 7))
 }
 
-export function fiveDayStart(date) {
-  const weekday = (new Date(`${date}T12:00:00`).getDay() + 6) % 7
-  return shiftDate(mondayOf(date), Math.max(0, weekday - 4))
+export function datesInMonth(month) {
+  const [year, monthNumber] = month.split('-').map(Number)
+  const count = new Date(year, monthNumber, 0, 12).getDate()
+  return Array.from({ length: count }, (_, index) => `${month}-${String(index + 1).padStart(2, '0')}`)
 }
 
 export function weekSummary(sessions, volleyballDays, date) {
