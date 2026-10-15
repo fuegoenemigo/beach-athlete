@@ -9,6 +9,13 @@ Persönliches Sporttagebuch für Training, Beachvolleyball und Hallenvolleyball.
 
 Kartenattribute und Ratingformeln sind noch offen. Bestehende Eingabedaten und Backups erhalten.
 
+## Versionsstände
+
+- **Version 0.05:** gesicherter App-Stand vor der neuen Layout-Entwicklung, Git-Markierung `v0.05` am Commit `6a3d9dc`. Eine zusätzliche lokale Sicherung enthält Projektdateien, Konfiguration und Git-Verlauf.
+- **Version 0.1:** Weiterentwicklung auf `codex/version-0.1`; die technische Paketversion lautet `0.1.0`. Der Startseitenentwurf und die Gestaltungsvorgaben liegen lokal unter `docs/version-0.1/`. Das neue Layout ist zunächst ein Entwurf und noch nicht umgesetzt.
+- `main` bleibt der veröffentlichte Stand. Der Entwicklungszweig wird erst zur Veröffentlichung nach `main` übernommen; ein Push auf `main` löst das Pages-Deployment aus.
+- Diese Versionssicherung sichert den App-Code. Persönliche Trainings- und Spieldaten lassen sich zusätzlich in der App als JSON exportieren.
+
 ## Entwicklung unter Windows
 
 ```powershell
