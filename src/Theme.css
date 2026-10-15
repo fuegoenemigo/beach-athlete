@@ -25,6 +25,7 @@ button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: not-allowed; opacity: .45; }
 button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
 .ui-icon { display: inline-block; flex: 0 0 auto; width: 24px; height: 24px; vertical-align: middle; }
+.app-haptic-switch { position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .app { width: min(100% - 36px, 760px); padding: calc(16px + env(safe-area-inset-top, 0px)) 0 calc(98px + env(safe-area-inset-bottom, 0px)); }
 .app-topline { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 45px; margin-bottom: 16px; border-bottom: 1px solid #818084; padding: 0 3px 8px; }
 .app-topline time { font-size: clamp(.69rem, 2.9vw, .87rem); color: #e1dedf; }
@@ -76,17 +77,14 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-month-pill { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 40px; padding: 7px 13px; border: 1px solid #77737b; border-radius: 22px; color: var(--cream); background: #ffffff04; font-size: .82rem; }
 .home-month-pill .ui-icon { width: 16px; height: 16px; }
 .home-date-controls { display: flex; align-items: center; }
-.home-date-controls button { min-width: 40px; min-height: 44px; border: 0; background: transparent; color: #c4c0c7; padding: 7px; }
-.home-date-arrow .ui-icon { width: 16px; height: 16px; }
-.home-date-arrow.is-previous .ui-icon { transform: rotate(180deg); }
-.home-today-link { font-size: .75rem; }
+.home-today-link { min-width: 82px; min-height: 40px; padding: 7px 15px; border: 1px solid #827b87; border-radius: 13px; color: var(--cream); background: linear-gradient(145deg, #48444b, #302f32); box-shadow: inset 0 1px #ffffff18; font-size: .78rem; font-weight: 600; }
+.home-today-link:hover { border-color: #c2b9c8; background: linear-gradient(145deg, #57515a, #37343b); }
 .home-day-strip { display: flex; width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; border-top: 1px solid #6c696e; border-bottom: 1px solid #6c696e; padding: 5px 0; -webkit-overflow-scrolling: touch; }
 .home-day-strip::-webkit-scrollbar { display: none; }
 .home-date-spacer { flex: 0 0 40%; pointer-events: none; }
 .home-date-slot { flex: 0 0 20%; min-width: 0; padding: 0 4px; scroll-snap-align: center; }
 .home-date { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; min-height: 64px; min-width: 0; padding: 4px; border: 1px solid transparent; border-radius: 12px; color: #e0dce3; background: transparent; font-family: var(--serif); }
 .home-date:focus-visible { outline-offset: -3px; }
-.home-haptic-switch { position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .home-date span { font-size: .78rem; }
 .home-date strong { color: var(--cream); font-size: 1.35rem; font-weight: 400; line-height: 1; }
 .home-date i { width: 4px; height: 4px; border-radius: 50%; }

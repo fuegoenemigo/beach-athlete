@@ -14,6 +14,7 @@ import { activityDestination } from "./activityHistory.js";
 import { adjacentArea, swipeDirection } from "./swipeNavigation.js";
 import UIIcon from "./UIIcon.jsx";
 import AppChrome from "./AppChrome.jsx";
+import { installScrollHaptics } from "./scrollHaptics.js";
 
 
 
@@ -89,6 +90,7 @@ function downloadJson(filename, value) {
 }
 
 function App() {
+  useEffect(() => installScrollHaptics(), []);
   const [sessions, setSessions] = useState(loadSessions);
   const [volleyballDays, setVolleyballDays] = useState(loadVolleyballDays);
   const [activeArea, setActiveArea] = useState("home");
