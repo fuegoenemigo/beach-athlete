@@ -16,12 +16,18 @@ export default function HomeDashboard({ sessions, volleyballDays, today, account
   const entryDates = useMemo(() => new Set(entries.map((entry) => entry.date)), [entries])
   const dayEntries = entries.filter((entry) => entry.date === selectedDate)
   const openTraining = entries.find((entry) => entry.type === 'training' && isOpenTraining(entry.item))
+  const volleyballEntry = dayEntries.find((entry) => entry.type === 'beach' || entry.type === 'indoor')
   const week = useMemo(() => weekSummary(sessions, volleyballDays, selectedDate), [sessions, volleyballDays, selectedDate])
   const name = greetingName(accountEmail)
 
-  function beginTraining(category) {
+  function beginTraining() {
     if (openTraining) onOpenActivity(openTraining)
-    else onCreateEntry('training', selectedDate, category)
+    else onCreateEntry('training', selectedDate)
+  }
+
+  function beginVolleyball(type) {
+    if (volleyballEntry) onOpenActivity(volleyballEntry)
+    else onCreateEntry(type, selectedDate)
   }
 
   return <div className="home-dashboard" aria-label="Startseite">
@@ -49,18 +55,25 @@ export default function HomeDashboard({ sessions, volleyballDays, today, account
           <UIIcon name="chevron" />
         </button>)}
       </div>}
-      <div className="home-quick-actions" aria-label="Schnellzugriffe">
-        {[['Kraft', 'training', 'Krafttraining'], ['Ausdauer', 'run', 'Ausdauer'], ['Mobility', 'mobility', 'Core und Mobility']].map(([label, icon, category]) =>
-          <button type="button" key={label} disabled={Boolean(openTraining)} onClick={() => beginTraining(category)}>
-            <UIIcon name={icon} /><span>{label}</span>
-          </button>)}
-        <button type="button" onClick={() => onFeature('more', selectedDate)}><UIIcon name="more" /><span>Mehr</span></button>
+      <div className="home-quick-actions" aria-label="Tag erfassen">
+        <span className="home-quick-plus" aria-hidden="true"><UIIcon name="plus" /></span>
+        <button type="button" className="home-quick-beach" disabled={volleyballEntry?.type === 'indoor'}
+          title={volleyballEntry?.type === 'indoor' ? 'Für diesen Tag gibt es bereits einen Hallenspieltag' : undefined}
+          onClick={() => beginVolleyball('beach')}><UIIcon name="beach" /><span>Beach</span></button>
+        <button type="button" className="home-quick-indoor" disabled={volleyballEntry?.type === 'beach'}
+          title={volleyballEntry?.type === 'beach' ? 'Für diesen Tag gibt es bereits einen Beachspieltag' : undefined}
+          onClick={() => beginVolleyball('indoor')}><UIIcon name="ball" /><span>Halle</span></button>
+        <button type="button" className="home-quick-training" onClick={beginTraining}>
+          <UIIcon name="training" /><span>Training</span></button>
       </div>
     </section>
 
     <section className="home-week-card" aria-labelledby="home-week-title">
       <div className="home-week-heading"><h2 id="home-week-title">Deine Woche</h2>
-        <button type="button" onClick={() => onFeature('statistics')}>Details<UIIcon name="chevron" /></button></div>
+        <div className="home-week-links">
+          <button type="button" onClick={() => onFeature('more', selectedDate)}>Mehr</button>
+          <button type="button" onClick={() => onFeature('statistics')}>Details<UIIcon name="chevron" /></button>
+        </div></div>
       <div className="home-week-metrics" aria-label={`Abgeschlossene Aktivitäten vom ${shortDate(week.start)} bis ${shortDate(week.end)}`}>
         <div><UIIcon name="training" /><strong>{week.sessions}</strong><span>Einheiten</span></div>
         <div title="Erfasste Dauer abgeschlossener Trainings"><UIIcon name="clock" /><strong>{week.minutes == null ? '—' : `${Math.floor(week.minutes / 60)}:${String(week.minutes % 60).padStart(2, '0')}`}<small>{week.minutes == null ? '' : ' h'}</small></strong><span>Trainingszeit</span></div>

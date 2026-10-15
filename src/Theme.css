@@ -79,16 +79,16 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-date-controls { display: flex; align-items: center; }
 .home-today-link { min-width: 78px; min-height: 38px; padding: 6px 14px; border: 1px solid #49464d; border-radius: 13px; color: var(--cream); background: #262529; font-size: .78rem; font-weight: 550; }
 .home-today-link:hover { border-color: #77717b; background: #343237; }
-.home-day-strip { display: flex; width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; border-top: 1px solid #6c696e; border-bottom: 1px solid #6c696e; padding: 3px 0; -webkit-overflow-scrolling: touch; }
+.home-day-strip { display: flex; width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; border-top: 1px solid #6c696e; border-bottom: 1px solid #6c696e; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
 .home-day-strip::-webkit-scrollbar { display: none; }
 .home-date-spacer { flex: 0 0 40%; pointer-events: none; }
-.home-date-slot { flex: 0 0 20%; min-width: 0; padding: 0 4px; scroll-snap-align: center; }
-.home-date { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 100%; min-height: 50px; min-width: 0; padding: 2px; border: 1px solid transparent; border-radius: 12px; color: #e0dce3; background: transparent; font-family: var(--serif); }
+.home-date-slot { display: flex; flex-direction: column; align-items: center; flex: 0 0 20%; min-width: 0; padding: 0 4px; scroll-snap-align: center; }
+.home-date { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; width: 48px; height: 48px; min-width: 0; padding: 2px; border: 1px solid transparent; border-radius: 50%; color: #e0dce3; background: transparent; font-family: var(--serif); }
 .home-date:focus-visible { outline-offset: -3px; }
 .home-date span { font-size: .72rem; }
 .home-date strong { color: var(--cream); font-size: 1.2rem; font-weight: 400; line-height: 1; }
-.home-date i { width: 4px; height: 4px; border-radius: 50%; }
-.home-date .has-entries { background: #a2e6c7; }
+.home-date-indicator { width: 5px; height: 5px; margin-top: 8px; border-radius: 50%; background: transparent; }
+.home-date-indicator.has-entries { background: #fff; }
 .home-date.is-selected { color: var(--cream); border-color: #49464d; background: #262529; }
 .home-date[aria-current='date']:not(.is-selected) { border-color: #49464d; background: #ffffff05; }
 .home-today-card, .home-week-card { padding: 13px 14px; border: 1px solid #78737b; border-radius: 21px; background: linear-gradient(120deg, #38363b5e, #1c1b1e66 55%, #1716199e); box-shadow: 0 12px 25px #00000012; }
@@ -96,15 +96,21 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-today-heading h2, .home-week-heading h2 { margin: 0; font-family: var(--serif); font-size: 2rem; font-weight: 400; line-height: 1.12; letter-spacing: -.035em; overflow-wrap: anywhere; }
 .home-today-heading p { margin: 3px 0 0; color: #ccc7ce; font-size: .75rem; }
 .home-day-count { flex: 0 0 auto; padding: 5px 8px; border: 1px solid #5a555f; border-radius: 20px; color: #c7c3ca; font-size: .6rem; }
-.home-quick-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: 8px; }
+.home-quick-actions { display: grid; grid-template-columns: 28px repeat(3, minmax(0, 1fr)); align-items: center; gap: 7px; margin-top: 8px; }
+.home-quick-plus { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid #a7a3aa; border-radius: 50%; color: #fff; background: #ffffff0a; }
+.home-quick-plus .ui-icon { width: 18px; height: 18px; }
 .home-quick-actions button { display: grid; justify-items: center; align-content: center; gap: 7px; min-width: 0; min-height: 62px; padding: 8px 2px; border: 1px solid #514c57; border-radius: 13px; background: linear-gradient(140deg, #3430389c, #2421275c); color: var(--cream); font-size: .66rem; }
-.home-quick-actions .ui-icon { width: 24px; height: 24px; }
-.home-quick-actions button:nth-child(1) .ui-icon, .home-week-metrics > div:nth-child(1) > .ui-icon { color: var(--blue); }
-.home-quick-actions button:nth-child(2) .ui-icon, .home-week-metrics > div:nth-child(2) > .ui-icon { color: var(--cyan); }
-.home-quick-actions button:nth-child(3) .ui-icon, .home-week-metrics > div:nth-child(3) > .ui-icon { color: var(--lilac); }
+.home-quick-actions button .ui-icon { width: 24px; height: 24px; }
+.home-quick-beach .ui-icon { color: var(--cyan); }
+.home-quick-indoor .ui-icon { color: var(--lilac); }
+.home-quick-training .ui-icon, .home-week-metrics > div:nth-child(1) > .ui-icon { color: var(--blue); }
+.home-week-metrics > div:nth-child(2) > .ui-icon { color: var(--cyan); }
+.home-week-metrics > div:nth-child(3) > .ui-icon { color: var(--lilac); }
+.home-quick-actions button:disabled { opacity: .4; cursor: not-allowed; }
 .home-quick-actions button:hover:not(:disabled), .home-feature-menu button:hover { border-color: #c1bac6; background-color: #ffffff08; }
 .home-week-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid #59545f; margin-bottom: 12px; }
 .home-week-heading h2 { font-size: 1.55rem; }
+.home-week-links { display: flex; gap: 10px; }
 .home-week-heading button { display: flex; align-items: center; justify-content: flex-end; gap: 5px; min-height: 40px; padding: 0 0 0 8px; border: 0; color: #d3ced8; background: transparent; font-size: .69rem; }
 .home-week-heading .ui-icon { width: 14px; height: 14px; }
 .home-week-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -251,7 +257,7 @@ select.field { padding-right: 6px; }
   .home-greeting { padding-top: 0; padding-bottom: 8px; }
   .home-greeting h1 { font-size: clamp(2rem, calc(var(--usable-height) * .045), 3rem); }
   .home-greeting p { margin-top: 5px; font-size: .78rem; }
-  .home-date { min-height: 46px; }
+  .home-date { width: 46px; height: 46px; }
   .home-today-card, .home-week-card { padding: 12px 14px; }
   .home-today-heading h2 { font-size: 1.8rem; }
   .home-quick-actions button { min-height: 60px; }

@@ -76,8 +76,9 @@ export default function HomeDayStrip({ today, selectedDate, entryDates, onSelect
             onClick={() => select(index)}>
             <span>{format(date, { weekday: 'short' }).replace('.', '')}</span>
             <strong>{Number(date.slice(-2))}</strong>
-            <i className={entryDates.has(date) ? 'has-entries' : ''} aria-hidden="true" />
           </button>
+          <i className={`home-date-indicator${entryDates.has(date) ? ' has-entries' : ''}`}
+            style={{ opacity }} aria-hidden="true" />
         </div>
       })}
       <span className="home-date-spacer" aria-hidden="true" />
