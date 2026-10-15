@@ -59,8 +59,8 @@ export default function HomeDayStrip({ today, selectedDate, entryDates, onSelect
       <button type="button" className="home-month-pill" onClick={onOpenCalendar}
         aria-label="Monatskalender öffnen">{format(today, { month: 'long' })}<UIIcon name="down" /></button>
       <div className="home-date-controls">
-        <button type="button" className="home-today-link" onClick={() => select(initialIndex)}
-          aria-label="Zu heute springen">Heute</button>
+        {selectedDate !== today && <button type="button" className="home-today-link"
+          onClick={() => select(initialIndex)} aria-label="Zu heute springen">Heute</button>}
       </div>
     </div>
     <div className="home-day-strip" ref={viewport} onScroll={readScroll} onKeyDown={keyDown}>
