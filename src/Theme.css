@@ -31,22 +31,21 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .app-topline time { font-size: clamp(.69rem, 2.9vw, .87rem); color: #e1dedf; }
 .app-notifications > span { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: #f58d94; }
 .app-global-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; max-width: 520px; margin: 0 auto 12px; padding: 0 0 7px; background: #101013f2; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
-.app-global-header .app-topline { height: var(--topline-height); min-height: 0; margin-bottom: 0; padding: 0 3px; overflow: hidden; }
-.app-global-header .app-topline time { opacity: var(--intro-opacity); }
-.app-global-header .app-notifications { display: grid; place-items: center; position: absolute; z-index: 3; top: 0; right: var(--bell-right); width: 44px; height: 44px; border: 0; background: transparent; color: var(--cream); }
+.app-global-header:has(.home-five-days.is-month-view) { position: relative; }
+.app-global-header .app-topline { height: 45px; min-height: 0; margin-bottom: 0; padding: 0 3px; overflow: hidden; }
+.app-global-header .app-notifications { display: grid; place-items: center; position: absolute; z-index: 3; top: 0; right: 3px; width: 44px; height: 44px; border: 0; background: transparent; color: var(--cream); }
 .app-intro { height: var(--intro-height); overflow: hidden; }
 .app-intro-copy { padding: 9px 6px 8px; opacity: var(--intro-opacity); }
 .app-intro h1 { margin: 0; font-family: var(--serif); font-size: clamp(2.7rem, 12vw, 3.9rem); line-height: .98; letter-spacing: -.055em; font-weight: 400; }
 .app-intro h1 > span { display: block; font-size: 1.45em; line-height: 1; overflow-wrap: anywhere; }
 .app-intro p { margin: 7px 0 0; color: #c3bfc5; font-size: .8rem; line-height: 1.4; }
 .app-header-calendar { position: relative; }
-.app-header-calendar .home-five-days-heading { padding-right: 91px; }
-.home-avatar.app-header-avatar { position: absolute; z-index: 2; top: 0; right: 6px; width: var(--avatar-size); height: var(--avatar-size); margin: 0; transform: translateY(var(--avatar-lift)); font-size: calc(var(--avatar-size) * .42); }
+.app-header-calendar .home-five-days { padding-top: 12px; }
+.app-header-calendar .home-five-days-heading { padding-right: 47px; margin-bottom: 12px; }
+.home-avatar.app-header-avatar { position: absolute; z-index: 2; top: 12px; right: 6px; width: var(--avatar-size); height: var(--avatar-size); margin: 0; transform: translateY(var(--avatar-lift)); font-size: calc(var(--avatar-size) * .42); }
 .is-intro-settling .app-intro { transition: height .22s ease-out; }
-.is-intro-settling .app-topline { transition: height .22s ease-out; }
 .is-intro-settling .app-intro-copy { transition: opacity .22s ease-out; }
 .is-intro-settling .app-header-avatar { transition: width .22s ease-out, height .22s ease-out, transform .22s ease-out; }
-.is-intro-settling .app-notifications { transition: right .22s ease-out; }
 .app-status-card { margin-bottom: 16px; padding: 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--panel); }
 .app-status-card > .ui-icon { color: var(--green); }
 .app-status-card h3 { margin: 12px 0 8px; }
@@ -159,6 +158,16 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-week-metrics strong { font-size: 1.25rem; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
 .home-week-metrics strong small { font-size: .65rem; font-weight: 400; }
 .home-week-metrics span { color: #bdb7c3; font-size: .67rem; }
+.home-athlete-preview { padding: 13px 14px 15px; border: 1px solid #78737b; border-radius: 21px; background: linear-gradient(120deg, #38363b5e, #1c1b1e66 55%, #1716199e); }
+.home-athlete-heading { display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.home-athlete-heading .eyebrow { margin: 0 0 5px; }
+.home-athlete-heading h2 { margin: 0; font-family: var(--serif); font-size: 1.55rem; font-weight: 400; letter-spacing: -.03em; }
+.home-athlete-heading button { display: flex; align-items: center; gap: 3px; padding: 7px 0 5px 8px; border: 0; color: #d3ced8; background: transparent; font-size: .69rem; }
+.home-athlete-heading .ui-icon { width: 14px; height: 14px; }
+.home-athlete-preview .home-card-art.is-preview { min-height: 228px; margin-top: 0; padding: 16px; }
+.home-athlete-preview .home-card-crest { width: 78px; height: 78px; border-radius: 21px; font-size: 1.65rem; }
+.home-athlete-preview .home-card-rating { font-size: 2.8rem; }
+.home-athlete-preview .home-card-name { font-size: 1.15rem; }
 .home-today-entries { display: grid; gap: 6px; margin-bottom: 9px; }
 .home-today-entries button { display: flex; align-items: center; gap: 10px; padding: 10px 8px; min-height: 52px; border: 1px solid #47434c; border-radius: 12px; color: var(--cream); background: #24212880; text-align: left; }
 .home-today-entries button > span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: .8rem; }

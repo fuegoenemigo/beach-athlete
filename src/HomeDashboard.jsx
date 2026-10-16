@@ -2,12 +2,13 @@ import { useMemo } from 'react'
 import { activityEntries, activityTitle, isOpenVolleyballDay } from './activityHistory.js'
 import { isOpenTraining } from './trainingModel.js'
 import { weekSummary } from './homeSummary.js'
+import PlayerCardArt from './PlayerCardArt.jsx'
 import UIIcon from './UIIcon.jsx'
 
 const format = (date, options) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', options)
 const shortDate = (date) => format(date, { day: 'numeric', month: 'long' })
 
-export default function HomeDashboard({ sessions, volleyballDays, today, selectedDate,
+export default function HomeDashboard({ sessions, volleyballDays, today, selectedDate, cardScore,
   onFeature, onOpenActivity, onCreateEntry }) {
   const entries = useMemo(() => activityEntries(sessions, volleyballDays), [sessions, volleyballDays])
   const dayEntries = entries.filter((entry) => entry.date === selectedDate)
@@ -63,6 +64,16 @@ export default function HomeDashboard({ sessions, volleyballDays, today, selecte
         <div title="Erfasste Dauer abgeschlossener Trainings"><UIIcon name="clock" /><strong>{week.minutes == null ? '—' : `${Math.floor(week.minutes / 60)}:${String(week.minutes % 60).padStart(2, '0')}`}<small>{week.minutes == null ? '' : ' h'}</small></strong><span>Trainingszeit</span></div>
         <div><UIIcon name="ball" /><strong>{week.gameDays}</strong><span>{week.gameDays === 1 ? 'Spieltag' : 'Spieltage'}</span></div>
       </div>
+    </section>
+
+    <section className="home-athlete-preview" aria-labelledby="home-athlete-title">
+      <div className="home-athlete-heading">
+        <div><p className="eyebrow">DEIN PROFIL</p><h2 id="home-athlete-title">Athlete Card</h2></div>
+        <button type="button" onClick={() => onFeature('card')}>
+          Ansehen <UIIcon name="chevron" />
+        </button>
+      </div>
+      <PlayerCardArt score={cardScore} preview />
     </section>
   </div>
 }

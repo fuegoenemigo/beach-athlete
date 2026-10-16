@@ -5,6 +5,7 @@ import StatisticsView from './StatisticsView.jsx'
 import { trainingProgress } from './trainingProgress.js'
 import { athleteRating } from './athleteRating.js'
 import HomeDashboard from './HomeDashboard.jsx'
+import PlayerCardArt from './PlayerCardArt.jsx'
 import UIIcon from './UIIcon.jsx'
 import { NumberWheel } from './WheelPicker.jsx'
 import './HomeView.css'
@@ -46,7 +47,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
     else setFeatureStack((stack) => stack.slice(0, -1))
   }
   const dashboard = <HomeDashboard sessions={sessions} volleyballDays={volleyballDays} today={today}
-    selectedDate={selectedDate} onFeature={openFeature}
+    selectedDate={selectedDate} cardScore={rating.overall.score} onFeature={openFeature}
     onOpenActivity={openEntry} onCreateEntry={createEntry} />
 
   if (selectedFeature) {
@@ -103,14 +104,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
         <p>{feature.text}</p>
         {selectedFeature === 'statistics' && <StatisticsView training={rating} progress={training} />}
         {selectedFeature === 'card' && <div className="player-card-detail">
-          <div className="home-card-art" aria-label={`Gesamtwert ${Math.round(rating.overall.score)} von 99`}>
-            <span className="home-card-topline">BEACH ATHLETE <span>✦</span> PLAYER CARD</span>
-            <span className="home-card-center"><span className="home-card-crest">BA</span>
-              <span className="home-card-rating">{Math.round(rating.overall.score)} <small>GES</small></span></span>
-            <span className="home-card-name">DEINE KARTE</span>
-            <span className="home-card-divider" />
-            <span className="home-card-bottom">DEINE DATEN. DEINE ENTWICKLUNG.</span>
-          </div>
+          <PlayerCardArt score={rating.overall.score} />
           <div className="player-card-attributes">
             {rating.attributes.map((attribute) => <div key={attribute.id}>
               <span>{attribute.name}</span><strong>{Math.round(attribute.score)}</strong>

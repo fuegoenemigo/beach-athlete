@@ -25,10 +25,8 @@ export default function AppChrome({ state, updateAvailable, onInstallUpdate, onP
   return <>
     <header className={`app-global-header${introProgress >= 1 ? ' is-compact' : ''}`}
       style={{ '--intro-height': `${introHeight}px`, '--intro-opacity': Math.max(0, 1 - introProgress * 1.3),
-        '--topline-height': `${Math.round((1 - introProgress) * 45)}px`,
         '--avatar-lift': `${Math.round((1 - introProgress) * -106)}px`,
-        '--avatar-size': `${Math.round(53 - introProgress * 15)}px`,
-        '--bell-right': `${Math.round(3 + introProgress * 44)}px` }}>
+        '--avatar-size': `${Math.round(53 - introProgress * 15)}px` }}>
     <div className="app-topline">
       <time dateTime={today}>{new Date(`${today}T12:00:00`).toLocaleDateString('de-DE', {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',

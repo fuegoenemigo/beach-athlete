@@ -148,7 +148,7 @@ function App() {
       if (introDone.current || distance === 0 || !document.querySelector('.app-signed-in')
         || document.querySelector('.entry-window')) return;
       setIntroSettling(false);
-      introProgressRef.current = Math.min(1, introProgressRef.current + distance / 181);
+      introProgressRef.current = Math.min(1, introProgressRef.current + distance / 136);
       setIntroProgress(introProgressRef.current);
       window.clearTimeout(introTimer.current);
       if (introProgressRef.current >= 1) { introDone.current = true; return; }
