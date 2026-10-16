@@ -37,7 +37,7 @@ function gameLabel(gameType) {
     matchDay: "🏐 Spieltag", tournament: "🏆 Turnier" })[gameType] ?? gameType;
 }
 
-export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice, onOpenArchive, navigationTarget }) {
+export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice, onOpenArchive, navigationTarget, onReturn }) {
   const beach = sport === "beach";
   const maxSets = beach ? 3 : 5;
   const label = beach ? "Beachvolleyball" : "Hallenvolleyball";
@@ -45,6 +45,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const [date, setDate] = useState("");
   const [month, setMonth] = useState(() => today().slice(0, 7));
   const [gameType, setGameType] = useState("");
+  const [gamePageOpen, setGamePageOpen] = useState(false);
   const [fitness, setFitness] = useState("5");
   const [fatigue, setFatigue] = useState("5");
   const [notes, setNotes] = useState("");
@@ -72,6 +73,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
         setDate(navigationTarget.date);
         setMonth(navigationTarget.date.slice(0, 7));
         setGameType("");
+        setGamePageOpen(false);
         setFitness("5");
         setFatigue("5");
         setNotes("");
@@ -120,6 +122,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     setDate(isVolleyballDateTaken(volleyballDays, today()) ? "" : today());
     setMonth(today().slice(0, 7));
     setGameType("");
+    setGamePageOpen(false);
     setFitness("5");
     setFatigue("5");
     setNotes("");
@@ -138,6 +141,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     setDate(day.date);
     setMonth(day.date.slice(0, 7));
     setGameType(day.gameType);
+    setGamePageOpen(true);
     setFitness(String(day.fitness));
     setFatigue(String(day.endFatigue ?? 5));
     setNotes(day.notes ?? "");
@@ -306,11 +310,17 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
 
   function cancelForm() {
     if (gameSets.length
-      && !window.confirm("Ungespeicherte Spiele und Sätze verwerfen?")) return;
+      && !window.confirm("Ungespeicherte Spiele und Sätze verwerfen?")) return false;
     setShowForm(false);
+    setGamePageOpen(false);
     setActiveDayId(null);
     resetGame();
     setNotice("");
+    return true;
+  }
+
+  function closeForm() {
+    if (cancelForm() && navigationTarget?.mode === 'create') onReturn(navigationTarget)
   }
 
   function saveLegacyOpponent(day, set) {
@@ -339,7 +349,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
       {!showForm && <button type="button" className="primary-button" onClick={startDay}>＋ Spieltag erfassen</button>}
 
       {showForm && <EntryWindow title={activeDay ? `${label} · Spieltag fortsetzen` : `${label} · Spieltag erfassen`}
-        subtitle="SPIELTAG-EINGABE" onClose={cancelForm}>
+        subtitle="SPIELTAG-EINGABE" onClose={closeForm}>
         <div className="volleyball-form">
         {!activeDay && <>
           <span className="field-label">Datum</span>
@@ -376,10 +386,19 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
             {(beach ? [["openPlay", "🏐 Open Play"], ["testMatch", "🤝 Testspiel"], ["tournament", "🏆 Turnier"]]
               : [["matchDay", "🏐 Spieltag"], ["tournament", "🏆 Turnier"]]).map(([value, title]) =>
               <button key={value} type="button" className="secondary-button"
-                onClick={() => { setGameType(value); setEditingGame(true); }}>{title}</button>)}
+                onClick={() => { setGameType(value); setEditingGame(true); setGamePageOpen(true) }}>{title}</button>)}
           </div>}
 
-          {gameType && <>
+          {gameType && !gamePageOpen && <button type="button" className="secondary-button"
+            onClick={() => setGamePageOpen(true)}>Spieltag ansehen</button>}
+
+          {gameType && gamePageOpen && <EntryWindow title={`${label} · ${gameLabel(gameType)}`}
+            subtitle={formatDate(activeDay?.date ?? date)} onClose={() => {
+              if (gameSets.length && !window.confirm("Ungespeicherte Sätze dieses Spiels verwerfen?")) return
+              setGamePageOpen(false)
+              if (!activeDay) setGameType("")
+              resetGame()
+            }}>
             {gameType === "tournament" && !activeTournament && <>
               <label className="field-label" htmlFor={`${sport}-tournament-name`}>Turniername *</label>
               <input id={`${sport}-tournament-name`} ref={tournamentNameRef} className="field"
@@ -524,9 +543,9 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                 onChange={(event) => setNotes(event.target.value)} />
               <button type="button" className="primary-button" onClick={saveDay}>Spieltag abschließen</button>
             </>}
-          </>}
+          </EntryWindow>}
         </>}
-        <button type="button" className="secondary-button" onClick={cancelForm}>
+        <button type="button" className="secondary-button" onClick={closeForm}>
           {activeDay ? "Für später schließen" : "Abbrechen"}
         </button>
         </div>
@@ -544,11 +563,15 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
             onClick={() => { setExpandedDayId(null); setShowSavedDays(true); }}>
             Aktuelle Spieltage anzeigen
           </button>
-          {showSavedDays && <EntryWindow
+          {showSavedDays && <EntryWindow key={expandedDayId ?? 'days'}
             title={expandedDayId ? `${label} · ${formatDate(savedDays.find((day) => day.id === expandedDayId)?.date ?? today())}` : 'Meine Spieltage'}
-            subtitle={label.toUpperCase()} onClose={() => { setShowSavedDays(false); setExpandedDayId(null); }}>
-          {expandedDayId && <button type="button" className="secondary-button"
-            onClick={() => { setEditingLegacySetId(null); setExpandedDayId(null); }}>← Alle Spieltage</button>}
+            subtitle={label.toUpperCase()} onClose={() => {
+              if (expandedDayId) {
+                setEditingLegacySetId(null); setExpandedDayId(null)
+                if (navigationTarget?.id === expandedDayId) onReturn(navigationTarget)
+              }
+              else setShowSavedDays(false)
+            }}>
           <div className="volleyball-day-list">
           {savedDays.filter((day) => !expandedDayId || day.id === expandedDayId).map((day) => <div className="diary-panel" id={`volleyball-day-${sport}-${day.id}`} key={day.id}>
             <div className="volleyball-day-header"><h3>{formatDate(day.date)}</h3>
@@ -598,18 +621,20 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                 <SetResultHeading number={index + 1} won={set.won} />
                 {day.gameType === "testMatch" && <>
                   <p>Gegner: {beachSetOpponent(day, set) ?? "Nicht einzeln erfasst"}</p>
-                  {editingLegacySetId === set.id ? <div className="beach-opponent-editor">
+                  <button type="button" className="secondary-button" onClick={() => {
+                    setLegacyOpponentEdit(beachSetOpponent(day, set) ?? "");
+                    setEditingLegacySetId(set.id);
+                  }}>Gegner nachtragen/ändern</button>
+                  {editingLegacySetId === set.id && <EntryWindow title={`Gegner für Satz ${index + 1}`}
+                    subtitle={formatDate(day.date)} onClose={() => setEditingLegacySetId(null)}>
+                    <div className="beach-opponent-editor">
                     <label className="field-label" htmlFor={`legacy-opponent-${set.id}`}>Gegner für Satz {index + 1}</label>
                     <input id={`legacy-opponent-${set.id}`} className="field" value={legacyOpponentEdit}
                       onChange={(event) => setLegacyOpponentEdit(event.target.value)} />
                     <button type="button" className="secondary-button"
                       onClick={() => saveLegacyOpponent(day, set)}>Gegner speichern</button>
-                    <button type="button" className="secondary-button"
-                      onClick={() => setEditingLegacySetId(null)}>Abbrechen</button>
-                  </div> : <button type="button" className="secondary-button" onClick={() => {
-                    setLegacyOpponentEdit(beachSetOpponent(day, set) ?? "");
-                    setEditingLegacySetId(set.id);
-                  }}>Gegner nachtragen/ändern</button>}
+                    </div>
+                  </EntryWindow>}
                 </>}
                 <p>Gegnerstärke: {strengthLabels[set.opponentStrength] ?? set.opponentStrength}</p>
                 <p>Fitness zu Satzbeginn: {set.fitness ?? "–"}/10</p>

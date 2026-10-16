@@ -69,11 +69,8 @@ export default function StatisticsView({ training, progress }) {
   </div>
     {trainingWindow && <EntryWindow key={`${trainingWindow.level}-${trainingWindow.name ?? ''}`}
       title={windowTitle} subtitle={trainingWindow.level === 'sport' ? 'DEINE VOLLEYBALLSTATISTIK' : 'DEINE TRAININGSSTATISTIK'}
-      onClose={() => setTrainingWindow(null)}>
-      {(trainingWindow.level === 'strength' || trainingWindow.level === 'category') && <button type="button"
-        className="statistics-window-back" onClick={() => setTrainingWindow({ level: 'categories' })}>
-        ← Zu den Hauptkategorien
-      </button>}
+      onClose={() => setTrainingWindow(trainingWindow.level === 'strength' || trainingWindow.level === 'category'
+        ? { level: 'categories' } : null)}>
       {trainingWindow.level === 'categories' && <TrainingStatistics rating={training}
         onOpenCategory={(id) => setTrainingWindow({
           level: id === 'strength' ? 'strength' : 'category', name: id,

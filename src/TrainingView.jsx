@@ -131,9 +131,10 @@ function TrainingSessionCard({ session, planName, onShow, onOpen, onDelete }) {
 }
 
 export default function TrainingView({ sessions, setSessions, exerciseLibrary,
-  setExerciseLibrary, trainingPlans, setTrainingPlans, setNotice, athleteProfile, onOpenArchive, navigationTarget }) {
+  setExerciseLibrary, trainingPlans, setTrainingPlans, setNotice, athleteProfile, onOpenArchive, navigationTarget, onReturn }) {
   const [selectedDate, setSelectedDate] = useState(today)
   const [customDate, setCustomDate] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [newCategory, setNewCategory] = useState('Krafttraining')
   const [newSessionOpen, setNewSessionOpen] = useState(false)
   const [pendingPlan, setPendingPlan] = useState(null)
@@ -758,13 +759,13 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     </section>}
 
     {expandedSessionId && sessions.some((session) => session.id === expandedSessionId)
-      && <EntryWindow title={`Training · ${formatDate(sessions.find((session) => session.id === expandedSessionId).date)}`}
-        subtitle="TRAININGSERGEBNISSE" onClose={() => { setExpandedSessionId(null); setShowHistory(false) }}>
+      && <EntryWindow layer={2} title={`Training · ${formatDate(sessions.find((session) => session.id === expandedSessionId).date)}`}
+        subtitle="TRAININGSERGEBNISSE" onClose={() => {
+          setExpandedSessionId(null)
+          if (navigationTarget?.id === expandedSessionId) onReturn(navigationTarget)
+        }}>
         <TrainingHistoryDetails session={sessions.find((session) => session.id === expandedSessionId)} />
         <div className="training-history-actions">
-          <button type="button" className="secondary-button" onClick={() => setExpandedSessionId(null)}>
-            {showHistory ? '← Alle Trainingseinheiten' : 'Schließen'}
-          </button>
           <button type="button" className="secondary-button"
             onClick={() => openHistorySession(sessions.find((session) => session.id === expandedSessionId))}>
             {isOpenTraining(sessions.find((session) => session.id === expandedSessionId))
@@ -785,7 +786,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     </section>}
 
     {newSessionOpen && !activeSession && <EntryWindow title={pendingPlan?.name || 'Neues Training'}
-      subtitle="TRAININGS-EINGABE" onClose={() => { setNewSessionOpen(false); setPendingPlan(null) }}>
+      subtitle="TRAININGS-EINGABE" onClose={() => {
+        setNewSessionOpen(false); setPendingPlan(null)
+        if (navigationTarget?.mode === 'create') onReturn(navigationTarget)
+      }}>
       <section className="diary-panel training-start-window">
       {pendingPlan ? <>
         <p className="training-plan-description">{pendingPlan.description}</p>
@@ -838,14 +842,18 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       </>}
       <p className="helper-text">Trainingsdatum: <strong>{customDate && !selectedDate
         ? 'Bitte wählen' : formatDate(customDate ? selectedDate : today())}</strong></p>
-      <details className="training-date-option"><summary>Anderes Datum erfassen</summary>
+      <button type="button" className="secondary-button training-date-option"
+        onClick={() => setShowDatePicker(true)}>Anderes Datum erfassen</button>
+      {showDatePicker && <EntryWindow title="Trainingsdatum" subtitle="NEUES TRAINING"
+        onClose={() => setShowDatePicker(false)}>
         <label className="field-label" htmlFor="training-date">Trainingsdatum</label>
         <input id="training-date" className="field" type="date"
           value={customDate ? selectedDate : today()}
           onChange={(event) => { setSelectedDate(event.target.value); setCustomDate(true) }} />
         {customDate && <button type="button" className="text-button"
           onClick={() => setCustomDate(false)}>Wieder heute verwenden</button>}
-      </details>
+        <button type="button" className="primary-button" onClick={() => setShowDatePicker(false)}>Datum übernehmen</button>
+      </EntryWindow>}
       {openSessions.length > 0 && <p className="training-open-hint" role="status">
         Ein anderes Training ist noch offen. Schließe dieses Fenster und setze es oben fort.
       </p>}
@@ -863,7 +871,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
 
     {activeSession && <EntryWindow title={activeSession.planName || 'Individuelles Training'}
       subtitle={`${formatDate(activeSession.date)} · ${(activeSession.categories ?? [activeSession.category]).join(' + ')}`}
-      onClose={closeTraining}>
+      onClose={() => { closeTraining(); if (navigationTarget) onReturn(navigationTarget) }}>
       {isSportTrainingAttendance(activeSession)
         ? <SportTrainingEditor key={activeSession.id} session={activeSession} onClose={closeTraining}
           onSave={(changes) => { updateSession(changes); closeTraining(); setNotice('Trainingsdatum gespeichert.') }} />
@@ -901,13 +909,16 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         onClick={() => { setExpandedPlanCategory(null); setShowPlans(true) }}>
         Vorlagen anzeigen
       </button>
-      {showPlans && <EntryWindow title={planDraft ? 'Vorlage anpassen' : expandedPlanCategory ?? 'Trainingsvorlagen'}
-        subtitle="WIEDERVERWENDBAR" onClose={() => { setShowPlans(false); setPlanDraft(null); setExpandedPlanCategory(null) }}>
+      {showPlans && <EntryWindow key={planDraft ? `draft-${planDraft.id}` : expandedPlanCategory ?? 'all-plans'}
+        title={planDraft ? 'Vorlage anpassen' : expandedPlanCategory ?? 'Trainingsvorlagen'}
+        subtitle="WIEDERVERWENDBAR" onClose={() => {
+          if (planDraft) setPlanDraft(null)
+          else if (expandedPlanCategory) setExpandedPlanCategory(null)
+          else setShowPlans(false)
+        }}>
       {!planDraft && <>
         <p className="helper-text">Wähle einen Trainingsbereich und öffne dort eine passende Vorlage.</p>
         {openSessions.length > 0 && <p className="helper-text">Zum Starten einer Vorlage zuerst das offene Training abschließen.</p>}
-        {expandedPlanCategory && <button type="button" className="secondary-button"
-          onClick={() => setExpandedPlanCategory(null)}>← Alle Kategorien</button>}
         <div className="training-plan-groups">{planGroups.filter(({ category }) =>
           !expandedPlanCategory || category === expandedPlanCategory).map(({ category, plans }) =>
           <section className="training-plan-group" key={category}>
@@ -985,7 +996,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
             onClick={() => { setExpandedSessionId(null); setShowHistory(true) }}>
             Aktuelle Trainingseinheiten anzeigen
           </button>
-          {showHistory && !expandedSessionId && <EntryWindow title="Trainingseinheiten"
+          {showHistory && <EntryWindow title="Trainingseinheiten"
             subtitle="DEIN VERLAUF" onClose={() => setShowHistory(false)}>
           <div className="volleyball-day-list training-history-list">
             {completedSessions.map((session) => <TrainingSessionCard key={session.id}
@@ -1051,11 +1062,6 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
                 <span>{item.name}</span><span className="history-meta">Empfohlene Übung
                   {libraryCategory === 'Krafttraining'
                     ? ` · ${strengthRoleFor(item) === 'compound' ? 'Grundübung' : 'Isolationsübung'}` : ''}</span>
-              </> : renamingIndex === index ? <>
-                <input className="field" aria-label="Neuer Übungsname" value={renameValue}
-                  onChange={(event) => setRenameValue(event.target.value)} />
-                <button type="button" className="text-button" onClick={() => renameLibraryItem(index)}>Speichern</button>
-                <button type="button" className="text-button" onClick={() => setRenamingIndex(null)}>Abbrechen</button>
               </> : <>
                 <span>{item.name}</span>
                 <select className="field training-group-select"
@@ -1081,6 +1087,14 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
             </div>
           })}</div>)}
       </div>
+      {renamingIndex !== null && exerciseLibrary[renamingIndex] && <EntryWindow
+        title="Übung umbenennen" subtitle={exerciseLibrary[renamingIndex].name}
+        onClose={() => setRenamingIndex(null)}>
+        <label className="field-label" htmlFor="library-rename">Neuer Übungsname</label>
+        <input id="library-rename" className="field" value={renameValue}
+          onChange={(event) => setRenameValue(event.target.value)} />
+        <button type="button" className="primary-button" onClick={() => renameLibraryItem(renamingIndex)}>Speichern</button>
+      </EntryWindow>}
       {managedLibrary.some((item) => !TRAINING_CATEGORIES.includes(item.category))
         && <div className="training-legacy">
           <strong>Ältere Übungen ohne neue Hauptkategorie</strong>

@@ -202,12 +202,12 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
     <button type="button" className="text-button home-calendar-method"
       onClick={() => setShowMethod(true)}>Wie entsteht die Wertung? ↗</button>
   </section>
-    {showMethod && <EntryWindow compact title="Wie entsteht die Wertung?" subtitle="SPORTKALENDER"
+    {showMethod && <EntryWindow title="Wie entsteht die Wertung?" subtitle="SPORTKALENDER"
       onClose={() => setShowMethod(false)}>
       <p>Jede abgeschlossene Übung wird über ihre ID mit ihrer letzten Ausführung verglichen. Jede vergleichbare Übung zählt gleich viel zum Tagesdurchschnitt: bis −15 % starker Rückgang, unter −5 % Rückgang, von −5 % bis +5 % keine Änderung, über +5 % Verbesserung und ab +15 % starke Verbesserung.</p>
       <p>Bei Kraftübungen wird der beste Satz der aktuellen Ausführung mit dem besten Satz der letzten Ausführung derselben Übungs-ID verglichen. Der Satzwert kombiniert Gewicht und Wiederholungen; gemeint ist nicht der persönliche Bestwert aller Zeiten. Bei Sprüngen zählt die gemessene Höhe, bei Core-Halteübungen die Dauer und bei Ausdauer mit gleicher Distanz das Tempo. Fehlt ein vergleichbarer Messwert, bleibt der Tag ohne Leistungswertung.</p>
     </EntryWindow>}
-    {selectedDate && <EntryWindow compact title={formatDate(selectedDate)} subtitle="DEIN KALENDERTAG"
+    {selectedDate && <EntryWindow title={formatDate(selectedDate)} subtitle="DEIN KALENDERTAG"
       onClose={() => { setSelectedDate(null); setShowEntryChoices(false) }}>
       <div className="home-day-details home-day-dialog">
       {!selectedRecovery && selectedPerformance && <p className="home-day-performance">
@@ -229,20 +229,23 @@ export default function HomeCalendar({ sessions, volleyballDays, onOpenActivity,
         </a>
       </article>)}
       <div className="home-new-entry">
-        <button type="button" className="secondary-button" aria-expanded={showEntryChoices}
-          onClick={() => setShowEntryChoices((open) => !open)}>＋ Neuer Eintrag</button>
-        {showEntryChoices && <div className="home-entry-choices" role="group" aria-label="Art des neuen Eintrags">
-          <p>Was möchtest du für diesen Tag erfassen?</p>
-          <button type="button" className="secondary-button" disabled={volleyballDateTaken}
-            onClick={() => onCreateEntry('beach', selectedDate)}>🏖️ Beachvolleyball</button>
-          <button type="button" className="secondary-button" disabled={volleyballDateTaken}
-            onClick={() => onCreateEntry('indoor', selectedDate)}>🏟️ Hallenvolleyball</button>
-          <button type="button" className="secondary-button" disabled={trainingOpen}
-            onClick={() => onCreateEntry('training', selectedDate)}>💪 Training</button>
-          {volleyballDateTaken && <p className="helper-text">An diesem Datum gibt es bereits einen Beach- oder Hallenspieltag.</p>}
-          {trainingOpen && <p className="helper-text">Schließe zuerst dein offenes Training ab, bevor du ein neues beginnst.</p>}
-        </div>}
+        <button type="button" className="secondary-button"
+          onClick={() => setShowEntryChoices(true)}>＋ Neuer Eintrag</button>
       </div>
+      </div>
+    </EntryWindow>}
+    {selectedDate && showEntryChoices && <EntryWindow title="Eintrag erfassen" subtitle={formatDate(selectedDate)}
+      onClose={() => setShowEntryChoices(false)}>
+      <div className="home-entry-choices" role="group" aria-label="Art des neuen Eintrags">
+        <p>Was möchtest du für diesen Tag erfassen?</p>
+        <button type="button" className="secondary-button" disabled={volleyballDateTaken}
+          onClick={() => onCreateEntry('beach', selectedDate)}>🏖️ Beachvolleyball</button>
+        <button type="button" className="secondary-button" disabled={volleyballDateTaken}
+          onClick={() => onCreateEntry('indoor', selectedDate)}>🏟️ Hallenvolleyball</button>
+        <button type="button" className="secondary-button" disabled={trainingOpen}
+          onClick={() => onCreateEntry('training', selectedDate)}>💪 Training</button>
+        {volleyballDateTaken && <p className="helper-text">An diesem Datum gibt es bereits einen Beach- oder Hallenspieltag.</p>}
+        {trainingOpen && <p className="helper-text">Schließe zuerst dein offenes Training ab, bevor du ein neues beginnst.</p>}
       </div>
     </EntryWindow>}
   </>

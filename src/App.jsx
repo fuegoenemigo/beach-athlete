@@ -14,7 +14,6 @@ import { activityDestination } from "./activityHistory.js";
 import { adjacentArea, swipeDirection } from "./swipeNavigation.js";
 import UIIcon from "./UIIcon.jsx";
 import AppChrome from "./AppChrome.jsx";
-import { installScrollHaptics } from "./scrollHaptics.js";
 
 
 
@@ -90,12 +89,12 @@ function downloadJson(filename, value) {
 }
 
 function App() {
-  useEffect(() => installScrollHaptics(), []);
   const [sessions, setSessions] = useState(loadSessions);
   const [volleyballDays, setVolleyballDays] = useState(loadVolleyballDays);
   const [activeArea, setActiveArea] = useState("home");
   const [homeViewKey, setHomeViewKey] = useState(0);
   const [homeInitialView, setHomeInitialView] = useState(null);
+  const [homeReturnArea, setHomeReturnArea] = useState(null);
   const [archiveTarget, setArchiveTarget] = useState(null);
   const [activityTarget, setActivityTarget] = useState(null);
   const activityNavigationId = useRef(0);
@@ -266,6 +265,7 @@ function App() {
     if (area === "home") {
       setArchiveTarget(null);
       setHomeInitialView(null);
+      setHomeReturnArea(null);
       setHomeViewKey((key) => key + 1);
     }
     setNotice("");
@@ -273,16 +273,17 @@ function App() {
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
-  function openHomeView(view) {
+  function openHomeView(view, originArea = activeArea) {
     clearPageSlide();
     setArchiveTarget(null);
     setHomeInitialView(view);
+    setHomeReturnArea(originArea === 'home' ? null : originArea);
     setHomeViewKey((key) => key + 1);
     setActiveArea("home");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
-  function openActivity(entry) {
+  function openActivity(entry, returnView = null) {
     clearPageSlide();
     const destination = activityDestination(entry);
     if (destination === "archive") {
@@ -292,20 +293,29 @@ function App() {
       setActiveArea("home");
     } else {
       activityNavigationId.current += 1;
-      setActivityTarget({ type: entry.type, id: entry.item.id, navigationId: activityNavigationId.current });
+      setActivityTarget({ type: entry.type, id: entry.item.id, returnArea: activeArea,
+        returnView, navigationId: activityNavigationId.current });
       setActiveArea(destination);
     }
     setNotice("");
     window.scrollTo({ top: 0, behavior: "auto" });
   }
 
-  function createCalendarEntry(type, date, category) {
+  function createCalendarEntry(type, date, category, returnView = null) {
     clearPageSlide();
     activityNavigationId.current += 1;
-    setActivityTarget({ type, date, category, mode: "create", navigationId: activityNavigationId.current });
+    setActivityTarget({ type, date, category, mode: "create", returnArea: activeArea,
+      returnView, navigationId: activityNavigationId.current });
     setActiveArea(type);
     setNotice("");
     window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
+  function returnFromActivity(target) {
+    if (!target?.returnArea || target.returnArea === target.type) return;
+    setActivityTarget(null);
+    if (target.returnArea === 'home') openHomeView(target.returnView, 'home');
+    else selectArea(target.returnArea);
   }
 
   function startPageSwipe(event) {
@@ -502,7 +512,8 @@ function App() {
         accountEmail={cloudState.email}
         sessions={sessions} volleyballDays={volleyballDays}
         initialView={activeArea === 'home' ? homeInitialView : null}
-        archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}>
+        archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}
+        onExit={homeReturnArea ? () => selectArea(homeReturnArea) : null}>
         <DataSecurity cloudState={cloudState}
           onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}
           onRetry={() => cloudRef.current?.retry()}
@@ -517,7 +528,8 @@ function App() {
           trainingPlans={trainingPlans} setTrainingPlans={setTrainingPlans}
           athleteProfile={athleteProfile}
           setNotice={setNotice} onOpenArchive={() => openHomeView("archive")}
-          navigationTarget={activityTarget?.type === "training" ? activityTarget : null} />
+          navigationTarget={activityTarget?.type === "training" ? activityTarget : null}
+          onReturn={returnFromActivity} />
       </div>
 
       <div className={`app-area-page${pageSlide?.from === 'beach' ? ' is-from' : ''}${pageSlide?.to === 'beach' ? ' is-to' : ''}`}
@@ -525,14 +537,16 @@ function App() {
         <VolleyballView sport="beach" volleyballDays={volleyballDays}
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
           onOpenArchive={() => openHomeView("archive")}
-          navigationTarget={activityTarget?.type === "beach" ? activityTarget : null} />
+          navigationTarget={activityTarget?.type === "beach" ? activityTarget : null}
+          onReturn={returnFromActivity} />
       </div>
       <div className={`app-area-page${pageSlide?.from === 'indoor' ? ' is-from' : ''}${pageSlide?.to === 'indoor' ? ' is-to' : ''}`}
         hidden={!areaVisible('indoor')} style={areaStyle('indoor')}>
         <VolleyballView sport="indoor" volleyballDays={volleyballDays}
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
           onOpenArchive={() => openHomeView("archive")}
-          navigationTarget={activityTarget?.type === "indoor" ? activityTarget : null} />
+          navigationTarget={activityTarget?.type === "indoor" ? activityTarget : null}
+          onReturn={returnFromActivity} />
       </div>
       </div>
       <footer className="app-footer">

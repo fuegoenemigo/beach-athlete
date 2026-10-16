@@ -25,7 +25,6 @@ button, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: not-allowed; opacity: .45; }
 button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
 .ui-icon { display: inline-block; flex: 0 0 auto; width: 24px; height: 24px; vertical-align: middle; }
-.app-haptic-switch { position: fixed; left: 0; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .app { width: min(100% - 36px, 760px); padding: calc(16px + env(safe-area-inset-top, 0px)) 0 calc(98px + env(safe-area-inset-bottom, 0px)); }
 .app-topline { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 45px; margin-bottom: 16px; border-bottom: 1px solid #818084; padding: 0 3px 8px; }
 .app-topline time { font-size: clamp(.69rem, 2.9vw, .87rem); color: #e1dedf; }
@@ -135,7 +134,6 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-feature-menu .ui-icon { color: var(--lilac); }
 .home-menu-sports { display: flex; gap: 9px; }
 .home-menu-sports .secondary-button { margin-top: 0; }
-.home-calendar-page > .home-back { margin: 0 0 12px; }
 
 /* Shared vocabulary for the three activity tabs and their existing editors. */
 .eyebrow, .home-widget-kicker { color: #b4adbd; letter-spacing: .16em; font-size: .65rem; font-weight: 550; }
@@ -164,7 +162,7 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .primary-button:hover { background: #fffaf2; transform: none; }
 .secondary-button { border-color: #5b5364; border-radius: 14px; color: #e6dfea; background: #29252e; font-weight: 500; }
 .secondary-button:hover { background: #38313f; }
-.text-button, .home-back, .statistics-window-back { color: #c7c4e8; font-weight: 500; }
+.text-button { color: #c7c4e8; font-weight: 500; }
 .field { border-color: #59515f; border-radius: 12px; background: #111014; color: var(--cream); font-size: 1rem; }
 .field:hover { border-color: #908297; }
 .field:focus { outline: 2px solid #a5b5ea; outline-offset: 2px; border-color: #a5b5ea; }
@@ -186,7 +184,7 @@ select.field { padding-right: 6px; }
 .statistics-section, .statistics-detail-placeholder, .statistics-empty-chart, .archive-entry {
   border-color: #4a4253; background: #211d27; color: #d7cfdc;
 }
-.training-plan-group-toggle:hover, .training-stat-card:hover, .training-stat-group > summary:hover, .statistics-section-toggle:hover { background: #302737; }
+.training-plan-group-toggle:hover, .training-stat-card:hover, .training-stat-group-link:hover, .statistics-section-toggle:hover { background: #302737; }
 .training-plan-group-toggle span:last-child, .training-history-plan, .training-group-heading, .training-history-group h4, .training-plan-evidence { color: #c2b4df; }
 .training-current-set, .training-timer, .endurance-clock { border-color: #7e6c94; background: linear-gradient(130deg, #35283e, #201b27); }
 .training-timer > strong, .training-timer .training-timer-goal, .endurance-phase-count, .endurance-distance-result { color: #d6c2ed; }
@@ -210,14 +208,12 @@ select.field { padding-right: 6px; }
 .access-gate-card h2 { font-family: var(--serif); font-weight: 400; font-size: 2rem; }
 
 /* Dialogs keep their original form components and are comfortable above a keyboard. */
-.entry-window { background: #070609d9; backdrop-filter: blur(9px); -webkit-backdrop-filter: blur(9px); }
-.entry-window-panel { border-color: #65576f; background: radial-gradient(ellipse at 0% 0%, #332b3e77, transparent 58%), #111013; }
+.entry-window { background: #111013; }
+.entry-window-panel { background: radial-gradient(ellipse at 0% 0%, #332b3e77, transparent 58%), #111013; }
 .entry-window-header { border-color: #514756; background: #19151ef5; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
 .entry-window-header h2 { font-family: var(--serif); font-weight: 400; font-size: 1.4rem; line-height: 1.15; overflow-wrap: anywhere; }
-.entry-window-close { width: 44px; height: 44px; border-color: #66596f; border-radius: 50%; background: #302637; color: var(--cream); }
+.entry-window-back { border-color: #66596f; background: #302637; }
 .entry-window-content { padding: 18px 16px calc(32px + env(safe-area-inset-bottom, 0px)); }
-.entry-window-compact .entry-window-panel { border-radius: 23px; }
-.home-back { margin-bottom: 18px; }
 .home-detail { min-height: auto; padding: 18px; }
 .home-detail > p { color: #c9bfce; line-height: 1.55; }
 .home-profile-card { padding: 16px; }

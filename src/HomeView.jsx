@@ -23,8 +23,10 @@ const FEATURES = {
 }
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile,
-  sessions, volleyballDays, accountEmail, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry }) {
-  const [selectedFeature, setSelectedFeature] = useState(initialView)
+  sessions, volleyballDays, accountEmail, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
+  onExit = null }) {
+  const [featureStack, setFeatureStack] = useState(initialView ? [initialView] : [])
+  const selectedFeature = featureStack.at(-1)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
   const [ratingDate, setRatingDate] = useState(() => new Date().toLocaleDateString('sv-SE'))
   const [featureDate, setFeatureDate] = useState(null)
@@ -40,18 +42,28 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   function openFeature(feature, date = ratingDate) {
     setFeatureDate(date)
     setFocusedArchiveTarget(null)
-    setSelectedFeature(feature)
+    setFeatureStack((stack) => [...stack, feature])
     window.scrollTo({ top: 0, behavior: 'auto' })
   }
+  const openEntry = (entry) => onOpenActivity(entry, selectedFeature)
+  const createEntry = (type, date, category) => onCreateEntry(type, date, category, selectedFeature)
+  const goBack = () => {
+    if (featureStack.length === 1 && onExit) onExit()
+    else setFeatureStack((stack) => stack.slice(0, -1))
+  }
+  const dashboard = <HomeDashboard sessions={sessions} volleyballDays={volleyballDays} today={ratingDate}
+    accountEmail={accountEmail} onFeature={openFeature}
+    onOpenActivity={openEntry} onCreateEntry={createEntry} />
 
   if (selectedFeature) {
-    if (selectedFeature === 'calendar') return <section className="home-calendar-page">
-      <button className="home-back" type="button" onClick={() => setSelectedFeature(null)}>← Zur Startseite</button>
+    if (selectedFeature === 'calendar') return <>{dashboard}<EntryWindow key="calendar" title="Sportkalender" subtitle="DEIN MONAT" onClose={goBack}>
+      <section className="home-calendar-page">
       <HomeCalendar sessions={sessions} volleyballDays={volleyballDays} initialDate={featureDate ?? ratingDate}
-        onOpenActivity={onOpenActivity} onCreateEntry={onCreateEntry} />
-    </section>
-    if (selectedFeature === 'more') return <EntryWindow compact title="Deine Bereiche" subtitle="BEACH ATHLETE"
-      onClose={() => setSelectedFeature(null)}>
+        onOpenActivity={openEntry} onCreateEntry={createEntry} />
+      </section>
+    </EntryWindow></>
+    if (selectedFeature === 'more') return <>{dashboard}<EntryWindow key="more" title="Deine Bereiche" subtitle="BEACH ATHLETE"
+      onClose={goBack}>
       <div className="home-feature-menu">
         {[
           ['calendar', 'calendar', 'Sportkalender', 'Alle Tage und Einträge'],
@@ -66,23 +78,18 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
       <p className="helper-text">Spieltag erfassen · {new Date(`${featureDate}T12:00:00`).toLocaleDateString('de-DE')}</p>
       <div className="home-menu-sports">
         <button type="button" className="secondary-button" disabled={volleyballDays.some((day) => day.date === featureDate)}
-          onClick={() => onCreateEntry('beach', featureDate)}><UIIcon name="beach" /> Beach</button>
+          onClick={() => createEntry('beach', featureDate)}><UIIcon name="beach" /> Beach</button>
         <button type="button" className="secondary-button" disabled={volleyballDays.some((day) => day.date === featureDate)}
-          onClick={() => onCreateEntry('indoor', featureDate)}><UIIcon name="ball" /> Halle</button>
+          onClick={() => createEntry('indoor', featureDate)}><UIIcon name="ball" /> Halle</button>
       </div>
       {volleyballDays.some((day) => day.date === featureDate) && <p className="helper-text">An diesem Datum gibt es bereits einen Spieltag. Du kannst ihn über den Kalender öffnen.</p>}
-    </EntryWindow>
+    </EntryWindow></>
     if (selectedFeature === 'profile' || selectedFeature === 'archive') return (
-      <EntryWindow title={selectedFeature === 'profile' ? 'Mein Profil' : 'Archiv'}
+      <>{dashboard}<EntryWindow key={selectedFeature} title={selectedFeature === 'profile' ? 'Mein Profil' : 'Archiv'}
         subtitle={selectedFeature === 'profile' ? 'DEIN KONTO' : 'DEINE EINTRÄGE'}
-        onClose={() => setSelectedFeature(null)}>
-      <section className="home-detail home-functional-detail">
-        <button className="home-back" type="button" onClick={() => setSelectedFeature(null)}>
-          ← Zur Startseite
-        </button>
+        onClose={goBack}>
+      <section className="home-functional-detail">
         {selectedFeature === 'profile' ? <>
-          <p className="eyebrow">DEIN KONTO</p>
-          <h2>Mein Profil</h2>
           <section className="home-profile-card" aria-labelledby="personal-data-title">
             <h3 id="personal-data-title">Persönliche Daten</h3>
             <p>Größe und Körpergewicht stehen für deine spätere Auswertung bereit. Dein Körpergewicht erscheint außerdem bei Übungen mit Eigengewicht.</p>
@@ -109,16 +116,13 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           {children}
         </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
       </section>
-      </EntryWindow>
+      </EntryWindow></>
     )
     const feature = FEATURES[selectedFeature]
     return (
-      <EntryWindow title={feature.title} subtitle="DEINE ENTWICKLUNG"
-        onClose={() => setSelectedFeature(null)}>
+      <>{dashboard}<EntryWindow key={selectedFeature} title={feature.title} subtitle="DEINE ENTWICKLUNG"
+        onClose={goBack}>
       <section className="home-detail" aria-labelledby="home-detail-title">
-        <button className="home-back" type="button" onClick={() => setSelectedFeature(null)}>
-          ← Zur Startseite
-        </button>
         <div className="home-detail-icon" aria-hidden="true">{feature.icon}</div>
         <p className="eyebrow">DEINE ENTWICKLUNG</p>
         <h2 id="home-detail-title">{feature.title}</h2>
@@ -141,11 +145,9 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           <p>Startwert 60 · maximal 99. Über 80 wächst jeder Wert um höchstens zwei Punkte pro Woche. Nach je elf vollen Tagen ohne passendes Training sinkt der jeweilige Wert um einen Punkt, nie unter 60. Körpergewicht wird bei geeigneten Kraftübungen berücksichtigt; regelmäßige Mobility-Einheiten zählen zur Körperkontrolle.</p>
         </div>}
       </section>
-      </EntryWindow>
+      </EntryWindow></>
     )
   }
 
-  return <HomeDashboard sessions={sessions} volleyballDays={volleyballDays} today={ratingDate}
-    accountEmail={accountEmail} onFeature={openFeature}
-    onOpenActivity={onOpenActivity} onCreateEntry={onCreateEntry} />
+  return dashboard
 }

@@ -1,17 +1,19 @@
-import { useId, useState } from 'react'
+import { useState } from 'react'
+import EntryWindow from './EntryWindow.jsx'
 import { instructionForExercise } from './exerciseInstructions.js'
 
-export default function ExerciseInfo({ exercise, defaultOpen = false }) {
+export default function ExerciseInfo({ exercise }) {
   const description = instructionForExercise(exercise)
-  const [open, setOpen] = useState(defaultOpen)
-  const descriptionId = useId()
+  const [open, setOpen] = useState(false)
   if (!description) return null
 
-  return <div className={`training-exercise-info${open ? ' open' : ''}`}>
+  return <div className="training-exercise-info">
     <button type="button" className="training-info-button"
       aria-label={`Informationen zu ${exercise.name}`}
-      aria-expanded={open} aria-controls={descriptionId}
-      onClick={() => setOpen((current) => !current)}>i</button>
-    <p id={descriptionId} className="training-exercise-description" hidden={!open}>{description}</p>
+      onClick={() => setOpen(true)}>i</button>
+    {open && <EntryWindow title={exercise.name} subtitle="ÜBUNG ERKLÄRT"
+      onClose={() => setOpen(false)}>
+      <p className="training-exercise-description">{description}</p>
+    </EntryWindow>}
   </div>
 }

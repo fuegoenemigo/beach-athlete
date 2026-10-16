@@ -37,7 +37,7 @@ export default function AppChrome({ state, updateAvailable, onInstallUpdate, onP
         </button>
       </div>
     </header>
-    {showNotices && <EntryWindow compact title="Deine Hinweise" subtitle="KONTO & APP" onClose={() => setShowNotices(false)}>
+    {showNotices && <EntryWindow title="Deine Hinweise" subtitle="KONTO & APP" onClose={() => setShowNotices(false)}>
       <section className="app-status-card"><UIIcon name={state.status === 'ready' ? 'check' : 'bell'} />
         <h3>{title}</h3><p>{state.message || description}</p>
         <button type="button" className="secondary-button" onClick={() => { setShowNotices(false); onProfile() }}>Konto und Datensicherung</button>

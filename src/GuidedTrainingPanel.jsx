@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { RatingStepper } from './VolleyballInputs.jsx'
+import EntryWindow from './EntryWindow.jsx'
 import { strengthRoleFor } from './strengthClassification.js'
 import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingTimer from './TrainingTimer.jsx'
@@ -92,10 +94,13 @@ export default function GuidedTrainingPanel({
   onTimerDuration,
   onSave, onClose, onRecategorize, onCancel,
 }) {
+  const [showCustomExercise, setShowCustomExercise] = useState(false)
   const exercise = session.exercises.find((item) => item.id === activeExerciseId)
   const type = exercise && exerciseMeasurement({ ...exercise, category: session.category })
   const entries = exercise?.entries ?? []
   const confirmed = entries.filter((entry) => isConfirmedSet(entry, type))
+  const editingIndex = confirmed.findIndex((entry) => entry.id === editingSetId)
+  const editingEntry = confirmed[editingIndex]
   const draft = entries.find((entry) => entry.completed === false)
   const previous = exercise && previousExercise(sessions, session, exercise)
   const previousEntryFor = (index) => previous && exerciseMeasurement({ ...previous.item,
@@ -199,7 +204,10 @@ export default function GuidedTrainingPanel({
               <ExerciseInfo exercise={item} />
             </div>)}</div>
         </>}
-        {exerciseCategory && <details className="training-custom"><summary>Eigene Übung anlegen</summary>
+        {exerciseCategory && <button type="button" className="secondary-button training-custom"
+          onClick={() => setShowCustomExercise(true)}>Eigene Übung anlegen</button>}
+        {exerciseCategory && showCustomExercise && <EntryWindow title="Eigene Übung anlegen" subtitle="DEIN TRAINING"
+          onClose={() => setShowCustomExercise(false)}>
           <label className="field-label" htmlFor="custom-name">Übungsname</label>
           <input id="custom-name" className="field" value={customName}
             onChange={(event) => setCustomName(event.target.value)} />
@@ -226,8 +234,9 @@ export default function GuidedTrainingPanel({
               <option value="isolation">Isolationsübung</option>
             </select>
           </>}
-          <button type="button" className="secondary-button" onClick={onCreateCustom}>Anlegen und ersten Satz öffnen</button>
-        </details>}
+          <button type="button" className="secondary-button"
+            onClick={() => { onCreateCustom(); setShowCustomExercise(false) }}>Anlegen und ersten Satz öffnen</button>
+        </EntryWindow>}
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}
         <div className="training-finish-actions">
           <button type="button" className="primary-button" onClick={() => setStep('summary')}>Training beenden</button>
@@ -239,7 +248,7 @@ export default function GuidedTrainingPanel({
     {step === 'set' && exercise && <>
       <div className="training-exercise-row training-exercise-heading">
         <h2>{exercise.name}</h2>
-        <ExerciseInfo key={exercise.id} exercise={exercise} defaultOpen />
+        <ExerciseInfo key={exercise.id} exercise={exercise} />
       </div>
       <p className="history-meta">{exercise.category === 'Krafttraining'
         ? exercise.muscleGroup || 'Ohne Muskelgruppe' : exercise.category || session.category}</p>
@@ -257,21 +266,24 @@ export default function GuidedTrainingPanel({
         <h3>Bestätigte Sätze</h3>
         {confirmed.map((entry, index) => <div className="training-completed-set" key={entry.id}>
           <button type="button" className="training-done-row"
-            onClick={() => setEditingSetId(editingSetId === entry.id ? null : entry.id)}>
+            onClick={() => setEditingSetId(entry.id)}>
             <span>✓ Satz {index + 1}: {formatTrainingEntry(entry, type, exercise)}</span>
-            <span>{editingSetId === entry.id ? 'Schließen' : 'Bearbeiten'}</span>
+            <span>Bearbeiten</span>
           </button>
-          {editingSetId === entry.id && <PreviousExerciseReference number={index + 1}
-            value={referenceFor(index)} />}
-          {editingSetId === entry.id && <SetFields entry={entry} type={type}
-            exercise={exercise} athleteProfile={athleteProfile}
-            onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
-              item.id === entry.id ? { ...item, ...changes } : item) })} />}
-          {editingSetId === entry.id && <button type="button" className="text-button"
-            onClick={() => { onUpdateExercise(exercise.id, { entries: entries.filter((item) =>
-              item.id !== entry.id) }); setEditingSetId(null) }}>Satz entfernen</button>}
         </div>)}
       </div>}
+      {editingEntry && <EntryWindow title={`Satz ${editingIndex + 1} bearbeiten`}
+        subtitle={exercise.name} onClose={() => setEditingSetId(null)}>
+        <PreviousExerciseReference number={editingIndex + 1} value={referenceFor(editingIndex)} />
+        <SetFields entry={editingEntry} type={type} exercise={exercise} athleteProfile={athleteProfile}
+          onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
+            item.id === editingEntry.id ? { ...item, ...changes } : item) })} />
+        <button type="button" className="secondary-button" onClick={() => setEditingSetId(null)}>Werte übernehmen</button>
+        <button type="button" className="text-button" onClick={() => {
+          onUpdateExercise(exercise.id, { entries: entries.filter((item) => item.id !== editingEntry.id) })
+          setEditingSetId(null)
+        }}>Satz entfernen</button>
+      </EntryWindow>}
       {draft && <div className="training-current-set">
         <p className="eyebrow">SATZ {confirmed.length + 1}</p>
         <h3>Werte eintragen</h3>

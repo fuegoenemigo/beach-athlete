@@ -15,6 +15,7 @@ const paths = {
   plus: 'M12 5v14M5 12h14',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   chevron: 'm9 5 7 7-7 7',
+  back: 'm15 5-7 7 7 7',
   down: 'm6 9 6 6 6-6',
   check: 'm5 12 4 4L19 6',
 }
