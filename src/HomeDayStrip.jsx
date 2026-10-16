@@ -107,34 +107,67 @@ function DayStrip({ month, today, selectedDate, entryDates, onSelect }) {
 export default function HomeDayStrip({ today, selectedDate, entryDates, onSelect }) {
   const [expanded, setExpanded] = useState(false)
   const [visibleMonth, setVisibleMonth] = useState(today.slice(0, 7))
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerYear, setPickerYear] = useState(Number(today.slice(0, 4)))
   const [phase, setPhase] = useState('')
   const foldTimer = useRef(null)
   const unfoldTimer = useRef(null)
   const swipeStart = useRef(null)
+  const headingRef = useRef(null)
   useEffect(() => () => {
     window.clearTimeout(foldTimer.current)
     window.clearTimeout(unfoldTimer.current)
   }, [])
 
-  function toggleMonth() {
+  useEffect(() => {
+    if (!pickerOpen) return undefined
+    const dismiss = (event) => {
+      if (event.type === 'keydown' && event.key === 'Escape') setPickerOpen(false)
+      if (event.type === 'pointerdown' && !headingRef.current?.contains(event.target)) setPickerOpen(false)
+    }
+    document.addEventListener('keydown', dismiss)
+    document.addEventListener('pointerdown', dismiss)
+    return () => {
+      document.removeEventListener('keydown', dismiss)
+      document.removeEventListener('pointerdown', dismiss)
+    }
+  }, [pickerOpen])
+
+  function toggleCalendar() {
     if (phase) return
+    setPickerOpen(false)
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      if (!expanded) setVisibleMonth(selectedDate.slice(0, 7))
+      setVisibleMonth(today.slice(0, 7))
+      if (expanded) onSelect(today)
       setExpanded(!expanded)
       return
     }
     setPhase('folding')
     foldTimer.current = window.setTimeout(() => {
-      if (!expanded) setVisibleMonth(selectedDate.slice(0, 7))
+      setVisibleMonth(today.slice(0, 7))
+      if (expanded) onSelect(today)
       setExpanded(!expanded)
       setPhase('unfolding')
       unfoldTimer.current = window.setTimeout(() => setPhase(''), 380)
     }, 170)
   }
 
+  function clickMonth() {
+    if (!expanded) { toggleCalendar(); return }
+    if (phase) return
+    setPickerYear(Number(visibleMonth.slice(0, 4)))
+    setPickerOpen((open) => !open)
+  }
+
   function returnToday() {
+    setPickerOpen(false)
     setVisibleMonth(today.slice(0, 7))
     onSelect(today)
+  }
+
+  function moveMonth(offset) {
+    setPickerOpen(false)
+    setVisibleMonth((month) => shiftMonth(month, offset))
   }
 
   function finishSwipe(event) {
@@ -147,24 +180,47 @@ export default function HomeDayStrip({ today, selectedDate, entryDates, onSelect
     }
   }
 
-  const displayMonth = expanded ? visibleMonth : selectedDate.slice(0, 7)
+  const displayMonth = expanded ? visibleMonth : today.slice(0, 7)
   return <section className={`home-five-days${expanded ? ' is-month-view' : ''}`} aria-label="Kalender">
-    <div className="home-five-days-heading">
-      <button type="button" className="home-month-pill" onClick={toggleMonth}
-        aria-expanded={expanded} aria-controls="home-calendar-stage"
-        aria-label={expanded ? 'Monatsansicht schließen' : 'Monatsansicht öffnen'}>
-        {format(`${displayMonth}-01`, { month: 'long' })}<UIIcon name="down" />
-      </button>
+    <div className="home-five-days-heading" ref={headingRef}>
+      <div className="home-month-actions">
+        <button type="button" className="home-month-pill" onClick={clickMonth}
+          aria-expanded={pickerOpen} aria-controls={expanded ? 'home-month-picker' : 'home-calendar-stage'}
+          aria-label={expanded ? 'Monat auswählen' : 'Monatsansicht öffnen'}>
+          {format(`${displayMonth}-01`, { month: 'long' })}
+        </button>
+        <button type="button" className="home-calendar-toggle" onClick={toggleCalendar}
+          aria-expanded={expanded} aria-controls="home-calendar-stage"
+          aria-label={expanded ? 'Kalender einklappen' : 'Kalender ausklappen'}>
+          <UIIcon name="down" />
+        </button>
+      </div>
       <div className="home-date-controls">
         {expanded && <div className="home-month-switch" aria-label="Monat wechseln">
-          <button type="button" aria-label="Vorheriger Monat" onClick={() => setVisibleMonth((month) => shiftMonth(month, -1))}>‹</button>
+          <button type="button" aria-label="Vorheriger Monat" onClick={() => moveMonth(-1)}>‹</button>
           <span>{displayMonth.slice(0, 4)}</span>
-          <button type="button" aria-label="Nächster Monat" onClick={() => setVisibleMonth((month) => shiftMonth(month, 1))}>›</button>
+          <button type="button" aria-label="Nächster Monat" onClick={() => moveMonth(1)}>›</button>
         </div>}
         {(selectedDate !== today || expanded && displayMonth !== today.slice(0, 7)) &&
           <button type="button" className="home-today-link" onClick={returnToday}
             aria-label="Zu heute springen">Heute</button>}
       </div>
+      {expanded && pickerOpen && <div id="home-month-picker" className="home-month-picker" role="group" aria-label="Monatsauswahl">
+        <div className="home-month-picker-year">
+          <button type="button" aria-label="Vorheriges Jahr" onClick={() => setPickerYear((year) => year - 1)}>‹</button>
+          <strong>{pickerYear}</strong>
+          <button type="button" aria-label="Nächstes Jahr" onClick={() => setPickerYear((year) => year + 1)}>›</button>
+        </div>
+        <div className="home-month-picker-grid">
+          {Array.from({ length: 12 }, (_, index) => {
+            const month = `${pickerYear}-${String(index + 1).padStart(2, '0')}`
+            return <button type="button" key={month} className={month === visibleMonth ? 'is-current' : ''}
+              aria-pressed={month === visibleMonth} onClick={() => { setVisibleMonth(month); setPickerOpen(false) }}>
+              {format(`${month}-01`, { month: 'short' })}
+            </button>
+          })}
+        </div>
+      </div>}
     </div>
     <div id="home-calendar-stage" className={`home-calendar-stage${phase ? ` is-${phase}` : ''}${expanded ? ' is-expanded' : ''}`}
       onTouchStart={(event) => { swipeStart.current = event.touches.length === 1
