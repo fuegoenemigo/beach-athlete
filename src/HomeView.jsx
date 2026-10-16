@@ -25,7 +25,7 @@ const FEATURES = {
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile,
   sessions, volleyballDays, today, selectedDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
-  onExit = null, onNavigate = () => {} }) {
+  onExit = null }) {
   const [featureStack, setFeatureStack] = useState(initialView ? [initialView] : [])
   const selectedFeature = featureStack.at(-1)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
@@ -34,11 +34,10 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   const rating = useMemo(() => athleteRating(sessions, athleteProfile, today),
     [sessions, athleteProfile, today])
   function openFeature(feature, date = today) {
-    onNavigate()
     setFeatureDate(date)
     setFocusedArchiveTarget(null)
     setFeatureStack((stack) => [...stack, feature])
-    window.scrollTo({ top: 0, behavior: 'auto' })
+    document.querySelector('.app-scroll-region')?.scrollTo({ top: 0, behavior: 'instant' })
   }
   const openEntry = (entry) => onOpenActivity(entry, selectedFeature)
   const createEntry = (type, date, category) => onCreateEntry(type, date, category, selectedFeature)

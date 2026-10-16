@@ -96,11 +96,9 @@ function App() {
   const [chosenDate, setChosenDate] = useState(null);
   const selectedDate = chosenDate ?? currentDate;
   const [introProgress, setIntroProgress] = useState(0);
-  const [introSettling, setIntroSettling] = useState(false);
   const introProgressRef = useRef(0);
   const introDone = useRef(false);
-  const introScrollY = useRef(0);
-  const introTimer = useRef(null);
+  const introTouch = useRef(null);
   const [homeViewKey, setHomeViewKey] = useState(0);
   const [homeInitialView, setHomeInitialView] = useState(null);
   const [homeReturnArea, setHomeReturnArea] = useState(null);
@@ -110,6 +108,7 @@ function App() {
   const pageSwipeStart = useRef(null);
   const pageSlideRef = useRef(null);
   const swipeContentRef = useRef(null);
+  const scrollRegionRef = useRef(null);
   const pageFrame = useRef(null);
   const pageTimer = useRef(null);
   const [pageSlide, setPageSlide] = useState(null);
@@ -139,29 +138,41 @@ function App() {
     return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refreshDate); };
   }, []);
 
-  useEffect(() => {
-    introScrollY.current = window.scrollY;
-    const scroll = () => {
-      const position = window.scrollY;
-      const distance = Math.max(0, position - introScrollY.current);
-      introScrollY.current = position;
-      if (introDone.current || distance === 0 || !document.querySelector('.app-signed-in')
-        || document.querySelector('.entry-window')) return;
-      setIntroSettling(false);
-      introProgressRef.current = Math.min(1, introProgressRef.current + distance / 136);
-      setIntroProgress(introProgressRef.current);
-      window.clearTimeout(introTimer.current);
-      if (introProgressRef.current >= 1) { introDone.current = true; return; }
-      introTimer.current = window.setTimeout(() => {
-        introDone.current = true;
-        introProgressRef.current = 1;
-        setIntroSettling(true);
-        setIntroProgress(1);
-      }, 170);
-    };
-    window.addEventListener('scroll', scroll, { passive: true });
-    return () => { window.removeEventListener('scroll', scroll); window.clearTimeout(introTimer.current); };
-  }, []);
+  function setIntroFromGesture(next) {
+    if (introDone.current) return;
+    const progress = Math.max(0, Math.min(1, next));
+    introProgressRef.current = progress;
+    setIntroProgress(progress);
+    if (progress === 1) introDone.current = true;
+  }
+
+  function startIntroTouch(event) {
+    introTouch.current = null;
+    if (introDone.current || event.touches.length !== 1 || document.querySelector('.entry-window')
+      || event.target.closest('.value-wheel, input, textarea, select, [contenteditable="true"]')) return;
+    introTouch.current = { x: event.touches[0].clientX, y: event.touches[0].clientY,
+      progress: introProgressRef.current };
+  }
+
+  function moveIntroTouch(event) {
+    const gesture = introTouch.current;
+    if (!gesture || event.touches.length !== 1 || introDone.current) return;
+    const dx = event.touches[0].clientX - gesture.x;
+    const dy = event.touches[0].clientY - gesture.y;
+    if (Math.abs(dx) > Math.abs(dy) * 1.2 && Math.abs(dx) > 12) {
+      introTouch.current = null;
+      return;
+    }
+    if (Math.abs(dy) < 4) return;
+    setIntroFromGesture(gesture.progress - dy / 220);
+  }
+
+  function moveIntroWheel(event) {
+    if (introDone.current || document.querySelector('.entry-window')
+      || event.target.closest('.value-wheel, .home-day-strip')) return;
+    const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1);
+    setIntroFromGesture(introProgressRef.current + delta / 220);
+  }
 
   useEffect(() => {
     if (storageDamaged) return;
@@ -302,18 +313,8 @@ function App() {
     setPageSlide(null);
   }
 
-  function finishIntro() {
-    if (introDone.current) return;
-    window.clearTimeout(introTimer.current);
-    introDone.current = true;
-    introProgressRef.current = 1;
-    setIntroSettling(true);
-    setIntroProgress(1);
-  }
-
   function selectArea(area) {
     clearPageSlide();
-    if (area !== 'home') finishIntro();
     if (area === "home") {
       setArchiveTarget(null);
       setHomeInitialView(null);
@@ -322,23 +323,21 @@ function App() {
     }
     setNotice("");
     setActiveArea(area);
-    window.scrollTo({ top: 0, behavior: "auto" });
+    scrollRegionRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }
 
   function openHomeView(view, originArea = activeArea) {
     clearPageSlide();
-    finishIntro();
     setArchiveTarget(null);
     setHomeInitialView(view);
     setHomeReturnArea(originArea === 'home' ? null : originArea);
     setHomeViewKey((key) => key + 1);
     setActiveArea("home");
-    window.scrollTo({ top: 0, behavior: "auto" });
+    scrollRegionRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }
 
   function openActivity(entry, returnView = null) {
     clearPageSlide();
-    finishIntro();
     const destination = activityDestination(entry);
     if (destination === "archive") {
       setArchiveTarget({ id: entry.id, type: entry.type, date: entry.date });
@@ -352,18 +351,17 @@ function App() {
       setActiveArea(destination);
     }
     setNotice("");
-    window.scrollTo({ top: 0, behavior: "auto" });
+    scrollRegionRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }
 
   function createCalendarEntry(type, date, category, returnView = null) {
     clearPageSlide();
-    finishIntro();
     activityNavigationId.current += 1;
     setActivityTarget({ type, date, category, mode: "create", returnArea: activeArea,
       returnView, navigationId: activityNavigationId.current });
     setActiveArea(type);
     setNotice("");
-    window.scrollTo({ top: 0, behavior: "auto" });
+    scrollRegionRef.current?.scrollTo({ top: 0, behavior: "instant" });
   }
 
   function returnFromActivity(target) {
@@ -487,8 +485,12 @@ function App() {
   }
 
   return (
-    <main className={`app app-signed-in${introSettling ? ' is-intro-settling' : ''}`}
-      data-area={activeArea} onClickCapture={() => { if (notice) setNotice(""); }}>
+    <main className="app app-signed-in" data-area={activeArea}
+      onTouchStartCapture={startIntroTouch} onTouchMoveCapture={moveIntroTouch}
+      onTouchEndCapture={() => { introTouch.current = null; }}
+      onTouchCancelCapture={() => { introTouch.current = null; }}
+      onWheelCapture={moveIntroWheel}
+      onClickCapture={() => { if (notice) setNotice(""); }}>
       <AppChrome state={cloudState} updateAvailable={updateAvailable}
         onInstallUpdate={installUpdate} onProfile={() => openHomeView("profile")}
         today={currentDate} selectedDate={selectedDate} entryDates={entryDates}
@@ -551,6 +553,7 @@ function App() {
       {criticalNotice && <p className="notice-message" role="alert">{criticalNotice}</p>}
       {notice && <p className="notice-message transient-notice" role="status">{notice}</p>}
 
+      <div className="app-scroll-region" ref={scrollRegionRef}>
       <div className={`app-swipe-content${pageSlide ? ' is-swiping' : ''}${pageSlide?.settling ? ' is-settling' : ''}`}
         ref={swipeContentRef} style={{ '--swipe-offset': `${pageSlide?.offset ?? 0}px` }}
         onTouchStart={startPageSwipe} onTouchMove={dragPageSwipe}
@@ -571,7 +574,6 @@ function App() {
         sessions={sessions} volleyballDays={volleyballDays}
         initialView={activeArea === 'home' ? homeInitialView : null}
         archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}
-        onNavigate={finishIntro}
         onExit={homeReturnArea ? () => selectArea(homeReturnArea) : null}>
         <DataSecurity cloudState={cloudState}
           onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}
@@ -611,6 +613,7 @@ function App() {
       <footer className="app-footer">
         BEACH ATHLETE <span>·</span> VERSION 0.1
       </footer>
+      </div>
     </main>
   );
 }

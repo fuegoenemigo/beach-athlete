@@ -513,7 +513,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setSelectedGroup('')
     setSelectedExerciseCategory(category)
     setCustomGroup(groupsFor(visibleLibrary, category)[0]?.[0] ?? 'Allgemein')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    document.querySelector('.app-scroll-region')?.scrollTo({ top: 0, behavior: 'smooth' })
   }
   function recategorizeSession(category) {
     updateSession({ category, categories: [category], legacyCategory: activeSession.category,
