@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import HomeCalendar from './HomeCalendar.jsx'
 import EntryWindow from './EntryWindow.jsx'
 import ArchiveView from './ArchiveView.jsx'
 import StatisticsView from './StatisticsView.jsx'
@@ -56,17 +55,10 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
     onOpenActivity={openEntry} onCreateEntry={createEntry} />
 
   if (selectedFeature) {
-    if (selectedFeature === 'calendar') return <>{dashboard}<EntryWindow key="calendar" title="Sportkalender" subtitle="DEIN MONAT" onClose={goBack}>
-      <section className="home-calendar-page">
-      <HomeCalendar sessions={sessions} volleyballDays={volleyballDays} initialDate={featureDate ?? ratingDate}
-        onOpenActivity={openEntry} onCreateEntry={createEntry} />
-      </section>
-    </EntryWindow></>
     if (selectedFeature === 'more') return <>{dashboard}<EntryWindow key="more" title="Deine Bereiche" subtitle="BEACH ATHLETE"
       onClose={goBack}>
       <div className="home-feature-menu">
         {[
-          ['calendar', 'calendar', 'Sportkalender', 'Alle Tage und Einträge'],
           ['statistics', 'chart', 'Statistiken', 'Deine Entwicklung im Detail'],
           ['card', 'card', 'Spielerkarte', 'Deine athletischen Werte'],
           ['archive', 'archive', 'Archiv', 'Alle abgeschlossenen Einträge'],
@@ -82,7 +74,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
         <button type="button" className="secondary-button" disabled={volleyballDays.some((day) => day.date === featureDate)}
           onClick={() => createEntry('indoor', featureDate)}><UIIcon name="ball" /> Halle</button>
       </div>
-      {volleyballDays.some((day) => day.date === featureDate) && <p className="helper-text">An diesem Datum gibt es bereits einen Spieltag. Du kannst ihn über den Kalender öffnen.</p>}
+      {volleyballDays.some((day) => day.date === featureDate) && <p className="helper-text">An diesem Datum gibt es bereits einen Spieltag. Du kannst ihn über die Monatsansicht auf der Startseite öffnen.</p>}
     </EntryWindow></>
     if (selectedFeature === 'profile' || selectedFeature === 'archive') return (
       <>{dashboard}<EntryWindow key={selectedFeature} title={selectedFeature === 'profile' ? 'Mein Profil' : 'Archiv'}

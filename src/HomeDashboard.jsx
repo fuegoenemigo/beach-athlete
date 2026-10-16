@@ -11,7 +11,7 @@ const shortDate = (date) => format(date, { day: 'numeric', month: 'long' })
 export default function HomeDashboard({ sessions, volleyballDays, today, accountEmail,
   onFeature, onOpenActivity, onCreateEntry }) {
   const [chosenDate, setChosenDate] = useState(null)
-  const selectedDate = chosenDate?.startsWith(today.slice(0, 7)) ? chosenDate : today
+  const selectedDate = chosenDate ?? today
   const entries = useMemo(() => activityEntries(sessions, volleyballDays), [sessions, volleyballDays])
   const entryDates = useMemo(() => new Set(entries.map((entry) => entry.date)), [entries])
   const dayEntries = entries.filter((entry) => entry.date === selectedDate)
@@ -39,8 +39,7 @@ export default function HomeDashboard({ sessions, volleyballDays, today, account
     </header>
 
     <HomeDayStrip key={today.slice(0, 7)} today={today} selectedDate={selectedDate}
-      entryDates={entryDates} onSelect={setChosenDate}
-      onOpenCalendar={() => onFeature('calendar', selectedDate)} />
+      entryDates={entryDates} onSelect={setChosenDate} />
 
     <section className="home-today-card" aria-labelledby="home-today-title">
       <div className="home-today-heading">

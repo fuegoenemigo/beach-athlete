@@ -75,10 +75,25 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-five-days-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
 .home-month-pill { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 38px; padding: 6px 12px; border: 1px solid #77737b; border-radius: 22px; color: var(--cream); background: #ffffff04; font-size: .8rem; }
 .home-month-pill .ui-icon { width: 16px; height: 16px; }
-.home-date-controls { display: flex; align-items: center; }
+.home-date-controls { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
+.home-five-days.is-month-view .home-month-pill .ui-icon { transform: rotate(180deg); }
+.home-month-switch { display: flex; align-items: center; gap: 3px; color: #c7c2ca; font-size: .72rem; }
+.home-month-switch button { display: grid; place-items: center; width: 28px; height: 32px; border: 0; border-radius: 9px; color: var(--cream); background: #ffffff0d; font-size: 1.35rem; line-height: 1; }
+.home-month-switch button:hover { background: #ffffff1b; }
+.home-calendar-stage { max-height: 90px; overflow: hidden; border-top: 1px solid #858188; border-bottom: 1px solid #858188; transition: max-height .38s cubic-bezier(.2,.75,.2,1); }
+.home-calendar-stage.is-expanded { max-height: 430px; }
+.home-calendar-stage.is-folding { max-height: 0; transition-duration: .17s; }
+.home-calendar-stage.is-unfolding { transition-duration: .38s; }
+.home-inline-month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px 2px; justify-items: center; align-items: center; padding: 10px 0 14px; touch-action: pan-y; }
+.home-inline-weekday { display: grid; place-items: center; width: 100%; min-height: 25px; color: #aaa6ad; font-size: .7rem; }
+.home-inline-day { display: grid; place-items: center; width: min(100%, 41px); aspect-ratio: 1; padding: 0; border: 1px solid transparent; border-radius: 50%; color: #e4dfe6; background: transparent; font-family: var(--serif); font-size: 1rem; }
+.home-inline-day:hover { background: #ffffff12; }
+.home-inline-day.is-today:not(.is-selected) { border-color: #78737b; background: #ffffff0a; }
+.home-inline-day.is-selected { border-color: #e9e4ea; color: #141316; background: #e9e4ea; box-shadow: 0 0 18px #e9e4ea25; }
+.home-inline-day:focus-visible { outline-offset: 2px; }
 .home-today-link { min-width: 78px; min-height: 38px; padding: 6px 14px; border: 1px solid #49464d; border-radius: 13px; color: var(--cream); background: #262529; font-size: .78rem; font-weight: 550; }
 .home-today-link:hover { border-color: #77717b; background: #343237; }
-.home-day-strip { display: flex; width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; border-top: 1px solid #6c696e; border-bottom: 1px solid #6c696e; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
+.home-day-strip { display: flex; width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 4px 0 10px; -webkit-overflow-scrolling: touch; }
 .home-day-strip::-webkit-scrollbar { display: none; }
 .home-date-spacer { flex: 0 0 40%; pointer-events: none; }
 .home-date-slot { display: flex; flex-direction: column; align-items: center; flex: 0 0 20%; min-width: 0; padding: 0 4px; scroll-snap-align: center; }
@@ -90,6 +105,13 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-date-indicator.has-entries { background: #fff; }
 .home-date.is-selected { color: var(--cream); border-color: #49464d; background: #262529; }
 .home-date[aria-current='date']:not(.is-selected) { border-color: #49464d; background: #ffffff05; }
+@media (prefers-reduced-motion: reduce) { .home-calendar-stage { transition: none; } }
+@media (max-width: 360px) {
+  .home-month-pill { gap: 6px; padding-inline: 9px; }
+  .home-month-switch span { display: none; }
+  .home-month-switch button { width: 25px; }
+  .home-today-link { min-width: 60px; padding-inline: 9px; }
+}
 .home-today-card, .home-week-card { padding: 13px 14px; border: 1px solid #78737b; border-radius: 21px; background: linear-gradient(120deg, #38363b5e, #1c1b1e66 55%, #1716199e); box-shadow: 0 12px 25px #00000012; }
 .home-today-heading { display: flex; align-items: center; justify-content: space-between; gap: 9px; margin-bottom: 10px; }
 .home-today-heading h2, .home-week-heading h2 { margin: 0; font-family: var(--serif); font-size: 2rem; font-weight: 400; line-height: 1.12; letter-spacing: -.035em; overflow-wrap: anywhere; }
@@ -180,7 +202,7 @@ select.field { padding-right: 6px; }
 .training-exercise-description, .training-bodyweight, .training-reference,
 .endurance-intensity, .endurance-intensity-guide, .endurance-device-reading, .endurance-progress-guidance,
 .exercise-card, .history-item, .volleyball-day-details, .beach-opponent-editor,
-.home-performance-breakdown li, .statistics-exercise-list li, .training-stat-card, .training-stat-group,
+.statistics-exercise-list li, .training-stat-card, .training-stat-group,
 .statistics-section, .statistics-detail-placeholder, .statistics-empty-chart, .archive-entry {
   border-color: #4a4253; background: #211d27; color: #d7cfdc;
 }
@@ -207,7 +229,7 @@ select.field { padding-right: 6px; }
 .app-header h1 { font-family: var(--serif); font-weight: 400; font-size: 2.5rem; }
 .access-gate-card h2 { font-family: var(--serif); font-weight: 400; font-size: 2rem; }
 
-/* Dialogs keep their original form components and are comfortable above a keyboard. */
+/* Pages keep their original form components and remain comfortable above a keyboard. */
 .entry-window { background: #111013; }
 .entry-window-panel { background: radial-gradient(ellipse at 0% 0%, #332b3e77, transparent 58%), #111013; }
 .entry-window-header { border-color: #514756; background: #19151ef5; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
@@ -217,17 +239,7 @@ select.field { padding-right: 6px; }
 .home-detail { min-height: auto; padding: 18px; }
 .home-detail > p { color: #c9bfce; line-height: 1.55; }
 .home-profile-card { padding: 16px; }
-.home-calendar { min-height: 0; }
-.home-calendar:hover { border-color: #82718e; }
-.home-calendar .home-month-navigation button { color: #ded1ea; border-color: #65576f; background: #2c2334; }
-.home-calendar-day.has-activity { background: #32283c; }
-.home-calendar-day.is-recovery { background: #25212b; }
-.home-calendar-day.is-selected { border-color: #c9b6df; }
-.home-calendar-day.is-today { box-shadow: inset 0 0 0 1px #c9b6df; }
-.home-calendar-day { color: #dbd1e2; }
-.home-weekday, .home-calendar-hint, .home-calendar-legend { color: #bdb0c7; }
-.home-day-details, .statistics-section-detail, .training-stat-group-content { border-color: #4e4259; }
-.home-activity-link { color: #d4c0ec; }
+.statistics-section-detail, .training-stat-group-content { border-color: #4e4259; }
 .statistics-preview-chart, .statistics-line-chart { background: #17131d; }
 .statistics-actual-line { stroke: #aab7ef; }
 .statistics-latest-point { fill: #b5bdf2; stroke: #17131d; }
