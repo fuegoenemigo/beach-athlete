@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import EntryWindow from './EntryWindow.jsx'
 import ArchiveView from './ArchiveView.jsx'
 import StatisticsView from './StatisticsView.jsx'
@@ -23,23 +23,17 @@ const FEATURES = {
 }
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile,
-  sessions, volleyballDays, accountEmail, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
-  onExit = null }) {
+  sessions, volleyballDays, today, selectedDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
+  onExit = null, onNavigate = () => {} }) {
   const [featureStack, setFeatureStack] = useState(initialView ? [initialView] : [])
   const selectedFeature = featureStack.at(-1)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
-  const [ratingDate, setRatingDate] = useState(() => new Date().toLocaleDateString('sv-SE'))
   const [featureDate, setFeatureDate] = useState(null)
-  useEffect(() => {
-    const refreshDate = () => setRatingDate(new Date().toLocaleDateString('sv-SE'))
-    const timer = window.setInterval(refreshDate, 60_000)
-    document.addEventListener('visibilitychange', refreshDate)
-    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refreshDate) }
-  }, [])
   const training = useMemo(() => trainingProgress(sessions), [sessions])
-  const rating = useMemo(() => athleteRating(sessions, athleteProfile, ratingDate),
-    [sessions, athleteProfile, ratingDate])
-  function openFeature(feature, date = ratingDate) {
+  const rating = useMemo(() => athleteRating(sessions, athleteProfile, today),
+    [sessions, athleteProfile, today])
+  function openFeature(feature, date = today) {
+    onNavigate()
     setFeatureDate(date)
     setFocusedArchiveTarget(null)
     setFeatureStack((stack) => [...stack, feature])
@@ -51,8 +45,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
     if (featureStack.length === 1 && onExit) onExit()
     else setFeatureStack((stack) => stack.slice(0, -1))
   }
-  const dashboard = <HomeDashboard sessions={sessions} volleyballDays={volleyballDays} today={ratingDate}
-    accountEmail={accountEmail} onFeature={openFeature}
+  const dashboard = <HomeDashboard sessions={sessions} volleyballDays={volleyballDays} today={today}
+    selectedDate={selectedDate} onFeature={openFeature}
     onOpenActivity={openEntry} onCreateEntry={createEntry} />
 
   if (selectedFeature) {

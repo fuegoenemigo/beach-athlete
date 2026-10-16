@@ -1,5 +1,5 @@
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { installUpdate, isUpdateAvailable } from "./pwa.js";
 import { CloudSync } from "./cloudSync.js";
@@ -10,7 +10,7 @@ import TrainingView from "./TrainingView.jsx";
 import HomeView from "./HomeView.jsx";
 import VolleyballView from "./VolleyballView.jsx";
 import { DEFAULT_EXERCISES } from "./volleyballTraining.js";
-import { activityDestination } from "./activityHistory.js";
+import { activityDestination, activityEntries } from "./activityHistory.js";
 import { adjacentArea, swipeDirection } from "./swipeNavigation.js";
 import UIIcon from "./UIIcon.jsx";
 import AppChrome from "./AppChrome.jsx";
@@ -92,6 +92,15 @@ function App() {
   const [sessions, setSessions] = useState(loadSessions);
   const [volleyballDays, setVolleyballDays] = useState(loadVolleyballDays);
   const [activeArea, setActiveArea] = useState("home");
+  const [currentDate, setCurrentDate] = useState(today);
+  const [chosenDate, setChosenDate] = useState(null);
+  const selectedDate = chosenDate ?? currentDate;
+  const [introProgress, setIntroProgress] = useState(0);
+  const [introSettling, setIntroSettling] = useState(false);
+  const introProgressRef = useRef(0);
+  const introDone = useRef(false);
+  const introScrollY = useRef(0);
+  const introTimer = useRef(null);
   const [homeViewKey, setHomeViewKey] = useState(0);
   const [homeInitialView, setHomeInitialView] = useState(null);
   const [homeReturnArea, setHomeReturnArea] = useState(null);
@@ -112,6 +121,8 @@ function App() {
   const [exerciseLibrary, setExerciseLibrary] = useState(loadExerciseLibrary);
   const [trainingPlans, setTrainingPlans] = useState(loadTrainingPlans);
   const [athleteProfile, setAthleteProfile] = useState(loadAthleteProfile);
+  const entryDates = useMemo(() => new Set(activityEntries(sessions, volleyballDays)
+    .map((entry) => entry.date)), [sessions, volleyballDays]);
   const [notice, setNotice] = useState("");
   const [criticalNotice, setCriticalNotice] = useState("");
   const [updateAvailable, setUpdateAvailable] = useState(isUpdateAvailable);
@@ -120,6 +131,37 @@ function App() {
     ? { status: "unavailable", email: "", message: "Lokale Daten sind beschädigt. Speicherung und Synchronisierung wurden zum Schutz angehalten." }
     : { status: "loading", email: "", message: "" });
   const cloudRef = useRef(null);
+
+  useEffect(() => {
+    const refreshDate = () => setCurrentDate(today());
+    const timer = window.setInterval(refreshDate, 60_000);
+    document.addEventListener('visibilitychange', refreshDate);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', refreshDate); };
+  }, []);
+
+  useEffect(() => {
+    introScrollY.current = window.scrollY;
+    const scroll = () => {
+      const position = window.scrollY;
+      const distance = Math.max(0, position - introScrollY.current);
+      introScrollY.current = position;
+      if (introDone.current || distance === 0 || !document.querySelector('.app-signed-in')
+        || document.querySelector('.entry-window')) return;
+      setIntroSettling(false);
+      introProgressRef.current = Math.min(1, introProgressRef.current + distance / 181);
+      setIntroProgress(introProgressRef.current);
+      window.clearTimeout(introTimer.current);
+      if (introProgressRef.current >= 1) { introDone.current = true; return; }
+      introTimer.current = window.setTimeout(() => {
+        introDone.current = true;
+        introProgressRef.current = 1;
+        setIntroSettling(true);
+        setIntroProgress(1);
+      }, 170);
+    };
+    window.addEventListener('scroll', scroll, { passive: true });
+    return () => { window.removeEventListener('scroll', scroll); window.clearTimeout(introTimer.current); };
+  }, []);
 
   useEffect(() => {
     if (storageDamaged) return;
@@ -260,8 +302,18 @@ function App() {
     setPageSlide(null);
   }
 
+  function finishIntro() {
+    if (introDone.current) return;
+    window.clearTimeout(introTimer.current);
+    introDone.current = true;
+    introProgressRef.current = 1;
+    setIntroSettling(true);
+    setIntroProgress(1);
+  }
+
   function selectArea(area) {
     clearPageSlide();
+    if (area !== 'home') finishIntro();
     if (area === "home") {
       setArchiveTarget(null);
       setHomeInitialView(null);
@@ -275,6 +327,7 @@ function App() {
 
   function openHomeView(view, originArea = activeArea) {
     clearPageSlide();
+    finishIntro();
     setArchiveTarget(null);
     setHomeInitialView(view);
     setHomeReturnArea(originArea === 'home' ? null : originArea);
@@ -285,6 +338,7 @@ function App() {
 
   function openActivity(entry, returnView = null) {
     clearPageSlide();
+    finishIntro();
     const destination = activityDestination(entry);
     if (destination === "archive") {
       setArchiveTarget({ id: entry.id, type: entry.type, date: entry.date });
@@ -303,6 +357,7 @@ function App() {
 
   function createCalendarEntry(type, date, category, returnView = null) {
     clearPageSlide();
+    finishIntro();
     activityNavigationId.current += 1;
     setActivityTarget({ type, date, category, mode: "create", returnArea: activeArea,
       returnView, navigationId: activityNavigationId.current });
@@ -432,9 +487,12 @@ function App() {
   }
 
   return (
-    <main className="app app-signed-in" data-area={activeArea} onClickCapture={() => { if (notice) setNotice(""); }}>
+    <main className={`app app-signed-in${introSettling ? ' is-intro-settling' : ''}`}
+      data-area={activeArea} onClickCapture={() => { if (notice) setNotice(""); }}>
       <AppChrome state={cloudState} updateAvailable={updateAvailable}
-        onInstallUpdate={installUpdate} onProfile={() => openHomeView("profile")} />
+        onInstallUpdate={installUpdate} onProfile={() => openHomeView("profile")}
+        today={currentDate} selectedDate={selectedDate} entryDates={entryDates}
+        onSelectDate={setChosenDate} introProgress={introProgress} />
 
       <nav className="main-navigation" aria-label="Hauptnavigation">
 
@@ -509,10 +567,11 @@ function App() {
       {areaVisible("home") && <div className={`app-area-page${pageSlide?.from === 'home' ? ' is-from' : ''}${pageSlide?.to === 'home' ? ' is-to' : ''}`}
         style={areaStyle('home')}><HomeView key={homeViewKey}
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
-        accountEmail={cloudState.email}
+        today={currentDate} selectedDate={selectedDate}
         sessions={sessions} volleyballDays={volleyballDays}
         initialView={activeArea === 'home' ? homeInitialView : null}
         archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}
+        onNavigate={finishIntro}
         onExit={homeReturnArea ? () => selectArea(homeReturnArea) : null}>
         <DataSecurity cloudState={cloudState}
           onResolve={(choice) => cloudRef.current?.resolveConflict(choice)}

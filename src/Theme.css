@@ -26,12 +26,27 @@ button:disabled { cursor: not-allowed; opacity: .45; }
 button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; }
 .ui-icon { display: inline-block; flex: 0 0 auto; width: 24px; height: 24px; vertical-align: middle; }
 .app { width: min(100% - 36px, 760px); padding: calc(16px + env(safe-area-inset-top, 0px)) 0 calc(98px + env(safe-area-inset-bottom, 0px)); }
+.app-signed-in[data-area='home'] { min-height: calc(100svh + 180px); }
 .app-topline { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 45px; margin-bottom: 16px; border-bottom: 1px solid #818084; padding: 0 3px 8px; }
 .app-topline time { font-size: clamp(.69rem, 2.9vw, .87rem); color: #e1dedf; }
-.app-topline-actions { display: flex; align-items: center; }
-.app-topline-actions button { display: grid; place-items: center; position: relative; flex: 0 0 auto; width: 44px; height: 44px; border: 0; background: transparent; color: var(--cream); }
 .app-notifications > span { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: #f58d94; }
-.app[data-area='home'] .app-profile-button { display: none; }
+.app-global-header { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; max-width: 520px; margin: 0 auto 12px; padding: 0 0 7px; background: #101013f2; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); }
+.app-global-header .app-topline { height: var(--topline-height); min-height: 0; margin-bottom: 0; padding: 0 3px; overflow: hidden; }
+.app-global-header .app-topline time { opacity: var(--intro-opacity); }
+.app-global-header .app-notifications { display: grid; place-items: center; position: absolute; z-index: 3; top: 0; right: var(--bell-right); width: 44px; height: 44px; border: 0; background: transparent; color: var(--cream); }
+.app-intro { height: var(--intro-height); overflow: hidden; }
+.app-intro-copy { padding: 9px 6px 8px; opacity: var(--intro-opacity); }
+.app-intro h1 { margin: 0; font-family: var(--serif); font-size: clamp(2.7rem, 12vw, 3.9rem); line-height: .98; letter-spacing: -.055em; font-weight: 400; }
+.app-intro h1 > span { display: block; font-size: 1.45em; line-height: 1; overflow-wrap: anywhere; }
+.app-intro p { margin: 7px 0 0; color: #c3bfc5; font-size: .8rem; line-height: 1.4; }
+.app-header-calendar { position: relative; }
+.app-header-calendar .home-five-days-heading { padding-right: 91px; }
+.home-avatar.app-header-avatar { position: absolute; z-index: 2; top: 0; right: 6px; width: var(--avatar-size); height: var(--avatar-size); margin: 0; transform: translateY(var(--avatar-lift)); font-size: calc(var(--avatar-size) * .42); }
+.is-intro-settling .app-intro { transition: height .22s ease-out; }
+.is-intro-settling .app-topline { transition: height .22s ease-out; }
+.is-intro-settling .app-intro-copy { transition: opacity .22s ease-out; }
+.is-intro-settling .app-header-avatar { transition: width .22s ease-out, height .22s ease-out, transform .22s ease-out; }
+.is-intro-settling .app-notifications { transition: right .22s ease-out; }
 .app-status-card { margin-bottom: 16px; padding: 18px; border: 1px solid var(--border); border-radius: 18px; background: var(--panel); }
 .app-status-card > .ui-icon { color: var(--green); }
 .app-status-card h3 { margin: 12px 0 8px; }
@@ -65,11 +80,6 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 
 /* Compact home: greeting, five days, today, week. Extra records grow naturally. */
 .home-dashboard { display: grid; gap: 12px; max-width: 520px; margin: 0 auto; padding: 0; }
-.home-greeting { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 9px 6px 13px; }
-.home-greeting > div { min-width: 0; }
-.home-greeting h1 { margin: 0; font-family: var(--serif); font-size: clamp(2.7rem, 12vw, 3.9rem); line-height: .98; letter-spacing: -.055em; font-weight: 400; }
-.home-greeting h1 > span { display: block; font-size: 1.45em; line-height: 1; overflow-wrap: anywhere; }
-.home-greeting p { margin: 7px 0 0; color: #c3bfc5; font-size: .8rem; line-height: 1.4; }
 .home-avatar { display: grid; place-items: center; flex: 0 0 auto; width: 53px; height: 53px; margin-top: 10px; border: 1px solid #c38acb; border-radius: 50%; color: var(--cream); background: linear-gradient(140deg, #343037, #111113); box-shadow: 0 0 17px #c689d022; font-size: 1.35rem; font-weight: 400; }
 .home-five-days { min-width: 0; padding: 0 6px; }
 .home-five-days-heading { position: relative; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
@@ -260,18 +270,16 @@ select.field { padding-right: 6px; }
 @media (min-width: 700px) {
   .app { padding-top: 28px; }
   .home-dashboard { gap: 18px; }
-  .home-greeting { padding-top: 16px; padding-bottom: 20px; }
   .home-quick-actions button { min-height: 74px; }
   .home-today-card, .home-week-card { padding: 18px; }
   .main-navigation { border: 1px solid #514957; border-bottom: 0; border-radius: 22px 22px 0 0; }
 }
 @media (max-width: 699px) {
   .app { --usable-height: calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
-  .app-topline { margin-bottom: 10px; padding-bottom: 4px; }
+  .app-intro-copy { padding-top: 0; }
+  .app-intro h1 { font-size: clamp(2rem, calc(var(--usable-height) * .045), 3rem); }
+  .app-intro p { margin-top: 5px; font-size: .78rem; }
   .home-dashboard { gap: 10px; }
-  .home-greeting { padding-top: 0; padding-bottom: 8px; }
-  .home-greeting h1 { font-size: clamp(2rem, calc(var(--usable-height) * .045), 3rem); }
-  .home-greeting p { margin-top: 5px; font-size: .78rem; }
   .home-date { width: 46px; height: 46px; }
   .home-today-card, .home-week-card { padding: 12px 14px; }
   .home-today-heading h2 { font-size: 1.8rem; }
@@ -280,9 +288,8 @@ select.field { padding-right: 6px; }
 }
 @media (max-width: 370px) {
   .app { width: calc(100% - 26px); }
-  .home-greeting { padding-left: 2px; padding-right: 2px; }
-  .home-greeting h1 { font-size: 2.6rem; }
-  .home-greeting p { font-size: .72rem; }
+  .app-header-calendar .home-five-days.is-month-view .home-five-days-heading { flex-wrap: wrap; }
+  .app-header-calendar .home-five-days.is-month-view .home-date-controls { flex: 1 0 100%; justify-content: flex-start; }
   .home-avatar { width: 44px; height: 44px; }
   .home-day-count { font-size: .55rem; }
   .home-today-heading h2 { font-size: 1.7rem; }

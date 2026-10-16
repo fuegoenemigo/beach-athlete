@@ -1,24 +1,19 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { activityEntries, activityTitle, isOpenVolleyballDay } from './activityHistory.js'
 import { isOpenTraining } from './trainingModel.js'
-import { greetingName, weekSummary } from './homeSummary.js'
-import HomeDayStrip from './HomeDayStrip.jsx'
+import { weekSummary } from './homeSummary.js'
 import UIIcon from './UIIcon.jsx'
 
 const format = (date, options) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', options)
 const shortDate = (date) => format(date, { day: 'numeric', month: 'long' })
 
-export default function HomeDashboard({ sessions, volleyballDays, today, accountEmail,
+export default function HomeDashboard({ sessions, volleyballDays, today, selectedDate,
   onFeature, onOpenActivity, onCreateEntry }) {
-  const [chosenDate, setChosenDate] = useState(null)
-  const selectedDate = chosenDate ?? today
   const entries = useMemo(() => activityEntries(sessions, volleyballDays), [sessions, volleyballDays])
-  const entryDates = useMemo(() => new Set(entries.map((entry) => entry.date)), [entries])
   const dayEntries = entries.filter((entry) => entry.date === selectedDate)
   const openTraining = entries.find((entry) => entry.type === 'training' && isOpenTraining(entry.item))
   const volleyballEntry = dayEntries.find((entry) => entry.type === 'beach' || entry.type === 'indoor')
   const week = useMemo(() => weekSummary(sessions, volleyballDays, selectedDate), [sessions, volleyballDays, selectedDate])
-  const name = greetingName(accountEmail)
 
   function beginTraining() {
     if (openTraining) onOpenActivity(openTraining)
@@ -31,16 +26,6 @@ export default function HomeDashboard({ sessions, volleyballDays, today, account
   }
 
   return <div className="home-dashboard" aria-label="Startseite">
-    <header className="home-greeting">
-      <div><h1>Hallo,<span>{name}.</span></h1>
-        <p>Bereit, deinen Tag zu gestalten?</p></div>
-      <button type="button" className="home-avatar" onClick={() => onFeature('profile')}
-        aria-label="Mein Profil öffnen" title={accountEmail || 'Mein Profil'}>{name.charAt(0)}</button>
-    </header>
-
-    <HomeDayStrip key={today.slice(0, 7)} today={today} selectedDate={selectedDate}
-      entryDates={entryDates} onSelect={setChosenDate} />
-
     <section className="home-today-card" aria-labelledby="home-today-title">
       <div className="home-today-heading">
         <div><h2 id="home-today-title">{selectedDate === today ? 'Heute' : format(selectedDate, { weekday: 'long' })}</h2>
