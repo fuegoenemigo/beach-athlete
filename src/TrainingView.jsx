@@ -4,6 +4,8 @@ import GuidedEndurancePanel from './GuidedEndurancePanel.jsx'
 import ExerciseInfo from './ExerciseInfo.jsx'
 import TrainingHistoryDetails from './TrainingHistoryDetails.jsx'
 import EntryWindow from './EntryWindow.jsx'
+import DateWheel from './DateWheel.jsx'
+import { ChoiceWheel } from './WheelPicker.jsx'
 import UIIcon from './UIIcon.jsx'
 import { isRecentDate } from './activityHistory.js'
 import { DEFAULT_EXERCISES, enrichExercise, guidedCardioPlanForExercise,
@@ -47,13 +49,28 @@ function groupsFor(library, category) {
     .map((group) => [group, items.filter((item) => (item.muscleGroup || 'Allgemein') === group)])
 }
 
-function ExercisePicker({ id, library, category, value, onChange }) {
-  return <select id={id} className="field" value={value} onChange={(event) => onChange(event.target.value)}>
-    <option value="">Übung auswählen</option>
-    {groupsFor(library, category).map(([group, items]) =>
-      <optgroup label={group} key={group}>{items.map((item) =>
-        <option key={exerciseIdentity(item)} value={exerciseIdentity(item)}>{item.name}</option>)}</optgroup>)}
-  </select>
+function ExercisePicker({ library, category, value, onChange }) {
+  return <ChoiceWheel label="Übung aus Bibliothek" value={value} onChange={onChange}
+    options={[{ value: '', label: 'Übung auswählen' },
+      ...groupsFor(library, category).flatMap(([group, items]) => items.map((item) => ({
+        value: exerciseIdentity(item), label: `${item.name} · ${group}`,
+      })))]} />
+}
+
+function WheelEdit({ label, value, options, onChange }) {
+  const [open, setOpen] = useState(false)
+  const selected = options.find((option) => (typeof option === 'string' ? option : option.value) === value)
+  return <>
+    <button type="button" className="secondary-button training-wheel-edit"
+      onClick={() => setOpen(true)} aria-label={label}>
+      {typeof selected === 'string' ? selected : selected?.label ?? 'Auswählen'}
+    </button>
+    {open && <EntryWindow title={label} subtitle="AUSWAHL"
+      onClose={() => setOpen(false)}>
+      <ChoiceWheel label={label} value={value} options={options} onChange={onChange} />
+      <button type="button" className="primary-button" onClick={() => setOpen(false)}>Übernehmen</button>
+    </EntryWindow>}
+  </>
 }
 
 function SportTrainingEditor({ session, onSave, onClose }) {
@@ -67,9 +84,8 @@ function SportTrainingEditor({ session, onSave, onClose }) {
 
   return <section className="diary-panel training-start-window">
     <p className="helper-text">Dieser Trainingstag ist abgeschlossen. Hier kannst du sein Datum korrigieren.</p>
-    <label className="field-label" htmlFor="sport-edit-date">Datum</label>
-    <input id="sport-edit-date" className="field" type="date" value={date}
-      onChange={(event) => { setDate(event.target.value); setError('') }} />
+    <DateWheel label="Datum" value={date}
+      onChange={(next) => { setDate(next); setError('') }} />
     {error && <p className="training-flow-error" role="alert">{error}</p>}
     <div className="training-finish-actions">
       <button type="button" className="primary-button" onClick={save}>Änderungen speichern</button>
@@ -814,11 +830,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           Andere Vorlage wählen
         </button>
       </> : <>
-      <label className="field-label" htmlFor="training-category">Hauptkategorie für Vorlagen</label>
-      <select id="training-category" className="field" value={newCategory}
-        onChange={(event) => { setNewCategory(event.target.value); setPlanSearch(''); setSportDateError('') }}>
-        {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
-      </select>
+      <ChoiceWheel label="Hauptkategorie für Vorlagen" value={newCategory}
+        options={TRAINING_CATEGORIES}
+        onChange={(category) => { setNewCategory(category); setPlanSearch(''); setSportDateError('') }} />
       {isSportTrainingCategory(newCategory) ? <>
         <p className="helper-text">Hat dieses Training am gewählten Tag stattgefunden? Es werden keine Übungen, Zeiten oder Leistungswerte erfasst.</p>
       </> : <>
@@ -846,10 +860,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         onClick={() => setShowDatePicker(true)}>Anderes Datum erfassen</button>
       {showDatePicker && <EntryWindow title="Trainingsdatum" subtitle="NEUES TRAINING"
         onClose={() => setShowDatePicker(false)}>
-        <label className="field-label" htmlFor="training-date">Trainingsdatum</label>
-        <input id="training-date" className="field" type="date"
-          value={customDate ? selectedDate : today()}
-          onChange={(event) => { setSelectedDate(event.target.value); setCustomDate(true) }} />
+        <DateWheel label="Trainingsdatum" value={customDate ? selectedDate : today()}
+          onChange={(date) => { setSelectedDate(date); setCustomDate(true) }} />
         {customDate && <button type="button" className="text-button"
           onClick={() => setCustomDate(false)}>Wieder heute verwenden</button>}
         <button type="button" className="primary-button" onClick={() => setShowDatePicker(false)}>Datum übernehmen</button>
@@ -952,14 +964,12 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         <input id="plan-name" className="field" value={planDraft.name}
           onChange={(event) => setPlanDraft((draft) => ({ ...draft, name: event.target.value }))}
           placeholder="z. B. Oberkörper" />
-        <label className="field-label" htmlFor="plan-category">Hauptkategorie</label>
-        <select id="plan-category" className="field" value={planDraft.category}
-          onChange={(event) => { setPlanDraft((draft) => ({ ...draft, category: event.target.value }));
-            setPlanExerciseCategory(event.target.value); setPlanChoice('') }}>
-          {!TRAINING_CATEGORIES.includes(planDraft.category)
-            && <option value={planDraft.category}>{planDraft.category} (alte Kategorie)</option>}
-          {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
-        </select>
+        <ChoiceWheel label="Hauptkategorie" value={planDraft.category}
+          options={[...(!TRAINING_CATEGORIES.includes(planDraft.category)
+            ? [{ value: planDraft.category, label: `${planDraft.category} (alte Kategorie)` }] : []),
+          ...TRAINING_CATEGORIES]}
+          onChange={(category) => { setPlanDraft((draft) => ({ ...draft, category }));
+            setPlanExerciseCategory(category); setPlanChoice('') }} />
         {planDraft.exercises.map((item, index) => <div className="training-plan-row" key={item.libraryId}>
           <span>{index + 1}. {item.name} · {item.category ?? planDraft.category}
             {(item.category ?? planDraft.category) === 'Krafttraining' && ` · ${item.muscleGroup || 'Ohne Muskelgruppe'}`}</span>
@@ -967,11 +977,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
             exercises: draft.exercises.filter((reference) => reference.libraryId !== item.libraryId),
           }))}>Entfernen</button>
         </div>)}
-        <label className="field-label" htmlFor="plan-exercise">Übung aus Bibliothek</label>
-        <select className="field" aria-label="Kategorie der nächsten Übung" value={planExerciseCategory}
-          onChange={(event) => { setPlanExerciseCategory(event.target.value); setPlanChoice('') }}>
-          {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
-        </select>
+        <ChoiceWheel label="Kategorie der nächsten Übung" value={planExerciseCategory}
+          options={TRAINING_CATEGORIES}
+          onChange={(category) => { setPlanExerciseCategory(category); setPlanChoice('') }} />
         <ExercisePicker id="plan-exercise" library={visibleLibrary} category={planExerciseCategory}
           value={planChoice} onChange={setPlanChoice} />
         <button type="button" className="secondary-button" onClick={addPlanExercise}>＋ Übung zur Vorlage</button>
@@ -1019,37 +1027,26 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       {showLibrary && <EntryWindow title="Übungsbibliothek" subtitle="ÜBUNGEN VERWALTEN"
         onClose={() => setShowLibrary(false)}>
       <p className="helper-text">Jede Übung gehört zu einer Hauptkategorie und einer Muskelgruppe oder einem Schwerpunkt.</p>
-      <label className="field-label" htmlFor="library-category">Hauptkategorie</label>
-      <select id="library-category" className="field" value={libraryCategory}
-        onChange={(event) => { const category = event.target.value
+      <ChoiceWheel label="Hauptkategorie" value={libraryCategory}
+        options={TRAINING_CATEGORIES}
+        onChange={(category) => {
           setLibraryCategory(category); setLibraryType(defaultMeasurement(category))
-          setLibraryGroup(groupsFor(visibleLibrary, category)[0]?.[0] ?? 'Allgemein') }}>
-        {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
-      </select>
+          setLibraryGroup(groupsFor(visibleLibrary, category)[0]?.[0] ?? 'Allgemein') }} />
       <label className="field-label" htmlFor="library-name">Neue Übung</label>
       <input id="library-name" className="field" value={libraryName}
         onChange={(event) => setLibraryName(event.target.value)} />
-      <label className="field-label" htmlFor="library-type">Messart</label>
-      <select id="library-type" className="field" value={libraryType}
-        onChange={(event) => setLibraryType(event.target.value)}>
-        {MEASUREMENT_TYPES.map(([type, label]) => <option key={type} value={type}>{label}</option>)}
-      </select>
-      <label className="field-label" htmlFor="library-group">
-        {libraryCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'}
-      </label>
-      <select id="library-group" className="field" value={libraryGroup}
-        onChange={(event) => setLibraryGroup(event.target.value)}>
-        {[...new Set([...libraryGroups, libraryGroup,
-          ...(libraryCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
-          .map((group) => <option key={group}>{group}</option>)}
-      </select>
+      <ChoiceWheel label="Messart" value={libraryType}
+        options={MEASUREMENT_TYPES.map(([value, label]) => ({ value, label }))}
+        onChange={setLibraryType} />
+      <ChoiceWheel label={libraryCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'}
+        value={libraryGroup} onChange={setLibraryGroup}
+        options={[...new Set([...libraryGroups, libraryGroup,
+          ...(libraryCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]} />
       {libraryCategory === 'Krafttraining' && <>
-        <label className="field-label" htmlFor="library-strength-role">Übungsart</label>
-        <select id="library-strength-role" className="field" value={libraryStrengthRole}
-          onChange={(event) => setLibraryStrengthRole(event.target.value)}>
-          <option value="compound">Grundübung</option>
-          <option value="isolation">Isolationsübung</option>
-        </select>
+        <ChoiceWheel label="Übungsart" value={libraryStrengthRole}
+          options={[{ value: 'compound', label: 'Grundübung' },
+            { value: 'isolation', label: 'Isolationsübung' }]}
+          onChange={setLibraryStrengthRole} />
       </>}
       <button type="button" className="secondary-button" onClick={addLibraryItem}>＋ Zur Bibliothek</button>
       <div className="training-library-list">
@@ -1064,20 +1061,15 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
                     ? ` · ${strengthRoleFor(item) === 'compound' ? 'Grundübung' : 'Isolationsübung'}` : ''}</span>
               </> : <>
                 <span>{item.name}</span>
-                <select className="field training-group-select"
-                  aria-label={`${libraryCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'} für ${item.name}`}
-                  value={item.muscleGroup || 'Allgemein'}
-                  onChange={(event) => changeLibraryGroup(index, event.target.value)}>
-                  {[...new Set([...libraryGroups, item.muscleGroup || 'Allgemein',
-                    ...(libraryCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
-                    .map((muscle) => <option key={muscle}>{muscle}</option>)}
-                </select>
-                {libraryCategory === 'Krafttraining' && <select className="field training-group-select"
-                  aria-label={`Übungsart für ${item.name}`} value={strengthRoleFor(item)}
-                  onChange={(event) => changeLibraryStrengthRole(index, event.target.value)}>
-                  <option value="compound">Grundübung</option>
-                  <option value="isolation">Isolationsübung</option>
-                </select>}
+                <WheelEdit label={`${libraryCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'} für ${item.name}`}
+                  value={item.muscleGroup || 'Allgemein'} onChange={(group) => changeLibraryGroup(index, group)}
+                  options={[...new Set([...libraryGroups, item.muscleGroup || 'Allgemein',
+                    ...(libraryCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]} />
+                {libraryCategory === 'Krafttraining' && <WheelEdit
+                  label={`Übungsart für ${item.name}`} value={strengthRoleFor(item)}
+                  onChange={(role) => changeLibraryStrengthRole(index, role)}
+                  options={[{ value: 'compound', label: 'Grundübung' },
+                    { value: 'isolation', label: 'Isolationsübung' }]} />}
                 <button type="button" className="text-button" onClick={() => { setRenamingIndex(index); setRenameValue(item.name) }}>Umbenennen</button>
                 <button type="button" className="text-button" onClick={() => {
                   if (!window.confirm(`„${item.name}“ aus der Bibliothek entfernen? Bestehende Einheiten bleiben erhalten.`)) return
@@ -1100,13 +1092,11 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           <strong>Ältere Übungen ohne neue Hauptkategorie</strong>
           <p className="helper-text">Diese Übungen bleiben erhalten. Ordne sie bei Bedarf selbst zu.</p>
           {managedLibrary.filter((item) => !TRAINING_CATEGORIES.includes(item.category))
-            .map((item) => <label className="training-field" key={item.id}>{item.name} · {item.category}
-              <select className="field" value="" onChange={(event) =>
-                reassignLibraryItem(item.sourceIndex, event.target.value)}>
-                <option value="">Neue Kategorie wählen</option>
-                {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
-              </select>
-            </label>)}
+            .map((item) => <div className="training-field" key={item.id}>{item.name} · {item.category}
+              <WheelEdit label={`Neue Kategorie für ${item.name}`} value=""
+                onChange={(category) => { if (category) reassignLibraryItem(item.sourceIndex, category) }}
+                options={[{ value: '', label: 'Neue Kategorie wählen' }, ...TRAINING_CATEGORIES]} />
+            </div>)}
         </div>}
       </EntryWindow>}
     </section>

@@ -6,6 +6,8 @@ import { deviceDistanceMeters, hasWarmupReading, mainDurationSeconds,
 import { ADDITIONAL_PLANS, FOCUS_PLANS, VOLLEYBALL_PLANS } from './volleyballTraining.js'
 import { enduranceProgress } from './enduranceProgress.js'
 import { RatingStepper } from './VolleyballInputs.jsx'
+import { NumberWheel, ChoiceWheel } from './WheelPicker.jsx'
+import DateWheel from './DateWheel.jsx'
 
 const freshClock = () => ({ startedAt: Date.now(), elapsedMs: 0, running: true })
 
@@ -114,17 +116,13 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
         <h3>Gerätestand nach dem Aufwärmen</h3>
         <p className="helper-text">Lies die bisher zurückgelegte Strecke am Gerät ab.
           Dieser Stand dient nur als Ausgangswert und zählt nicht zur Hauptübung.</p>
-        <label className="field-label" htmlFor="endurance-reading-unit">Anzeige am Gerät</label>
-        <select id="endurance-reading-unit" className="field" value={readingUnit}
-          onChange={(event) => onUpdateReading('deviceUnit', event.target.value)}>
-          <option value="km">Kilometer (z. B. 0,75)</option>
-          <option value="m">Meter (z. B. 750)</option>
-        </select>
-        <label className="field-label" htmlFor="endurance-warmup-reading">
-          Zurückgelegte Strecke am Gerät ({readingUnit})</label>
-        <input id="endurance-warmup-reading" className="field" type="text" inputMode="decimal"
-          value={flow.warmupDeviceReading ?? ''} placeholder={readingUnit === 'km' ? 'z. B. 0,75' : 'z. B. 750'}
-          onChange={(event) => onUpdateReading('warmupDeviceReading', event.target.value)} />
+        <ChoiceWheel label="Anzeige am Gerät" value={readingUnit}
+          options={[{ value: 'km', label: 'Kilometer' }, { value: 'm', label: 'Meter' }]}
+          onChange={(unit) => onUpdateReading('deviceUnit', unit)} />
+        <NumberWheel label={`Zurückgelegte Strecke am Gerät (${readingUnit})`}
+          value={flow.warmupDeviceReading ?? ''} min={0} max={readingUnit === 'km' ? 100 : 100000}
+          step={readingUnit === 'km' ? .001 : 1}
+          onChange={(value) => onUpdateReading('warmupDeviceReading', value)} />
         {!hasWarmupReading(flow) && <p className="helper-text">Bitte den Gerätestand eintragen, bevor die Hauptübung startet.</p>}
       </div>}
       <p className="helper-text">{spec.kind === 'interval'
@@ -209,11 +207,10 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
           <h3>Gerätestand nach der Hauptübung</h3>
           <p className="helper-text">Lies den Stand direkt am Ende der Hauptübung ab,
             bevor die Strecke des Auslaufens dazukommt. Startstand: {flow.warmupDeviceReading} {readingUnit}.</p>
-          <label className="field-label" htmlFor="endurance-main-reading">
-            Zurückgelegte Strecke am Gerät ({readingUnit})</label>
-          <input id="endurance-main-reading" className="field" type="text" inputMode="decimal"
-            value={flow.mainDeviceReading ?? ''} placeholder={readingUnit === 'km' ? 'z. B. 3,15' : 'z. B. 3150'}
-            onChange={(event) => onUpdateReading('mainDeviceReading', event.target.value)} />
+          <NumberWheel label={`Zurückgelegte Strecke am Gerät (${readingUnit})`}
+            value={flow.mainDeviceReading ?? ''} min={0} max={readingUnit === 'km' ? 100 : 100000}
+            step={readingUnit === 'km' ? .001 : 1}
+            onChange={(value) => onUpdateReading('mainDeviceReading', value)} />
           {measuredMeters == null ? <p className="helper-text">Der zweite Stand muss größer sein
             als der Stand nach dem Aufwärmen.</p> : <p className="endurance-distance-result">
             Distanz der Hauptübung: <strong>{measuredMeters} m</strong></p>}
@@ -281,36 +278,29 @@ export default function GuidedEndurancePanel({ session, sessions, onUpdateFlow, 
           ? Number(result?.durationValue || 0) : mainDurationSeconds(spec))}.
         Aufwärmen und Auslaufen zählen nicht zur Distanz der Hauptübung.</p>
       {!flow.freeTraining && <>
-        <label className="field-label" htmlFor="guided-endurance-date">Trainingsdatum</label>
-        <input id="guided-endurance-date" className="field" type="date" value={session.date}
-          onChange={(event) => { if (event.target.value) onUpdateSession({ date: event.target.value }) }} />
+        <DateWheel label="Trainingsdatum" value={session.date}
+          onChange={(date) => onUpdateSession({ date })} />
       </>}
       {flow.distanceTracking ? <div className="endurance-device-reading">
         <h3>Ermittelte Distanz der Hauptübung</h3>
         <p className="endurance-distance-result"><strong>{measuredMeters ?? '–'} m</strong>
           {' '}= Stand nach Hauptübung minus Stand nach Aufwärmen</p>
         <p className="helper-text">Ablesefehler? Korrigiere die beiden Gerätestände hier.</p>
-        <label className="field-label" htmlFor="endurance-summary-start">Nach Aufwärmen ({readingUnit})</label>
-        <input id="endurance-summary-start" className="field" type="text" inputMode="decimal"
-          value={flow.warmupDeviceReading ?? ''}
-          onChange={(event) => onUpdateReading('warmupDeviceReading', event.target.value)} />
-        <label className="field-label" htmlFor="endurance-summary-end">Nach Hauptübung ({readingUnit})</label>
-        <input id="endurance-summary-end" className="field" type="text" inputMode="decimal"
-          value={flow.mainDeviceReading ?? ''}
-          onChange={(event) => onUpdateReading('mainDeviceReading', event.target.value)} />
+        <NumberWheel label={`Nach Aufwärmen (${readingUnit})`}
+          value={flow.warmupDeviceReading ?? ''} min={0} max={readingUnit === 'km' ? 100 : 100000}
+          step={readingUnit === 'km' ? .001 : 1}
+          onChange={(value) => onUpdateReading('warmupDeviceReading', value)} />
+        <NumberWheel label={`Nach Hauptübung (${readingUnit})`}
+          value={flow.mainDeviceReading ?? ''} min={0} max={readingUnit === 'km' ? 100 : 100000}
+          step={readingUnit === 'km' ? .001 : 1}
+          onChange={(value) => onUpdateReading('mainDeviceReading', value)} />
       </div> : spec.kind === 'sprint' ? <p className="endurance-distance-result">
         {result?.distanceValue} m in {result?.completedSprints} Sprints
         {' · '}durchschnittlich {result?.averageSprintSeconds} s pro Sprint
       </p> : guidedExercise?.type === 'distance' ? <>
-        <label className="field-label" htmlFor="guided-endurance-distance">
-          Distanz der Hauptübung (km, optional)</label>
-        <input id="guided-endurance-distance" className="field" type="number" min="0" step="any"
-          inputMode="decimal" value={result?.distanceValue ?? ''}
-          onChange={(event) => {
-            const value = event.target.value
-            if (value === '' || (Number.isFinite(Number(value)) && Number(value) >= 0))
-              onUpdateResult({ distanceValue: value, distanceUnit: 'km' })
-          }} />
+        <NumberWheel label="Distanz der Hauptübung (km, optional)"
+          value={result?.distanceValue ?? ''} min={0} max={100} step={.01}
+          onChange={(distanceValue) => onUpdateResult({ distanceValue, distanceUnit: 'km' })} />
       </> : null}
       {!flow.freeTraining && <>
       <RatingStepper id="guided-endurance-intensity" label="Anstrengung der Hauptübung (1–10, optional)"

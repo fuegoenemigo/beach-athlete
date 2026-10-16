@@ -322,7 +322,7 @@ function App() {
     pageSwipeStart.current = null;
     if (pageSlideRef.current?.settling || document.querySelector('.entry-window')
       || event.touches.length !== 1 || event.target.closest(
-        '.home-calendar-stage, input, textarea, select, [contenteditable="true"], [role="slider"]')) return;
+        '.home-calendar-stage, .value-wheel, input, textarea, select, [contenteditable="true"], [role="slider"]')) return;
     const touch = event.touches[0];
     if (touch.clientX < 24 || touch.clientX > window.innerWidth - 24) return;
     pageSwipeStart.current = { x: touch.clientX, y: touch.clientY,

@@ -8,6 +8,8 @@ import { beachSetOpponent } from "./beachOpponents.js";
 import { RatingStepper, SetResultHeading, StrengthStepper } from "./VolleyballInputs.jsx";
 import { isRating, strengthLabels, strengthOptions } from "./volleyballValues.js";
 import EntryWindow from "./EntryWindow.jsx";
+import DateWheel from './DateWheel.jsx';
+import { NumberWheel, ChoiceWheel } from './WheelPicker.jsx';
 import { isOpenVolleyballDay, isRecentDate } from "./activityHistory.js";
 
 const today = () => new Date().toLocaleDateString("sv-SE");
@@ -17,14 +19,6 @@ const beachStrengths = {
   testMatch: ["weaker2", "weaker1", "equal", "stronger1", "stronger2"],
   tournament: ["weaker1", "equal", "stronger1"],
 };
-
-function calendarDays(month) {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const count = new Date(year, monthNumber, 0).getDate();
-  const blanks = (new Date(year, monthNumber - 1, 1).getDay() + 6) % 7;
-  return [...Array(blanks).fill(null), ...Array.from({ length: count }, (_, index) =>
-    `${month}-${String(index + 1).padStart(2, "0")}`)];
-}
 
 function formatDate(date) {
   return new Date(`${date}T12:00:00`).toLocaleDateString("de-DE", {
@@ -43,7 +37,6 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const label = beach ? "Beachvolleyball" : "Hallenvolleyball";
   const [showForm, setShowForm] = useState(false);
   const [date, setDate] = useState("");
-  const [month, setMonth] = useState(() => today().slice(0, 7));
   const [gameType, setGameType] = useState("");
   const [gamePageOpen, setGamePageOpen] = useState(false);
   const [fitness, setFitness] = useState("5");
@@ -71,7 +64,6 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     const frame = window.requestAnimationFrame(() => {
       if (navigationTarget.mode === "create") {
         setDate(navigationTarget.date);
-        setMonth(navigationTarget.date.slice(0, 7));
         setGameType("");
         setGamePageOpen(false);
         setFitness("5");
@@ -103,8 +95,6 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   const savedDays = volleyballDays.filter((day) => day.type === sport
     && (isOpenVolleyballDay(day) || isRecentDate(day.date)))
     .sort((a, b) => b.date.localeCompare(a.date));
-  const takenDates = volleyballDays.filter((day) => day.type === "beach" || day.type === "indoor")
-    .map((day) => day.date);
   const dateAvailable = Boolean(date) && (!isVolleyballDateTaken(volleyballDays, date)
     || activeDay?.date === date);
   const allowedStrengths = beach ? beachStrengths[gameType] ?? strengthOptions : strengthOptions;
@@ -120,7 +110,6 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
 
   function startDay() {
     setDate(isVolleyballDateTaken(volleyballDays, today()) ? "" : today());
-    setMonth(today().slice(0, 7));
     setGameType("");
     setGamePageOpen(false);
     setFitness("5");
@@ -139,7 +128,6 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
   function resumeDay(day) {
     if (gameSets.length && !window.confirm("Ungespeicherte Sätze des aktuellen Spiels verwerfen?")) return;
     setDate(day.date);
-    setMonth(day.date.slice(0, 7));
     setGameType(day.gameType);
     setGamePageOpen(true);
     setFitness(String(day.fitness));
@@ -155,12 +143,6 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     setShowSavedDays(false);
     setExpandedDayId(null);
     setNotice("");
-  }
-
-  function changeMonth(direction) {
-    const [year, monthNumber] = month.split("-").map(Number);
-    const next = new Date(year, monthNumber - 1 + direction, 1);
-    setMonth(`${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, "0")}`);
   }
 
   function validateTournamentFields() {
@@ -352,30 +334,9 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
         subtitle="SPIELTAG-EINGABE" onClose={closeForm}>
         <div className="volleyball-form">
         {!activeDay && <>
-          <span className="field-label">Datum</span>
-          <div className="beach-calendar">
-            <div className="beach-calendar-header">
-              <button type="button" className="secondary-button" aria-label="Vorheriger Monat"
-                onClick={() => changeMonth(-1)}>‹</button>
-              <strong>{new Date(Number(month.slice(0, 4)), Number(month.slice(5, 7)) - 1, 1)
-                .toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</strong>
-              <button type="button" className="secondary-button" aria-label="Nächster Monat"
-                onClick={() => changeMonth(1)}>›</button>
-            </div>
-            <div className="beach-calendar-grid">
-              {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((weekday) =>
-                <div className="beach-calendar-weekday" key={weekday}>{weekday}</div>)}
-              {calendarDays(month).map((calendarDate, index) => calendarDate === null
-                ? <div key={`empty-${index}`} />
-                : <button key={calendarDate} type="button"
-                    className={`beach-calendar-day ${dateAvailable && date === calendarDate ? "selected" : ""}`}
-                    aria-label={formatDate(calendarDate)} aria-pressed={dateAvailable && date === calendarDate}
-                    disabled={takenDates.includes(calendarDate)} onClick={() => setDate(calendarDate)}>
-                    {Number(calendarDate.slice(8, 10))}</button>)}
-            </div>
-          </div>
+          <DateWheel label="Spieltag-Datum" value={date || today()} onChange={setDate} />
           {!dateAvailable && <p className="helper-text" role="status">
-            Bitte wähle ein freies Datum. Durchgestrichene Tage haben bereits einen Beach- oder Hallenvolleyball-Spieltag.
+            Bitte wähle am Rad ein freies Datum. Für diesen Tag gibt es bereits einen Beach- oder Hallenvolleyball-Spieltag.
           </p>}
         </>}
         {activeDay && <p><strong>{formatDate(activeDay.date)}</strong> · {gameLabel(activeDay.gameType)}</p>}
@@ -486,11 +447,9 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
                     value={setDraft.intensity} onChange={(intensity) => setSetDraft((previous) => ({ ...previous, intensity }))} />
                   <RatingStepper id={`${sport}-set-technique`} label="Technische Leistung (1–10)"
                     value={setDraft.technique} onChange={(technique) => setSetDraft((previous) => ({ ...previous, technique }))} />
-                  <label className="field-label" htmlFor={`${sport}-set-result`}>Satzergebnis</label>
-                  <select id={`${sport}-set-result`} className="field" value={setDraft.won}
-                    onChange={(event) => setSetDraft((previous) => ({ ...previous, won: event.target.value }))}>
-                    <option value="true">Gewonnen</option><option value="false">Verloren</option>
-                  </select>
+                  <ChoiceWheel label="Satzergebnis" value={setDraft.won}
+                    options={[{ value: 'true', label: 'Gewonnen' }, { value: 'false', label: 'Verloren' }]}
+                    onChange={(won) => setSetDraft((previous) => ({ ...previous, won }))} />
                   <button type="button" className="secondary-button" onClick={addSet}>＋ Satz hinzufügen</button>
                 </>}
                 {currentGameStatus.finished && <p className="helper-text" role="status">
@@ -520,10 +479,8 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
 
             {gameType === "tournament" && activeTournament?.tournamentStatus === "pendingPlacement" && <>
               <p>Das letzte Spiel ist gespeichert. Trage jetzt die erreichte Platzierung ein.</p>
-              <label className="field-label" htmlFor={`${sport}-tournament-place`}>Belegter Platz</label>
-              <input id={`${sport}-tournament-place`} className="field" type="number" inputMode="numeric"
-                min="1" step="1" value={tournamentPlace}
-                onChange={(event) => setTournamentPlace(event.target.value)} placeholder="z. B. 3" />
+              <NumberWheel label="Belegter Platz" value={tournamentPlace} onChange={setTournamentPlace}
+                min={1} max={100} step={1} />
               <RatingStepper id={`${sport}-tournament-fatigue`}
                 label="Erschöpfung am Ende des Turniers (1–10)" value={fatigue} onChange={setFatigue} />
               <label className="field-label" htmlFor={`${sport}-tournament-notes`}>Notizen (optional)</label>

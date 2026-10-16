@@ -80,12 +80,9 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-date-controls { display: flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 0; }
 .home-five-days.is-month-view .home-calendar-toggle .ui-icon { transform: rotate(180deg); }
 .home-month-picker { position: absolute; z-index: 8; top: calc(100% + 7px); left: 0; width: min(300px, calc(100vw - 48px)); padding: 12px; border: 1px solid #77717b; border-radius: 18px; background: #242127; box-shadow: 0 16px 40px #0009; }
-.home-month-picker-year { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--cream); }
-.home-month-picker-year button { width: 32px; height: 32px; border: 0; border-radius: 10px; color: var(--cream); background: #ffffff0e; font-size: 1.35rem; }
-.home-month-picker-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
-.home-month-picker-grid button { min-height: 38px; border: 1px solid transparent; border-radius: 11px; color: #e1dce3; background: #ffffff08; font-size: .78rem; }
-.home-month-picker-grid button:hover, .home-month-picker-year button:hover { background: #ffffff1a; }
-.home-month-picker-grid button.is-current { border-color: #bdb5c0; color: var(--cream); background: #403b43; }
+.home-month-picker-wheels { display: grid; grid-template-columns: 1.25fr 1fr; gap: 8px; }
+.home-month-picker-wheels .value-wheel-option { font-size: .9rem; }
+.home-month-picker-wheels .value-wheel-option.is-current { font-size: 1.12rem; }
 .home-month-switch { display: flex; align-items: center; gap: 3px; color: #c7c2ca; font-size: .72rem; }
 .home-month-switch button { display: grid; place-items: center; width: 28px; height: 32px; border: 0; border-radius: 9px; color: var(--cream); background: #ffffff0d; font-size: 1.35rem; line-height: 1; }
 .home-month-switch button:hover { background: #ffffff1b; }

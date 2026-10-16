@@ -66,7 +66,7 @@ export default function EntryWindow({ title, subtitle, onClose, children, layer 
 
   function startSwipe(event) {
     touchStart.current = null
-    if (event.touches.length !== 1 || event.target.closest('input, textarea, select, [contenteditable="true"], [role="slider"], .home-calendar-stage, .beach-calendar')) return
+    if (event.touches.length !== 1 || event.target.closest('input, textarea, select, [contenteditable="true"], [role="slider"], .value-wheel, .home-calendar-stage')) return
     touchStart.current = { x: event.touches[0].clientX, y: event.touches[0].clientY }
   }
 

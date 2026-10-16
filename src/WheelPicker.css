@@ -1,0 +1,15 @@
+.number-wheel-field, .choice-wheel-field { min-width: 0; }
+.value-wheel { position: relative; width: 100%; border: 1px solid #57515d; border-radius: 17px; background: #201e23; overflow: hidden; }
+.value-wheel::before, .value-wheel::after { position: absolute; z-index: 1; left: 10px; right: 10px; height: 1px; background: #9a929d80; content: ''; pointer-events: none; }
+.value-wheel::before { top: 43px; }
+.value-wheel::after { bottom: 43px; }
+.value-wheel-viewport { height: 132px; overflow-y: auto; overscroll-behavior-y: contain; overflow-anchor: none; scrollbar-width: none; touch-action: pan-y; }
+.value-wheel-viewport::-webkit-scrollbar { display: none; }
+.value-wheel-viewport:focus-visible { outline: 2px solid var(--cyan); outline-offset: -3px; }
+.value-wheel-spacer { flex: none; }
+.value-wheel-option { display: grid; place-items: center; height: 44px; color: #f2eef4; font-family: var(--serif); font-size: 1.06rem; white-space: nowrap; transition: opacity .1s ease, font-size .1s ease; }
+.value-wheel-option.is-current { font-size: 1.52rem; color: #fff; }
+.value-wheel-suggestion { margin-top: 7px; font-size: .75rem; }
+.date-wheel-columns { display: grid; grid-template-columns: .7fr 1fr 1fr; gap: 6px; }
+.date-wheel-columns .value-wheel-option { font-size: .87rem; }
+.date-wheel-columns .value-wheel-option.is-current { font-size: 1.12rem; }

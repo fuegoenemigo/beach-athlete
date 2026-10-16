@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { RatingStepper } from './VolleyballInputs.jsx'
+import { NumberWheel, ChoiceWheel } from './WheelPicker.jsx'
+import DateWheel from './DateWheel.jsx'
 import EntryWindow from './EntryWindow.jsx'
 import { strengthRoleFor } from './strengthClassification.js'
 import ExerciseInfo from './ExerciseInfo.jsx'
@@ -19,21 +21,21 @@ const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de
   day: '2-digit', month: '2-digit', year: 'numeric',
 })
 
-function NumberField({ label, value, suggestion, onChange, step = 'any' }) {
-  return <label className="training-field">{label}
-    <input className="field" type="number" inputMode="decimal" min="0" step={step}
-      value={value ?? ''} placeholder={suggestion ?? ''} onChange={(event) => {
-        const next = event.target.value
-        if (next === '' || (Number.isFinite(Number(next)) && Number(next) >= 0)) onChange(next)
-      }} />
-  </label>
+function NumberField({ label, value, suggestion, onChange, min = 0, max = 300, step = 1 }) {
+  return <NumberWheel label={label} value={value} suggestion={suggestion}
+    min={min} max={max} step={step} onChange={onChange} />
 }
 
 function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }) {
   const suggested = suggestedTrainingSet(entry, previous, type, exercise)
-  const number = (label, field, step) => <NumberField label={label} value={entry[field]}
+  const number = (label, field) => <NumberField label={label} value={entry[field]}
     suggestion={previous ? suggested[field] : ''}
-    step={step} onChange={(value) => onChange({ [field]: value })} />
+    min={field === 'reps' ? 1 : 0}
+    max={field === 'reps' ? 100 : field === 'weightKg' ? 300 : field === 'heightCm' ? 200
+      : field === 'distanceValue' ? entry.distanceUnit === 'km' ? 100 : 10000
+        : entry.durationUnit === 'min' ? 240 : 3600}
+    step={field === 'weightKg' ? .5 : field === 'distanceValue' && entry.distanceUnit === 'km' ? .01 : 1}
+    onChange={(value) => onChange({ [field]: value })} />
   const timed = ['duration', 'distance', 'carry'].includes(type)
   const bodyweightOnly = isBodyweightOnly(exercise)
   const bodyweight = exercise.loadMode === 'bodyweight'
@@ -43,7 +45,7 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
   const bodyweightKg = entry.bodyweightKg || athleteProfile.bodyweightKg
   return <>
     <div className="training-activity-fields">
-      {['strength', 'reps', 'jump'].includes(type) && number('Wiederholungen', 'reps', '1')}
+      {['strength', 'reps', 'jump'].includes(type) && number('Wiederholungen', 'reps')}
       {['strength', 'jump', 'reps', 'duration'].includes(type) && bodyweight && <p className="training-bodyweight">
         Eigengewicht: {bodyweightKg ? `${bodyweightKg} kg` : 'noch nicht im Profil hinterlegt'}
       </p>}
@@ -57,17 +59,13 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
               : 'Gewicht (kg, optional)', 'weightKg')}
       {type === 'jump' && number('Sprunghöhe (cm, optional)', 'heightCm')}
       {['distance', 'carry'].includes(type) && number(interval ? 'Distanz (optional)' : 'Distanz', 'distanceValue')}
-      {['distance', 'carry'].includes(type) && <label className="training-field">Einheit
-        <select className="field" value={entry.distanceUnit ?? 'm'}
-          onChange={(event) => onChange({ distanceUnit: event.target.value })}>
-          <option value="m">Meter</option><option value="km">Kilometer</option>
-        </select></label>}
+      {['distance', 'carry'].includes(type) && <ChoiceWheel label="Distanzeinheit"
+        value={entry.distanceUnit ?? 'm'} options={[{ value: 'm', label: 'Meter' }, { value: 'km', label: 'Kilometer' }]}
+        onChange={(distanceUnit) => onChange({ distanceUnit })} />}
       {timed && number(interval ? 'Tatsächlich geschaffte Belastungsdauer' : 'Dauer', 'durationValue')}
-      {timed && <label className="training-field">Einheit
-        <select className="field" value={entry.durationUnit ?? 's'}
-          onChange={(event) => onChange({ durationUnit: event.target.value })}>
-          <option value="s">Sekunden</option><option value="min">Minuten</option>
-        </select></label>}
+      {timed && <ChoiceWheel label="Zeiteinheit" value={entry.durationUnit ?? 's'}
+        options={[{ value: 's', label: 'Sekunden' }, { value: 'min', label: 'Minuten' }]}
+        onChange={(durationUnit) => onChange({ durationUnit })} />}
     </div>
     <input className="field training-set-note" aria-label="Notiz zum Satz"
       placeholder="Notiz zum Satz (optional)" value={entry.notes ?? ''}
@@ -140,10 +138,8 @@ export default function GuidedTrainingPanel({
       <h2>Nächste Übung wählen</h2>
       {!TRAINING_CATEGORIES.includes(session.category) ? <div className="training-legacy">
         <p>Dieser ältere Eintrag gehört noch zur Kategorie „{session.category}“. Wähle die passende neue Kategorie, damit seine Übungen eindeutig zugeordnet werden.</p>
-        <select className="field" aria-label="Neue Hauptkategorie" value={newCategory}
-          onChange={(event) => setNewCategory(event.target.value)}>
-          {TRAINING_CATEGORIES.map((category) => <option key={category}>{category}</option>)}
-        </select>
+        <ChoiceWheel label="Neue Hauptkategorie" value={newCategory}
+          options={TRAINING_CATEGORIES} onChange={setNewCategory} />
         <button type="button" className="secondary-button" onClick={() => onRecategorize(newCategory)}>Kategorie übernehmen</button>
       </div> : <>
         {!session.planId && <h3>Hauptkategorie wählen</h3>}
@@ -211,28 +207,20 @@ export default function GuidedTrainingPanel({
           <label className="field-label" htmlFor="custom-name">Übungsname</label>
           <input id="custom-name" className="field" value={customName}
             onChange={(event) => setCustomName(event.target.value)} />
-          <label className="field-label" htmlFor="custom-type">Was wird gemessen?</label>
-          <select id="custom-type" className="field" value={customType}
-            onChange={(event) => setCustomType(event.target.value)}>
-            {MEASUREMENT_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
+          <ChoiceWheel label="Was wird gemessen?" value={customType}
+            options={MEASUREMENT_TYPES.map(([value, label]) => ({ value, label }))}
+            onChange={setCustomType} />
           <>
-            <label className="field-label" htmlFor="custom-group">
-              {exerciseCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'}
-            </label>
-            <select id="custom-group" className="field" value={customGroup}
-              onChange={(event) => setCustomGroup(event.target.value)}>
-              {[...new Set([...groups, customGroup,
-                ...(exerciseCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]
-                .map((muscle) => <option key={muscle}>{muscle}</option>)}
-            </select></>
+            <ChoiceWheel label={exerciseCategory === 'Krafttraining' ? 'Muskelgruppe' : 'Schwerpunkt'}
+              value={customGroup} onChange={setCustomGroup}
+              options={[...new Set([...groups, customGroup,
+                ...(exerciseCategory === 'Krafttraining' ? MUSCLE_GROUPS : [])])]} />
+          </>
           {exerciseCategory === 'Krafttraining' && <>
-            <label className="field-label" htmlFor="custom-strength-role">Übungsart</label>
-            <select id="custom-strength-role" className="field" value={customStrengthRole}
-              onChange={(event) => setCustomStrengthRole(event.target.value)}>
-              <option value="compound">Grundübung</option>
-              <option value="isolation">Isolationsübung</option>
-            </select>
+            <ChoiceWheel label="Übungsart" value={customStrengthRole}
+              options={[{ value: 'compound', label: 'Grundübung' },
+                { value: 'isolation', label: 'Isolationsübung' }]}
+              onChange={setCustomStrengthRole} />
           </>}
           <button type="button" className="secondary-button"
             onClick={() => { onCreateCustom(); setShowCustomExercise(false) }}>Anlegen und ersten Satz öffnen</button>
@@ -258,9 +246,15 @@ export default function GuidedTrainingPanel({
         <p className="helper-text">Die alten Werte bleiben erhalten. Damals wurden keine einzelnen Sätze erfasst.</p>
         <div className="training-activity-fields">{Object.entries(legacyLabels)
           .filter(([field]) => exercise[field] !== '' && exercise[field] != null)
-          .map(([field, label]) => <label className="training-field" key={field}>{label}
-            <input className="field" value={exercise[field] ?? ''}
-              onChange={(event) => onUpdateExercise(exercise.id, { [field]: event.target.value })} /></label>)}</div>
+          .map(([field, label]) => field === 'result'
+            ? <label className="training-field" key={field}>{label}
+              <input className="field" value={exercise[field] ?? ''}
+                onChange={(event) => onUpdateExercise(exercise.id, { [field]: event.target.value })} /></label>
+            : <NumberWheel key={field} label={label} value={exercise[field] ?? ''}
+              min={field === 'reps' || field === 'sets' ? 1 : 0}
+              max={field === 'weight' ? 300 : field === 'distance' ? 10000 : 240}
+              step={field === 'weight' ? .5 : 1} allowEmpty={false}
+              onChange={(value) => onUpdateExercise(exercise.id, { [field]: value })} />)}</div>
       </div>}
       {confirmed.length > 0 && <div className="training-done-list">
         <h3>Bestätigte Sätze</h3>
@@ -289,7 +283,7 @@ export default function GuidedTrainingPanel({
         <h3>Werte eintragen</h3>
         <PreviousExerciseReference number={confirmed.length + 1} value={referenceFor(confirmed.length)} />
         {previousEntryFor(confirmed.length) && <p className="training-suggestion-help">
-          Graue Werte werden beim Bestätigen übernommen. Tippe ins Feld, um sie zu ändern.
+          Vorschläge werden beim Bestätigen übernommen. Drehe ein Rad, um den Wert zu ändern.
         </p>}
         {['duration', 'distance', 'carry'].includes(type) && <TrainingTimer
           key={draft.id} sessionId={session.id} exercise={exercise} entry={draft}
@@ -317,9 +311,8 @@ export default function GuidedTrainingPanel({
     {step === 'summary' && <>
       <h2>Training abschließen</h2>
       <p className="helper-text">Prüfe deine Einheit. Erst mit „Training speichern“ ist sie abgeschlossen.</p>
-      <label className="field-label" htmlFor="session-date">Datum</label>
-      <input id="session-date" className="field" type="date" value={session.date}
-        onChange={(event) => onUpdateSession({ date: event.target.value })} />
+      <DateWheel label="Datum" value={session.date}
+        onChange={(date) => onUpdateSession({ date })} />
       <NumberField label="Dauer der Einheit (Min., optional)" value={session.durationMinutes}
         onChange={(value) => onUpdateSession({ durationMinutes: value })} />
       <RatingStepper id="session-intensity" label="Anstrengung der Einheit (1–10, optional)"

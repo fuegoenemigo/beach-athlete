@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { datesInMonth } from './homeSummary.js'
 import UIIcon from './UIIcon.jsx'
+import { WheelPicker } from './WheelPicker.jsx'
 
 const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const format = (date, options) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', options)
@@ -206,19 +207,21 @@ export default function HomeDayStrip({ today, selectedDate, entryDates, onSelect
             aria-label="Zu heute springen">Heute</button>}
       </div>
       {expanded && pickerOpen && <div id="home-month-picker" className="home-month-picker" role="group" aria-label="Monatsauswahl">
-        <div className="home-month-picker-year">
-          <button type="button" aria-label="Vorheriges Jahr" onClick={() => setPickerYear((year) => year - 1)}>‹</button>
-          <strong>{pickerYear}</strong>
-          <button type="button" aria-label="Nächstes Jahr" onClick={() => setPickerYear((year) => year + 1)}>›</button>
-        </div>
-        <div className="home-month-picker-grid">
-          {Array.from({ length: 12 }, (_, index) => {
-            const month = `${pickerYear}-${String(index + 1).padStart(2, '0')}`
-            return <button type="button" key={month} className={month === visibleMonth ? 'is-current' : ''}
-              aria-pressed={month === visibleMonth} onClick={() => { setVisibleMonth(month); setPickerOpen(false) }}>
-              {format(`${month}-01`, { month: 'short' })}
-            </button>
-          })}
+        <div className="home-month-picker-wheels">
+          <div><span className="field-label">Monat</span>
+            <WheelPicker label="Monat" selectedIndex={Number(visibleMonth.slice(5)) - 1} count={12}
+              optionAt={(index) => ({ label: format(`${pickerYear}-${String(index + 1).padStart(2, '0')}-01`, { month: 'long' }) })}
+              onChangeIndex={(index) => setVisibleMonth(`${pickerYear}-${String(index + 1).padStart(2, '0')}`)} />
+          </div>
+          <div><span className="field-label">Jahr</span>
+            <WheelPicker label="Jahr" selectedIndex={pickerYear - 1950} count={151}
+              optionAt={(index) => ({ label: String(1950 + index) })}
+              onChangeIndex={(index) => {
+                const year = 1950 + index
+                setPickerYear(year)
+                setVisibleMonth(`${year}-${visibleMonth.slice(5)}`)
+              }} />
+          </div>
         </div>
       </div>}
     </div>

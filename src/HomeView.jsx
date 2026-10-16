@@ -6,6 +6,7 @@ import { trainingProgress } from './trainingProgress.js'
 import { athleteRating } from './athleteRating.js'
 import HomeDashboard from './HomeDashboard.jsx'
 import UIIcon from './UIIcon.jsx'
+import { NumberWheel } from './WheelPicker.jsx'
 import './HomeView.css'
 
 const FEATURES = {
@@ -85,25 +86,12 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           <section className="home-profile-card" aria-labelledby="personal-data-title">
             <h3 id="personal-data-title">Persönliche Daten</h3>
             <p>Größe und Körpergewicht stehen für deine spätere Auswertung bereit. Dein Körpergewicht erscheint außerdem bei Übungen mit Eigengewicht.</p>
-            <label className="field-label" htmlFor="profile-bodyweight">Körpergewicht (kg)</label>
-            <input id="profile-bodyweight" className="field" type="number" inputMode="decimal"
-              min="1" step="0.1" placeholder="Noch nicht hinterlegt"
-              value={athleteProfile.bodyweightKg ?? ''}
-              onChange={(event) => {
-                const value = event.target.value
-                if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0))
-                  setAthleteProfile((profile) => ({ ...profile, bodyweightKg: value }))
-              }} />
-            <label className="field-label" htmlFor="profile-height">Körpergröße (cm)</label>
-            <input id="profile-height" className="field" type="number" inputMode="decimal"
-              min="1" max="300" step="0.1" placeholder="Noch nicht hinterlegt"
-              value={athleteProfile.heightCm ?? ''}
-              onChange={(event) => {
-                const value = event.target.value
-                if (value === '' || (Number.isFinite(Number(value)) && Number(value) > 0
-                  && Number(value) <= 300))
-                  setAthleteProfile((profile) => ({ ...profile, heightCm: value }))
-              }} />
+            <NumberWheel label="Körpergewicht (kg)" value={athleteProfile.bodyweightKg ?? ''}
+              min={1} max={300} step={.1}
+              onChange={(bodyweightKg) => setAthleteProfile((profile) => ({ ...profile, bodyweightKg }))} />
+            <NumberWheel label="Körpergröße (cm)" value={athleteProfile.heightCm ?? ''}
+              min={1} max={300} step={.1}
+              onChange={(heightCm) => setAthleteProfile((profile) => ({ ...profile, heightCm }))} />
           </section>
           {children}
         </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
