@@ -24,7 +24,7 @@ const FEATURES = {
 }
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile,
-  sessions, volleyballDays, today, selectedDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
+  sessions, volleyballDays, today, selectedDate, entryDates, onSelectDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
   onExit = null }) {
   const [featureStack, setFeatureStack] = useState(initialView ? [initialView] : [])
   const selectedFeature = featureStack.at(-1)
@@ -46,7 +46,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
     else setFeatureStack((stack) => stack.slice(0, -1))
   }
   const dashboard = <HomeDashboard sessions={sessions} volleyballDays={volleyballDays} today={today}
-    selectedDate={selectedDate} cardScore={rating.overall.score} onFeature={openFeature}
+    selectedDate={selectedDate} entryDates={entryDates} onSelectDate={onSelectDate} cardScore={rating.overall.score} onFeature={openFeature}
     onOpenActivity={openEntry} onCreateEntry={createEntry} />
 
   if (selectedFeature) {

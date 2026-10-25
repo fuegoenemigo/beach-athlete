@@ -161,6 +161,7 @@ function App() {
       return;
     }
     if (Math.abs(dy) < 4) return;
+    gesture.consuming = true;
     setIntroFromGesture(gesture.progress - dy / 220);
   }
 
@@ -170,6 +171,16 @@ function App() {
     const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? 100 : 1);
     setIntroFromGesture(introProgressRef.current + delta / 220);
   }
+
+  useEffect(() => {
+    const region = scrollRegionRef.current;
+    if (!region) return undefined;
+    const keepCalendarInView = (event) => {
+      if (introTouch.current?.consuming && event.cancelable) event.preventDefault();
+    };
+    region.addEventListener('touchmove', keepCalendarInView, { passive: false });
+    return () => region.removeEventListener('touchmove', keepCalendarInView);
+  }, [cloudState.status]);
 
   useEffect(() => {
     if (storageDamaged) return;
@@ -500,8 +511,7 @@ function App() {
       onClickCapture={() => { if (notice) setNotice(""); }}>
       <AppChrome state={cloudState} updateAvailable={updateAvailable}
         onInstallUpdate={installUpdate} onProfile={() => openHomeView("profile")}
-        today={currentDate} selectedDate={selectedDate} entryDates={entryDates} firstName={athleteProfile.firstName}
-        onSelectDate={setChosenDate} introProgress={introProgress} />
+        today={currentDate} firstName={athleteProfile.firstName} introProgress={introProgress} />
 
       <nav className="main-navigation" aria-label="Hauptnavigation">
 
@@ -577,7 +587,7 @@ function App() {
       {areaVisible("home") && <div className={`app-area-page${pageSlide?.from === 'home' ? ' is-from' : ''}${pageSlide?.to === 'home' ? ' is-to' : ''}`}
         style={areaStyle('home')}><HomeView key={homeViewKey}
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
-        today={currentDate} selectedDate={selectedDate}
+        today={currentDate} selectedDate={selectedDate} entryDates={entryDates} onSelectDate={setChosenDate}
         sessions={sessions} volleyballDays={volleyballDays}
         initialView={activeArea === 'home' ? homeInitialView : null}
         archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}

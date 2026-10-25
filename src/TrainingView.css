@@ -20,7 +20,7 @@
 .training-flow-steps span {
   padding: 9px 5px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 0;
   color: var(--muted);
   font-size: 0.73rem;
   text-align: center;
@@ -195,7 +195,7 @@
   margin: 0;
   padding: 12px;
   border: 1px solid #5e5e5e;
-  border-radius: 11px;
+  border-radius: 0;
   color: var(--green);
   background: #2c2c2c;
   font-size: 0.83rem;
@@ -210,7 +210,7 @@
 .training-plan-row .secondary-button { margin-top: 0; }
 
 .training-plan-groups { display: grid; gap: 10px; margin: 16px 0; }
-.training-plan-group { overflow: hidden; border: 1px solid var(--border); border-radius: 13px; background: #1e1e1e; }
+.training-plan-group { overflow: hidden; border: 1px solid var(--border); border-radius: 0; background: #1e1e1e; }
 .training-plan-group-toggle { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 12px 15px; border: 0; color: #f1f1f1; background: transparent; text-align: left; }
 .training-plan-group-toggle strong { flex: 1; font-size: 0.98rem; }
 .training-plan-group-toggle span { color: var(--muted); font-size: 0.8rem; }
@@ -236,7 +236,7 @@
   min-height: 49px;
   padding: 12px 16px;
   border: 1px solid #474747;
-  border-radius: 12px;
+  border-radius: 0;
   color: var(--green);
   background: #212121;
   font-weight: 750;
@@ -311,7 +311,7 @@
   width: 42px;
   height: 42px;
   border: 1px solid #8a8a8a;
-  border-radius: 50%;
+  border-radius: 0;
   color: #e2e2e2;
   background: #353535;
   font: 700 1rem/1 Georgia, serif;
@@ -327,7 +327,7 @@
   margin: 8px 0 0;
   padding: 12px 14px;
   border: 1px solid #5e5e5e;
-  border-radius: 11px;
+  border-radius: 0;
   color: #e0e0e0;
   background: #2c2c2c;
   font-size: 0.88rem;
@@ -349,7 +349,7 @@
 .training-plan-preview > li {
   padding: 10px;
   border: 1px solid var(--border);
-  border-radius: 11px;
+  border-radius: 0;
   background: #222222;
 }
 
@@ -365,7 +365,7 @@
   margin: 18px 0;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .training-done-list h3 {
@@ -389,7 +389,7 @@
   margin: 22px 0;
   padding: 17px;
   border: 1px solid #717171;
-  border-radius: 15px;
+  border-radius: 0;
   background: #262626;
 }
 
@@ -403,7 +403,7 @@
   margin: 16px 0;
   padding: 16px;
   border: 1px solid #828282;
-  border-radius: 13px;
+  border-radius: 0;
   background: #1e1e1e;
   text-align: center;
 }
@@ -419,28 +419,28 @@
 .guided-endurance h2 { margin: 8px 0 0; }
 .guided-endurance .helper-text { margin: 0; }
 .endurance-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.endurance-steps span { padding: 9px 5px; border: 1px solid var(--border); border-radius: 9px;
+.endurance-steps span { padding: 9px 5px; border: 1px solid var(--border); border-radius: 0;
   color: var(--muted); font-size: 0.75rem; text-align: center; overflow-wrap: anywhere; }
 .endurance-steps .current { color: var(--green); border-color: #828282; background: #2f2f2f; }
 .endurance-clock { display: block; padding: 18px 8px; border: 1px solid #717171;
-  border-radius: 15px; color: #f5f5f5; background: #1e1e1e; text-align: center;
+  border-radius: 0; color: #f5f5f5; background: #1e1e1e; text-align: center;
   font-variant-numeric: tabular-nums; font-size: clamp(2.8rem, 14vw, 5rem); font-weight: 800; line-height: 1; }
 .endurance-countdown { color: var(--green); }
 .endurance-rest-clock { color: #cacaca; border-color: #838383; background: #242424; }
 .endurance-recovery { color: #cacaca; }
 .endurance-phase-count { margin: 0; color: var(--green); font-weight: 700; }
 .endurance-intensity, .endurance-intensity-guide { padding: 11px 13px; border: 1px solid #5e5e5e;
-  border-radius: 11px; color: #e0e0e0; background: #2c2c2c; line-height: 1.45; }
+  border-radius: 0; color: #e0e0e0; background: #2c2c2c; line-height: 1.45; }
 .endurance-intensity-guide p { margin: 0 0 6px; }
 .endurance-intensity-guide small { color: #cccccc; }
 .endurance-device-reading { display: grid; gap: 9px; padding: 13px;
-  border: 1px solid var(--border); border-radius: 12px; background: #222222; }
+  border: 1px solid var(--border); border-radius: 0; background: #222222; }
 .endurance-device-reading h3 { margin: 0; font-size: 1rem; }
 .endurance-device-reading .field-label { margin: 2px 0 0; }
 .endurance-device-reading .field { width: 100%; min-width: 0; }
 .endurance-distance-result { margin: 0; color: var(--green); }
 .endurance-progress-guidance { padding: 13px; border: 1px solid var(--border);
-  border-radius: 12px; background: #222222; line-height: 1.45; }
+  border-radius: 0; background: #222222; line-height: 1.45; }
 .endurance-progress-guidance p { margin: 8px 0 0; }
 .endurance-comparable-check { display: flex; align-items: flex-start; gap: 9px; color: #e0e0e0; }
 .endurance-comparable-check input { flex: none; margin-top: 4px; }
@@ -480,7 +480,7 @@
   margin-top: 12px;
   padding: 16px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 0;
   background: #181818;
 }
 
@@ -493,7 +493,7 @@
   margin: 12px 0 16px;
   padding: 11px 13px;
   border: 1px solid #474747;
-  border-radius: 11px;
+  border-radius: 0;
   color: #b8b8b8;
   background: #232323;
   font-size: 0.82rem;
@@ -531,7 +531,7 @@
   margin-top: 16px;
   padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 0;
   background: #222222;
 }
 

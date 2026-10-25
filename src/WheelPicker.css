@@ -1,5 +1,5 @@
 .number-wheel-field, .choice-wheel-field { min-width: 0; }
-.value-wheel { position: relative; width: 100%; border: 1px solid #535353; border-radius: 17px; background: #1f1f1f; overflow: hidden; }
+.value-wheel { position: relative; width: 100%; border: 1px solid #535353; border-radius: 0; background: #1f1f1f; overflow: hidden; }
 .value-wheel::before, .value-wheel::after { position: absolute; z-index: 1; left: 10px; right: 10px; height: 1px; background: #94949480; content: ''; pointer-events: none; }
 .value-wheel::before { top: 43px; }
 .value-wheel::after { bottom: 43px; }
