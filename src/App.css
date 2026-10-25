@@ -2,8 +2,8 @@
 :root {
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  color: #f3f5f3;
-  background: #0b0e0c;
+  color: #f4f4f4;
+  background: #0d0d0d;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -11,13 +11,13 @@
   font-optical-sizing: auto;
   font-weight: 400;
   color-scheme: dark;
-  --bg: #0b0e0c;
-  --panel: #141915;
-  --panel-light: #1b221d;
-  --border: #29332c;
-  --muted: #929d94;
-  --green: #a5ef75;
-  --green-dark: #243c24;
+  --bg: #0d0d0d;
+  --panel: #181818;
+  --panel-light: #202020;
+  --border: #303030;
+  --muted: #9a9a9a;
+  --green: #d6d6d6;
+  --green-dark: #353535;
 }
 
 * {
@@ -29,7 +29,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 50% -10%, #1c3020 0, transparent 42%),
+    radial-gradient(ellipse at 50% -10%, #2b2b2b 0, transparent 42%),
     var(--bg);
 }
 
@@ -98,7 +98,7 @@ textarea:focus-visible {
   min-height: 49px;
   padding: 0;
   border: 0;
-  color: #aab2ac;
+  color: #b0b0b0;
   background: transparent;
 }
 
@@ -121,10 +121,10 @@ textarea:focus-visible {
   gap: 8px;
   margin-bottom: 18px;
   padding: 13px 16px;
-  border: 1px solid #496b43;
+  border: 1px solid #616161;
   border-radius: 12px;
-  color: #e6f6db;
-  background: #18251a;
+  color: #f1f1f1;
+  background: #212121;
   font-size: 0.9rem;
 }
 
@@ -159,10 +159,10 @@ textarea:focus-visible {
   place-items: center;
   width: 50px;
   height: 50px;
-  border: 1px solid #537b46;
+  border: 1px solid #6f6f6f;
   border-radius: 15px;
   color: var(--green);
-  background: linear-gradient(145deg, #253d27, #111712);
+  background: linear-gradient(145deg, #363636, #151515);
   font-size: 1rem;
   font-weight: 900;
 }
@@ -170,9 +170,9 @@ textarea:focus-visible {
 .diary-intro {
   padding: 27px;
   margin-bottom: 18px;
-  border: 1px solid #314334;
+  border: 1px solid #3e3e3e;
   border-radius: 22px;
-  background: linear-gradient(135deg, #1b2b1e, #121814 72%);
+  background: linear-gradient(135deg, #272727, #161616 72%);
 }
 
 .diary-intro h2 {
@@ -186,7 +186,7 @@ textarea:focus-visible {
 .diary-intro > p:last-child {
   max-width: 540px;
   margin: 0;
-  color: #b5c0b7;
+  color: #bdbdbd;
   font-size: 0.94rem;
   line-height: 1.65;
 }
@@ -196,7 +196,7 @@ textarea:focus-visible {
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 20px;
-  background: rgba(20, 25, 21, 0.96);
+  background: rgba(24, 24, 24, 0.96);
   box-shadow: 0 10px 30px #00000012;
 }
 
@@ -217,7 +217,7 @@ textarea:focus-visible {
 .field-label {
   display: block;
   margin: 18px 0 9px;
-  color: #dbe2dc;
+  color: #e0e0e0;
   font-size: 0.85rem;
   font-weight: 650;
 }
@@ -228,16 +228,16 @@ textarea:focus-visible {
   min-width: 0;
   min-height: 46px;
   padding: 11px 13px;
-  border: 1px solid #344037;
+  border: 1px solid #3d3d3d;
   border-radius: 11px;
-  color: #f3f5f3;
-  background: #0e120f;
+  color: #f4f4f4;
+  background: #111111;
   font-size: 1rem;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .field:hover {
-  border-color: #506452;
+  border-color: #5e5e5e;
 }
 
 .field:focus {
@@ -247,17 +247,17 @@ textarea:focus-visible {
 
 .field[aria-invalid="true"],
 .field[aria-invalid="true"]:focus {
-  border-color: #f27575;
+  border-color: #909090;
 }
 
 .field-error {
   margin: 7px 0 0;
-  color: #f5a7a7;
+  color: #b8b8b8;
   font-size: 0.82rem;
 }
 
 .field::placeholder {
-  color: #68736a;
+  color: #707070;
 }
 
 .beach-stepper {
@@ -269,16 +269,16 @@ textarea:focus-visible {
 
 .beach-stepper-button {
   min-height: 50px;
-  border: 1px solid #496b43;
+  border: 1px solid #616161;
   border-radius: 11px;
   color: var(--green);
-  background: #1a2a1d;
+  background: #262626;
   font-size: 1.1rem;
   font-weight: 800;
 }
 
 .beach-stepper-button:hover:not(:disabled) {
-  background: #29452b;
+  background: #3d3d3d;
 }
 
 .beach-stepper-button:disabled {
@@ -306,10 +306,10 @@ textarea:focus-visible {
   min-width: 0;
   min-height: 50px;
   padding: 7px 5px;
-  border: 1px solid #344037;
+  border: 1px solid #3d3d3d;
   border-radius: 11px;
-  color: #f3f5f3;
-  background: #0e120f;
+  color: #f4f4f4;
+  background: #111111;
   text-align: center;
   font-size: 0.9rem;
   font-weight: 700;
@@ -323,25 +323,25 @@ textarea:focus-visible {
   min-height: 49px;
   margin-top: 10px;
   padding: 12px 16px;
-  border: 1px solid #b99759;
+  border: 1px solid #9a9a9a;
   border-radius: 12px;
-  color: #ffe6b5;
-  background: #3b3020;
+  color: #e8e8e8;
+  background: #313131;
   font-weight: 750;
 }
 
 .last-set-button:hover {
-  background: #514028;
+  background: #424242;
 }
 
 .last-game-button {
-  border-color: #8fb89b;
-  color: #e4f4e7;
-  background: #244331;
+  border-color: #adadad;
+  color: #f0f0f0;
+  background: #3b3b3b;
 }
 
 .last-game-button:hover {
-  background: #315941;
+  background: #4f4f4f;
 }
 
 input[type="date"] {
@@ -365,24 +365,24 @@ input[type="date"] {
 .primary-button {
   margin-top: 16px;
   border: 1px solid var(--green);
-  color: #13200f;
+  color: #1c1c1c;
   background: var(--green);
 }
 
 .primary-button:hover {
-  background: #b8f798;
+  background: #e3e3e3;
   transform: translateY(-1px);
 }
 
 .secondary-button {
   margin-top: 12px;
-  border: 1px solid #3b4c3d;
+  border: 1px solid #474747;
   color: var(--green);
-  background: #1a241b;
+  background: #212121;
 }
 
 .secondary-button:hover {
-  background: #263728;
+  background: #323232;
 }
 
 .helper-text {
@@ -401,9 +401,9 @@ input[type="date"] {
 .exercise-adder {
   margin: 24px 0;
   padding: 17px;
-  border: 1px solid #29352b;
+  border: 1px solid #323232;
   border-radius: 15px;
-  background: #101511;
+  background: #141414;
 }
 
 .exercise-adder .field-label {
@@ -412,14 +412,14 @@ input[type="date"] {
 
 .empty-state {
   padding: 28px 14px;
-  border: 1px dashed #344137;
+  border: 1px dashed #3e3e3e;
   border-radius: 14px;
   text-align: center;
 }
 
 .empty-state p {
   margin: 0 0 6px;
-  color: #dfe6df;
+  color: #e4e4e4;
   font-weight: 650;
 }
 
@@ -449,9 +449,9 @@ input[type="date"] {
 .exercise-card {
   min-width: 0;
   padding: 18px;
-  border: 1px solid #303c32;
+  border: 1px solid #393939;
   border-radius: 15px;
-  background: linear-gradient(145deg, #19201a, #131713);
+  background: linear-gradient(145deg, #1e1e1e, #161616);
 }
 
 .exercise-card-heading {
@@ -482,16 +482,16 @@ input[type="date"] {
   place-items: center;
   width: 44px;
   height: 44px;
-  border: 1px solid #3a453c;
+  border: 1px solid #424242;
   border-radius: 10px;
-  color: #c3cdc4;
-  background: #1a211b;
+  color: #cacaca;
+  background: #1f1f1f;
   font-size: 1.3rem;
 }
 
 .icon-button:hover {
-  border-color: #a85b5b;
-  color: #ffaaaa;
+  border-color: #6b6b6b;
+  color: #bcbcbc;
 }
 
 .exercise-fields {
@@ -504,7 +504,7 @@ input[type="date"] {
 .notes-label {
   display: block;
   min-width: 0;
-  color: #b5c0b7;
+  color: #bdbdbd;
   font-size: 0.77rem;
   font-weight: 600;
 }
@@ -531,10 +531,10 @@ input[type="date"] {
   min-width: 34px;
   height: 34px;
   padding: 0 9px;
-  border: 1px solid #3c523d;
+  border: 1px solid #4c4c4c;
   border-radius: 10px;
   color: var(--green);
-  background: #1b2a1d;
+  background: #262626;
   font-size: 0.82rem;
   font-weight: 800;
 }
@@ -549,9 +549,9 @@ input[type="date"] {
   align-items: center;
   gap: 10px;
   padding: 13px;
-  border: 1px solid #2c372e;
+  border: 1px solid #343434;
   border-radius: 13px;
-  background: #111612;
+  background: #151515;
 }
 
 .history-main {
@@ -583,10 +583,10 @@ input[type="date"] {
 
 .notice-message {
   padding: 13px 16px;
-  border: 1px solid #496b43;
+  border: 1px solid #616161;
   border-radius: 12px;
   color: var(--green);
-  background: #18251a;
+  background: #212121;
   font-size: 0.9rem;
 }
 
@@ -618,7 +618,7 @@ input[type="date"] {
   padding: 24px;
   border: 1px solid var(--border);
   border-radius: 20px;
-  background: linear-gradient(135deg, #1a281c, var(--panel) 70%);
+  background: linear-gradient(135deg, #242424, var(--panel) 70%);
 }
 .access-gate-card h2 { margin: 0 0 8px; }
 .access-gate-card > p:not(.eyebrow) { color: var(--muted); line-height: 1.55; }
@@ -651,12 +651,12 @@ input[type="date"] {
   height: 44px;
   padding: 6px;
   border: 0;
-  color: #aeb7b1;
+  color: #b5b5b5;
   background: transparent;
 }
 
 .profile-shortcut svg { display: block; width: 30px; height: 30px; fill: currentColor; }
-.profile-shortcut:hover { color: #e0e8e1; }
+.profile-shortcut:hover { color: #e6e6e6; }
 
 .sync-status {
   display: block;
@@ -671,7 +671,7 @@ input[type="date"] {
 
 .app-footer {
   padding: 18px 0 8px;
-  color: #667168;
+  color: #6e6e6e;
   font-size: 0.68rem;
   font-weight: 750;
   letter-spacing: 0.12em;
@@ -700,8 +700,8 @@ input[type="date"] {
     gap: 8px;
     margin: 0;
     padding: 8px max(11px, env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) max(11px, env(safe-area-inset-left, 0px));
-    border-top: 1px solid #354039;
-    background: rgba(14, 20, 16, 0.97);
+    border-top: 1px solid #3d3d3d;
+    background: rgba(18, 18, 18, 0.97);
   }
 
   .main-navigation .primary-button,
@@ -782,7 +782,7 @@ input[type="date"] {
 .beach-calendar-day {
   min-width: 0;
   aspect-ratio: 1;
-  border: 1px solid #53675a;
+  border: 1px solid #626262;
   border-radius: 8px;
   background: transparent;
   color: inherit;
@@ -795,14 +795,14 @@ input[type="date"] {
 
 .beach-calendar-day.selected {
   background: var(--green);
-  color: #13200f;
+  color: #1c1c1c;
   border-color: var(--green);
 }
 
 .beach-calendar-day:disabled {
-  background: #1c2420;
-  color: #8c9c8f;
-  border-color: #354039;
+  background: #222222;
+  color: #989898;
+  border-color: #3d3d3d;
   cursor: not-allowed;
   text-decoration: line-through;
   opacity: 1;
@@ -811,9 +811,9 @@ input[type="date"] {
 .volleyball-set-editor {
   margin-top: 22px;
   padding: 18px;
-  border: 1px solid #344938;
+  border: 1px solid #434343;
   border-radius: 14px;
-  background: #111a13;
+  background: #181818;
 }
 
 .volleyball-set-editor h3,
@@ -832,9 +832,9 @@ input[type="date"] {
 }
 
 .volleyball-delete-action {
-  color: #f0b3a7;
-  border-color: #744d46;
-  background: #2b1d1b;
+  color: #bfbfbf;
+  border-color: #555555;
+  background: #202020;
 }
 
 .volleyball-list-toggle { margin-top: 0; }
@@ -870,15 +870,15 @@ input[type="date"] {
   line-height: 1;
 }
 
-.set-result-mark.is-win { color: #9bee7b; }
-.set-result-mark.is-loss { color: #f27575; }
+.set-result-mark.is-win { color: #d4d4d4; }
+.set-result-mark.is-loss { color: #909090; }
 
 .beach-opponent-editor {
   margin: 12px 0 18px;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #101711;
+  background: #151515;
 }
 
 .beach-opponent-editor .field-label {

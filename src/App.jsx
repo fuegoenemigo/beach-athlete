@@ -463,10 +463,10 @@ function App() {
           <span className="app-mark">BA</span>
         </header>
         <nav className="main-navigation" aria-label="Hauptnavigation">
-          <button type="button" className="home-navigation-button" disabled aria-label="Startseite">⌂</button>
-          <button type="button" className="secondary-button" disabled>🏖️ Beach</button>
-          <button type="button" className="secondary-button" disabled>🏟️ Halle</button>
-          <button type="button" className="secondary-button" disabled>💪 Training</button>
+          <button type="button" className="home-navigation-button" disabled aria-label="Startseite"><UIIcon name="home" /><span>Start</span></button>
+          <button type="button" className="secondary-button" disabled><UIIcon name="beach" /><span>Beach</span></button>
+          <button type="button" className="secondary-button" disabled><UIIcon name="ball" /><span>Halle</span></button>
+          <button type="button" className="secondary-button" disabled><UIIcon name="training" /><span>Training</span></button>
         </nav>
         <section className="access-gate-card">
           <p className="eyebrow">PERSÖNLICHER ZUGANG</p>

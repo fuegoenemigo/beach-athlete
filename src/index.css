@@ -1,18 +1,18 @@
 
 :root {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: #f3f5f4;
-  background: #0b0e0d;
+  color: #f5f5f5;
+  background: #0d0d0d;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --bg: #0b0e0d;
-  --panel: #141917;
-  --panel-light: #1a211e;
-  --border: #29332e;
-  --muted: #929d96;
-  --green: #b7f36b;
-  --green-dark: #25351c;
+  --bg: #0d0d0d;
+  --panel: #181818;
+  --panel-light: #1f1f1f;
+  --border: #313131;
+  --muted: #9a9a9a;
+  --green: #dcdcdc;
+  --green-dark: #303030;
 }
 
 * { box-sizing: border-box; }
@@ -22,7 +22,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 85% 0%, #1c2a1e 0%, transparent 36%),
+    radial-gradient(ellipse at 85% 0%, #262626 0%, transparent 36%),
     var(--bg);
 }
 
@@ -53,7 +53,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   align-items: center;
   gap: 12px;
   padding: 0;
-  color: #f3f5f4;
+  color: #f5f5f5;
   border: 0;
   background: none;
   font-family: 'Space Grotesk', sans-serif;
@@ -68,7 +68,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   width: 38px;
   height: 38px;
   border-radius: 11px;
-  color: #0b0e0d;
+  color: #0d0d0d;
   background: var(--green);
   font-size: 14px;
   letter-spacing: -1px;
@@ -95,7 +95,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
 .athlete-card, .panel {
   border: 1px solid var(--border);
   border-radius: 20px;
-  background: linear-gradient(140deg, #19211b, #111513 72%);
+  background: linear-gradient(140deg, #1f1f1f, #141414 72%);
 }
 .athlete-card { padding: 26px; }
 .card-top, .section-heading, .detail-heading {
@@ -125,7 +125,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   padding: 18px;
 }
 .athlete-symbol { font-size: 30px; }
-.card-placeholder p { margin: 8px 0 5px; color: #eaf0eb; font-weight: 600; }
+.card-placeholder p { margin: 8px 0 5px; color: #eeeeee; font-weight: 600; }
 .card-placeholder > span:last-child { font-size: 12px; }
 
 .attribute-grid {
@@ -140,9 +140,9 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 6px;
   padding: 12px;
   border-radius: 12px;
-  background: #111613;
+  background: #151515;
 }
-.attribute span { color: #c3ccc6; font-size: 11px; }
+.attribute span { color: #cacaca; font-size: 11px; }
 .attribute strong { font-family: 'Space Grotesk', sans-serif; font-size: 24px; }
 .attribute small { color: var(--muted); font-size: 10px; }
 
@@ -199,10 +199,10 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   gap: 12px;
   margin-top: 18px;
   padding: 12px 16px;
-  border: 1px solid #425a30;
+  border: 1px solid #525252;
   border-radius: 12px;
   color: var(--green);
-  background: #192419;
+  background: #212121;
   font-size: 13px;
 }
 .notice button {
@@ -227,7 +227,7 @@ button:focus-visible, input:focus-visible, select:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  color: #c5cec8;
+  color: #cccccc;
   font-size: 11px;
   font-weight: 600;
 }
@@ -236,12 +236,12 @@ input, select {
   min-width: 0;
   min-height: 42px;
   padding: 10px 11px;
-  color: #f3f5f4;
-  border: 1px solid #344039;
+  color: #f5f5f5;
+  border: 1px solid #3d3d3d;
   border-radius: 9px;
-  background: #0d110f;
+  background: #101010;
 }
-input::placeholder { color: #647169; }
+input::placeholder { color: #6e6e6e; }
 select { color-scheme: dark; }
 
 .primary-button {
@@ -249,13 +249,13 @@ select { color-scheme: dark; }
   padding: 0 15px;
   border: 1px solid var(--green);
   border-radius: 9px;
-  color: #10150c;
+  color: #131313;
   background: var(--green);
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
 }
-.primary-button:hover { background: #d0ff9b; }
+.primary-button:hover { background: #eeeeee; }
 
 .empty-state {
   display: flex;
@@ -264,10 +264,10 @@ select { color-scheme: dark; }
   justify-content: center;
   margin-top: 18px;
   padding: 38px 20px;
-  border: 1px dashed #354239;
+  border: 1px dashed #3f3f3f;
   border-radius: 16px;
   text-align: center;
-  background: #101512;
+  background: #141414;
 }
 .empty-state > span { font-size: 30px; }
 .empty-state h3 { margin: 12px 0 4px; }
@@ -291,7 +291,7 @@ select { color-scheme: dark; }
   border-radius: 12px;
   background: var(--panel);
 }
-.plan-selected { border-color: #829e65; background: #172018; }
+.plan-selected { border-color: #949494; background: #1e1e1e; }
 .plan-open {
   display: flex;
   flex: 1;
@@ -299,7 +299,7 @@ select { color-scheme: dark; }
   align-items: center;
   gap: 10px;
   padding: 9px 5px;
-  color: #f3f5f4;
+  color: #f5f5f5;
   text-align: left;
   border: 0;
   background: none;
@@ -311,7 +311,7 @@ select { color-scheme: dark; }
   height: 36px;
   border-radius: 10px;
   color: var(--green);
-  background: #25351c;
+  background: #303030;
   font-size: 17px;
 }
 .plan-info { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 5px; }
@@ -326,11 +326,11 @@ select { color-scheme: dark; }
   height: 30px;
   border: 0;
   border-radius: 8px;
-  color: #a4aea7;
+  color: #ababab;
   background: transparent;
   font-size: 20px;
 }
-.delete-plan:hover, .remove-exercise:hover { color: #ff9a9a; background: #35201e; }
+.delete-plan:hover, .remove-exercise:hover { color: #afafaf; background: #242424; }
 
 .plan-details { min-width: 0; padding: 20px; }
 .detail-heading { margin-bottom: 20px; }
@@ -362,7 +362,7 @@ select { color-scheme: dark; }
   padding: 15px;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: #101512;
+  background: #141414;
 }
 .exercise-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .exercise-number { color: var(--green); font-family: 'Space Grotesk', sans-serif; font-size: 12px; }
@@ -392,9 +392,9 @@ select { color-scheme: dark; }
   gap: 4px;
   padding: 8px;
   transform: translateX(50%);
-  border: 1px solid #354039;
+  border: 1px solid #3d3d3d;
   border-radius: 16px;
-  background: rgba(18, 23, 20, .96);
+  background: rgba(22, 22, 22, .96);
   box-shadow: 0 12px 45px #0009;
   backdrop-filter: blur(14px);
 }
@@ -412,11 +412,11 @@ select { color-scheme: dark; }
   font-size: 10px;
 }
 .bottom-nav .nav-icon { font-size: 19px; line-height: 1; }
-.bottom-nav button.nav-active { color: var(--green); background: #25351c; }
+.bottom-nav button.nav-active { color: var(--green); background: #303030; }
 
 footer {
   padding: 30px 0 0;
-  color: #5f6c63;
+  color: #696969;
   text-align: center;
   font-size: 9px;
   letter-spacing: 1.3px;
@@ -468,7 +468,7 @@ footer {
 }
 
 .volleyball-day-header span {
-  color: #aab6ad;
+  color: #b3b3b3;
   font-size: 0.85rem;
   white-space: nowrap;
 }

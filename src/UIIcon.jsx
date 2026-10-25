@@ -21,7 +21,7 @@ const paths = {
 }
 
 export default function UIIcon({ name, className = '' }) {
-  return <svg className={`ui-icon ${className}`} viewBox="0 0 24 24" fill="none"
+  return <svg className={`ui-icon ${className}`} data-icon={name} viewBox="0 0 24 24" fill="none"
     stroke="currentColor" strokeWidth={name === 'more' ? 3.5 : 1.65}
     strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
     <path d={paths[name] ?? paths.card} />

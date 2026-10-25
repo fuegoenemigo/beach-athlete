@@ -30,7 +30,7 @@
   min-height: 72px;
   padding: calc(12px + env(safe-area-inset-top, 0px)) 18px 12px;
   border-bottom: 1px solid var(--border);
-  background: #141316f2;
+  background: #131313f2;
   backdrop-filter: blur(18px);
 }
 
@@ -44,13 +44,13 @@
   flex: none;
   width: 42px;
   height: 42px;
-  border: 1px solid #555058;
+  border: 1px solid #525252;
   border-radius: 13px;
   color: var(--cream);
-  background: #252329;
+  background: #242424;
 }
 .entry-window-back .ui-icon { width: 22px; height: 22px; }
-.entry-window-back:hover { border-color: #9e98a3; background: #312e35; }
+.entry-window-back:hover { border-color: #9a9a9a; background: #2f2f2f; }
 
 .entry-window-content {
   min-width: 0;

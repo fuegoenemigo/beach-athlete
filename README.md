@@ -12,7 +12,7 @@ Kartenattribute und Ratingformeln sind noch offen. Bestehende Eingabedaten und B
 ## Versionsstände
 
 - **Version 0.05:** gesicherter App-Stand vor der neuen Layout-Entwicklung, Git-Markierung `v0.05` am Commit `6a3d9dc`. Eine zusätzliche lokale Sicherung enthält Projektdateien, Konfiguration und Git-Verlauf.
-- **Version 0.1:** Neues Interface für Start, Beach, Halle und Training; die technische Paketversion lautet `0.1.0`. Dunkler Hintergrund mit weichem Lichtverlauf, Serifenschriften, farbige Symbole und einheitliche Karten und Eingabefenster. Die Startseite bündelt Begrüßung, fünf Kalendertage, Tageseinträge und einen Wochenüberblick aus vorhandenen Daten. Der ursprüngliche Entwurf und lokale Browserprüfungen liegen unter `docs/version-0.1/`.
+- **Version 0.1:** Neues Interface für Start, Beach, Halle und Training; die technische Paketversion lautet `0.1.0`. Neutrale schwarze, weiße und graue Flächen, Texte und Rahmen mit weichem Lichtverlauf und Serifenschriften. Nur die Sport-Symbole tragen Farbe: Beach in Aquamarin, Halle in Lila und Training in Blau, einheitlich auch in der unteren Navigation. Die Startseite bündelt Begrüßung, fünf Kalendertage, Tageseinträge und einen Wochenüberblick aus vorhandenen Daten. Der ursprüngliche Entwurf und lokale Browserprüfungen liegen unter `docs/version-0.1/`.
 - `main` bleibt der veröffentlichte Stand. Der Entwicklungszweig wird erst zur Veröffentlichung nach `main` übernommen; ein Push auf `main` löst das Pages-Deployment aus.
 - Diese Versionssicherung sichert den App-Code. Persönliche Trainings- und Spieldaten lassen sich zusätzlich in der App als JSON exportieren.
 
