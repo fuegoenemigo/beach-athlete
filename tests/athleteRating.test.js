@@ -73,7 +73,7 @@ test('mobility rewards repeated documented days, not a single short stretch', ()
   const short = athleteRating([day('2026-10-12', [mobility(30)])])
   assert.equal(short.attributes[4].score, 60)
   const repeated = athleteRating(['2026-10-12', '2026-10-13', '2026-10-14']
-    .map((date) => day(date, [mobility(130)])))
+    .map((date) => day(date, [mobility(130)])), {}, '2026-10-14')
   assert.ok(repeated.attributes[4].score > 60)
   assert.equal(repeated.attributes[4].series.length, 4)
   assert.equal(repeated.attributes[4].series[0].value, 60)
@@ -153,7 +153,7 @@ test('arms stay at 60 until shoulders, biceps and triceps are all represented', 
 test('several sessions on one day produce only one rating update', () => {
   const sessions = [day('2026-10-12', [jump(60)]),
     { ...day('2026-10-12', [jump(70)]), id: 'later', createdAt: '2026-10-12T20:00:00Z' }]
-  const rating = athleteRating(sessions)
+  const rating = athleteRating(sessions, {}, '2026-10-12')
   assert.equal(rating.attributes[1].observations, 1)
   assert.equal(rating.attributes[1].series.length, 2)
 })

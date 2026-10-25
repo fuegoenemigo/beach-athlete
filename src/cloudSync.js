@@ -151,7 +151,7 @@ export class CloudSync {
       if (!Array.isArray(members) || !Number.isInteger(limit)) throw new Error('Invalid access registry')
       if (!members.includes(uid)) {
         if (members.length >= limit) {
-          this.publish('limitReached', 'Die fünf Testplätze sind bereits vergeben. Bitte wende dich an Marc.')
+          this.publish('limitReached', 'Die 15 Testplätze sind bereits vergeben. Bitte wende dich an Marc.')
           return false
         }
         try {
@@ -160,7 +160,7 @@ export class CloudSync {
           if (generation !== this.generation) return false
           const latest = await getDocFromServer(registry)
           if (latest.exists() && latest.data().members?.length >= latest.data().limit) {
-            this.publish('limitReached', 'Die fünf Testplätze sind bereits vergeben. Bitte wende dich an Marc.')
+            this.publish('limitReached', 'Die 15 Testplätze sind bereits vergeben. Bitte wende dich an Marc.')
             return false
           }
           throw error

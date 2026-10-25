@@ -471,7 +471,7 @@ function App() {
         <section className="access-gate-card">
           <p className="eyebrow">PERSÖNLICHER ZUGANG</p>
           <h2>Bitte melde dich an</h2>
-          <p>Nach der Anmeldung kannst du deine Trainings, Spieltage und Auswertungen nutzen. Für diese Testversion stehen insgesamt fünf Plätze bereit.</p>
+          <p>Nach der Anmeldung kannst du deine Trainings, Spieltage und Auswertungen nutzen. Für diese Testversion stehen insgesamt 15 Plätze bereit.</p>
           <CloudAccount state={cloudState} onRetry={() => cloudRef.current?.retry()} />
           {storageDamaged && (
             <button type="button" className="secondary-button" onClick={exportRawData}>

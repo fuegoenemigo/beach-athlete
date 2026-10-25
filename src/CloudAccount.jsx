@@ -19,7 +19,7 @@ const AUTH_ERRORS = {
 const STATUS = {
   loading: 'Cloud-Daten werden geprüft …',
   checkingAccess: 'Dein Testplatz wird geprüft …',
-  limitReached: 'Die fünf Testplätze sind bereits vergeben. Bitte wende dich an Marc.',
+  limitReached: 'Die 15 Testplätze sind bereits vergeben. Bitte wende dich an Marc.',
   accessError: 'Dein Zugang konnte nicht geprüft werden. Bitte versuche es erneut.',
   pending: 'Änderungen warten auf die Cloud-Speicherung …',
   saving: 'Änderungen werden in der Cloud gespeichert …',
