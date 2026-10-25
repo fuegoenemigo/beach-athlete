@@ -34,6 +34,7 @@ export default function CloudAccount({ state, onResolve, onRetry, onExport }) {
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [authMode, setAuthMode] = useState('signIn')
 
   async function authenticate(mode) {
     setBusy(true)
@@ -82,26 +83,30 @@ export default function CloudAccount({ state, onResolve, onRetry, onExport }) {
 
   return (
     <section id="cloud-account" className="cloud-account" aria-label="Cloud-Synchronisierung">
-      <h3>Geräte synchronisieren</h3>
+      <h3>{state.status === 'signedOut' ? authMode === 'create' ? 'Dein Konto erstellen' : 'Schön, dich wiederzusehen' : 'Geräte synchronisieren'}</h3>
       {state.status === 'signedOut' ? (
         <>
-          <p>Mit deinem persönlichen Konto bleiben Training und Spieltage auch auf einem neuen Gerät verfügbar.</p>
-          <p>Private Testversion: Nach der Anmeldung gehören deine Einträge zu deinem Konto und werden mit der Cloud synchronisiert. Sichere wichtige Einträge gelegentlich über „Daten exportieren“.</p>
-          <form onSubmit={(event) => { event.preventDefault(); authenticate('signIn') }}>
+          <div className="auth-mode" aria-label="Zugang wählen">
+            <button type="button" aria-pressed={authMode === 'signIn'} disabled={busy}
+              onClick={() => { setAuthMode('signIn'); setMessage('') }}>Anmelden</button>
+            <button type="button" aria-pressed={authMode === 'create'} disabled={busy}
+              onClick={() => { setAuthMode('create'); setMessage('') }}>Registrieren</button>
+          </div>
+          <p>{authMode === 'create' ? 'Starte mit E-Mail und Passwort. Anschließend richten wir gemeinsam dein Profil ein.' : 'Mit deinem persönlichen Konto bleiben Training und Spieltage auch auf einem neuen Gerät verfügbar.'}</p>
+          <form aria-label={authMode === 'create' ? 'Registrierung' : 'Anmeldung'} onSubmit={(event) => { event.preventDefault(); authenticate(authMode) }}>
             <label className="field-label" htmlFor="cloud-email">E-Mail-Adresse</label>
             <input id="cloud-email" className="field" type="email" autoComplete="email"
               value={email} onChange={(event) => setEmail(event.target.value)} required />
             <label className="field-label" htmlFor="cloud-password">Passwort</label>
-            <input id="cloud-password" className="field" type="password" autoComplete="current-password"
+            <input id="cloud-password" className="field" type="password" autoComplete={authMode === 'create' ? 'new-password' : 'current-password'}
               value={password} onChange={(event) => setPassword(event.target.value)} required minLength={6} />
             <div className="cloud-actions">
-              <button className="primary-button" type="submit" disabled={busy}>Anmelden</button>
-              <button className="secondary-button" type="button" disabled={busy}
-                onClick={() => authenticate('create')}>Konto erstellen</button>
-              <button className="text-button" type="button" disabled={busy}
-                onClick={resetPassword}>Passwort vergessen?</button>
+              <button className="primary-button" type="submit" disabled={busy}>{busy ? 'Einen Moment …' : authMode === 'create' ? 'Konto erstellen' : 'Anmelden'}</button>
+              {authMode === 'signIn' && <button className="text-button" type="button" disabled={busy}
+                onClick={resetPassword}>Passwort vergessen?</button>}
             </div>
           </form>
+          <p className="auth-note">Deine Einträge gehören zu deinem Konto und werden mit der Cloud synchronisiert. Sichere wichtige Einträge gelegentlich über „Daten exportieren“ im Profil.</p>
         </>
       ) : (
         <>

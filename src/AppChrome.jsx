@@ -15,9 +15,9 @@ const statuses = {
 }
 
 export default function AppChrome({ state, updateAvailable, onInstallUpdate, onProfile,
-  today, selectedDate, entryDates, onSelectDate, introProgress }) {
+  today, selectedDate, entryDates, onSelectDate, introProgress, firstName }) {
   const [showNotices, setShowNotices] = useState(false)
-  const name = greetingName(state.email)
+  const name = greetingName(state.email, firstName)
   const introHeight = Math.round((1 - introProgress) * 136)
   const [title, description] = statuses[state.status] ?? ['Cloud wird geprüft', 'Der aktuelle Synchronisierungsstatus wird geladen.']
   const attention = updateAvailable || ['offline', 'conflict', 'error', 'unavailable'].includes(state.status)

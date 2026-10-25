@@ -33,7 +33,8 @@ export function weekSummary(sessions, volleyballDays, date) {
   }
 }
 
-export function greetingName(email) {
+export function greetingName(email, firstName) {
+  if (typeof firstName === 'string' && firstName.trim()) return firstName.trim()
   const first = (email ?? '').split('@')[0].split(/[._+-]/)[0]
   return /^[\p{L}]{2,24}$/u.test(first)
     ? first.charAt(0).toLocaleUpperCase('de-DE') + first.slice(1) : 'Athlet'

@@ -7,7 +7,7 @@ import { athleteRating } from './athleteRating.js'
 import HomeDashboard from './HomeDashboard.jsx'
 import PlayerCardArt from './PlayerCardArt.jsx'
 import UIIcon from './UIIcon.jsx'
-import { NumberWheel } from './WheelPicker.jsx'
+import ProfileForm from './ProfileForm.jsx'
 import './HomeView.css'
 
 const FEATURES = {
@@ -79,13 +79,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
         {selectedFeature === 'profile' ? <>
           <section className="home-profile-card" aria-labelledby="personal-data-title">
             <h3 id="personal-data-title">Persönliche Daten</h3>
-            <p>Größe und Körpergewicht stehen für deine spätere Auswertung bereit. Dein Körpergewicht erscheint außerdem bei Übungen mit Eigengewicht.</p>
-            <NumberWheel label="Körpergewicht (kg)" value={athleteProfile.bodyweightKg ?? ''}
-              min={1} max={300} step={.1}
-              onChange={(bodyweightKg) => setAthleteProfile((profile) => ({ ...profile, bodyweightKg }))} />
-            <NumberWheel label="Körpergröße (cm)" value={athleteProfile.heightCm ?? ''}
-              min={1} max={300} step={.1}
-              onChange={(heightCm) => setAthleteProfile((profile) => ({ ...profile, heightCm }))} />
+            <ProfileForm profile={athleteProfile}
+              onSave={(values) => setAthleteProfile((profile) => ({ ...profile, ...values }))} />
           </section>
           {children}
         </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}

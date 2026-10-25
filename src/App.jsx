@@ -14,6 +14,8 @@ import { activityDestination, activityEntries } from "./activityHistory.js";
 import { adjacentArea, swipeDirection } from "./swipeNavigation.js";
 import UIIcon from "./UIIcon.jsx";
 import AppChrome from "./AppChrome.jsx";
+import ProfileForm from "./ProfileForm.jsx";
+import { isAthleteProfile } from "./athleteProfile.js";
 
 
 
@@ -56,12 +58,7 @@ function loadVolleyballDays() {
 function loadAthleteProfile() {
   try {
     const stored = JSON.parse(localStorage.getItem("beach-athlete-profile"));
-    if (stored && typeof stored === "object" && !Array.isArray(stored)
-      && (stored.bodyweightKg === "" || stored.bodyweightKg == null
-        || (Number.isFinite(Number(stored.bodyweightKg)) && Number(stored.bodyweightKg) > 0))
-      && (stored.heightCm === undefined || stored.heightCm === "" || stored.heightCm == null
-        || (Number.isFinite(Number(stored.heightCm)) && Number(stored.heightCm) > 0
-          && Number(stored.heightCm) <= 300))) {
+    if (isAthleteProfile(stored)) {
       return { ...stored, bodyweightKg: stored.bodyweightKg ?? "" };
     }
   } catch { /* Keep the training log available even if this optional field is damaged. */ }
@@ -452,7 +449,7 @@ function App() {
       : 'translate3d(var(--swipe-offset), 0, 0)' };
   }
 
-  if (!cloudState.authorized) {
+  if (!cloudState.authorized || cloudState.profileLoaded === false) {
     return (
       <main className="app app-access-gate">
         <header className="app-header">
@@ -470,8 +467,8 @@ function App() {
         </nav>
         <section className="access-gate-card">
           <p className="eyebrow">PERSÖNLICHER ZUGANG</p>
-          <h2>Bitte melde dich an</h2>
-          <p>Nach der Anmeldung kannst du deine Trainings, Spieltage und Auswertungen nutzen. Für diese Testversion stehen insgesamt 15 Plätze bereit.</p>
+          <h2>{cloudState.authorized ? "Dein Konto wird geladen" : "Willkommen."}</h2>
+          <p>Dein Training und deine Entwicklung an einem Ort. Für diese Testversion stehen insgesamt 15 Plätze bereit.</p>
           <CloudAccount state={cloudState} onRetry={() => cloudRef.current?.retry()} />
           {storageDamaged && (
             <button type="button" className="secondary-button" onClick={exportRawData}>
@@ -484,6 +481,16 @@ function App() {
     );
   }
 
+  if (athleteProfile.onboardingCompleted === false && cloudState.status !== 'conflict') {
+    return <main className="app app-onboarding">
+      <p className="eyebrow setup-brand">BEACH ATHLETE</p>
+      <section className="setup-card" aria-label="Profil einrichten">
+        <ProfileForm key={cloudState.uid} profile={athleteProfile} onboarding
+          onSave={(values) => setAthleteProfile((profile) => ({ ...profile, ...values }))} />
+      </section>
+    </main>;
+  }
+
   return (
     <main className="app app-signed-in" data-area={activeArea}
       onTouchStartCapture={startIntroTouch} onTouchMoveCapture={moveIntroTouch}
@@ -493,7 +500,7 @@ function App() {
       onClickCapture={() => { if (notice) setNotice(""); }}>
       <AppChrome state={cloudState} updateAvailable={updateAvailable}
         onInstallUpdate={installUpdate} onProfile={() => openHomeView("profile")}
-        today={currentDate} selectedDate={selectedDate} entryDates={entryDates}
+        today={currentDate} selectedDate={selectedDate} entryDates={entryDates} firstName={athleteProfile.firstName}
         onSelectDate={setChosenDate} introProgress={introProgress} />
 
       <nav className="main-navigation" aria-label="Hauptnavigation">

@@ -308,3 +308,36 @@ select.field { padding-right: 6px; }
 .ui-icon[data-icon="beach"] { color: var(--icon-beach); }
 .ui-icon[data-icon="ball"] { color: var(--icon-indoor); }
 .ui-icon[data-icon="training"] { color: var(--icon-training); }
+/* Account access and first-time profile setup share the monochrome app design. */
+.app-access-gate, .app-onboarding { max-width: 520px; min-height: 100dvh; }
+.app-access-gate .app-header { padding: 18px 0; border-bottom: 1px solid var(--border); }
+.app-access-gate .app-header h1 { font-family: var(--serif); font-weight: 400; letter-spacing: -.04em; }
+.app-access-gate .main-navigation { display: none; }
+.access-gate-card { margin-top: 24px; padding: 24px 20px; }
+.access-gate-card > h2 { font-family: var(--serif); font-size: 2rem; font-weight: 400; line-height: 1.15; }
+.access-gate-card > p, .cloud-account p { color: var(--muted); font-size: .85rem; line-height: 1.55; }
+.access-gate-card .cloud-account { border: 0; background: transparent; padding: 0; margin-top: 28px; box-shadow: none; }
+.auth-mode { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; gap: 4px; margin: 20px 0; border: 1px solid var(--border); border-radius: 15px; background: #141414; }
+.auth-mode button { border: 0; border-radius: 11px; padding: 11px 4px; background: transparent; color: var(--muted); }
+.auth-mode button[aria-pressed='true'] { color: #111; background: #eee; }
+.cloud-account .field { margin: 8px 0 18px; }
+.cloud-account form { display: block; }
+.cloud-account .field-label { margin-top: 0; }
+.cloud-actions { gap: 10px; }
+.cloud-actions .primary-button { width: 100%; }
+.cloud-account .auth-note { margin-top: 22px; font-size: .73rem; }
+.setup-brand { margin: 24px 0 32px; }
+.setup-card { border-top: 1px solid #777; border-bottom: 1px solid #777; padding: 26px 4px 30px; }
+.setup-progress { display: flex; gap: 12px; align-items: center; margin-bottom: 25px; }
+.setup-progress .eyebrow { margin: 0; }
+.setup-progress .entry-window-back { flex: 0 0 36px; width: 36px; height: 36px; }
+.profile-form h1 { font-family: var(--serif); font-size: clamp(2.2rem, 9vw, 3rem); font-weight: 400; line-height: 1.08; letter-spacing: -.04em; overflow-wrap: anywhere; margin: 0 0 14px; }
+.profile-form .profile-intro { font-size: 1rem; line-height: 1.5; color: #ccc; margin-bottom: 28px; }
+.profile-form .field-label { display: block; }
+.profile-form .field { display: block; width: 100%; margin: 8px 0 20px; }
+.profile-body-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.profile-form .profile-explanation { color: #bbb; font-size: .87rem; line-height: 1.6; margin: 20px 0; }
+.profile-form .profile-reminder { display: flex; align-items: flex-start; gap: 10px; padding: 16px 0; border-top: 1px solid var(--border); color: #ccc; font-size: .8rem; line-height: 1.6; }
+.profile-reminder .ui-icon { width: 20px; height: 20px; margin-top: 3px; }
+.profile-form > .primary-button { width: 100%; margin-top: 12px; min-height: 48px; }
+@media (max-width: 370px) { .profile-body-fields { grid-template-columns: 1fr; gap: 0; } }

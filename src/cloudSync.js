@@ -1,3 +1,4 @@
+import { initialProfileData } from './athleteProfile.js'
 import { onAuthStateChanged } from 'firebase/auth'
 import {
   arrayUnion,
@@ -48,6 +49,7 @@ export class CloudSync {
     this.unsubDocument = null
     this.deferredSnapshot = null
     this.active = false
+    this.profileLoaded = false
     this.authorized = false
     this.onOnline = () => this.retry()
     this.onVisible = () => {
@@ -57,7 +59,7 @@ export class CloudSync {
 
   publish(status, message = '') {
     this.status = status
-    this.onState({ status, message, email: this.user?.email || '', conflict: Boolean(this.conflict), authorized: this.authorized })
+    this.onState({ status, message, profileLoaded: this.profileLoaded, uid: this.user?.uid, email: this.user?.email || '', conflict: Boolean(this.conflict), authorized: this.authorized })
   }
 
   updateData(data) {
@@ -104,6 +106,7 @@ export class CloudSync {
     this.deferredSnapshot = null
     this.writing = false
     this.user = user
+    this.profileLoaded = false
     this.authorized = false
     this.meta = user ? readMeta(user.uid) : null
     this.conflict = null
@@ -194,6 +197,12 @@ export class CloudSync {
         this.publish('error', 'Cloud-Daten haben ein unbekanntes Format. Lokale Daten bleiben erhalten.')
         return
       }
+      const prepared = initialProfileData(this.data, Boolean(remote))
+      if (prepared !== this.data) {
+        this.data = prepared
+        this.onApply(prepared)
+      }
+      this.profileLoaded = true
       const localHash = dataHash(this.data)
       if (decision === 'upload') {
         await this.write(localHash, remote?.revision ?? null)
@@ -207,6 +216,7 @@ export class CloudSync {
       }
     } catch (error) {
       if (generation !== this.generation || error instanceof RevisionConflict) return
+      this.profileLoaded = Boolean(this.meta)
       this.publish('offline', 'Cloud momentan nicht erreichbar. Änderungen bleiben auf diesem Gerät.')
     }
   }

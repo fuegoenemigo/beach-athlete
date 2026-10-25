@@ -1,3 +1,4 @@
+import { isAthleteProfile } from './athleteProfile.js'
 import { isRating, strengthOptions } from './volleyballValues.js'
 import { isLoggedTrainingExercise, isTrainingPlan } from './trainingModel.js'
 
@@ -48,16 +49,7 @@ export function isAthleteData(data) {
   return data && Array.isArray(data.sessions)
     && Array.isArray(data.exerciseLibrary)
     && Array.isArray(data.volleyballDays)
-    && (data.athleteProfile === undefined || (data.athleteProfile
-      && typeof data.athleteProfile === 'object' && !Array.isArray(data.athleteProfile)
-      && (data.athleteProfile.bodyweightKg === '' || data.athleteProfile.bodyweightKg == null
-        || (Number.isFinite(Number(data.athleteProfile.bodyweightKg))
-          && Number(data.athleteProfile.bodyweightKg) > 0))
-      && (data.athleteProfile.heightCm === undefined || data.athleteProfile.heightCm === ''
-        || data.athleteProfile.heightCm == null
-        || (Number.isFinite(Number(data.athleteProfile.heightCm))
-          && Number(data.athleteProfile.heightCm) > 0
-          && Number(data.athleteProfile.heightCm) <= 300))))
+    && (data.athleteProfile === undefined || isAthleteProfile(data.athleteProfile))
     && (data.trainingPlans === undefined || (Array.isArray(data.trainingPlans)
       && data.trainingPlans.every(isTrainingPlan)))
     && data.sessions.every((item) => item && typeof item === 'object'
@@ -96,6 +88,8 @@ export function hasPersonalData(data, defaultLibrary) {
     || (data.trainingPlans?.length ?? 0) > 0
     || Boolean(data.athleteProfile?.bodyweightKg)
     || Boolean(data.athleteProfile?.heightCm)
+    || Boolean(data.athleteProfile?.firstName)
+    || data.athleteProfile?.onboardingCompleted !== undefined
     || JSON.stringify(data.exerciseLibrary) !== JSON.stringify(defaultLibrary)
 }
 
