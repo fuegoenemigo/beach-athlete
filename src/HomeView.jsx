@@ -8,6 +8,7 @@ import HomeDashboard from './HomeDashboard.jsx'
 import PlayerCardArt from './PlayerCardArt.jsx'
 import UIIcon from './UIIcon.jsx'
 import ProfileForm from './ProfileForm.jsx'
+import ProfileOverview from './ProfileOverview.jsx'
 import { nextOnboardingStep } from './athleteProfile.js'
 import './HomeView.css'
 
@@ -24,7 +25,7 @@ const FEATURES = {
   },
 }
 
-export default function HomeView({ children, athleteProfile, setAthleteProfile,
+export default function HomeView({ children, athleteProfile, setAthleteProfile, accountEmail,
   sessions, volleyballDays, today, selectedDate, entryDates, onSelectDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
   onExit = null }) {
   const [featureStack, setFeatureStack] = useState(initialView ? [initialView] : [])
@@ -32,6 +33,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
   const [featureDate, setFeatureDate] = useState(null)
   const [showProfileSetup, setShowProfileSetup] = useState(false)
+  const [profileSubview, setProfileSubview] = useState(null)
   const training = useMemo(() => trainingProgress(sessions), [sessions])
   const rating = useMemo(() => athleteRating(sessions, athleteProfile, today),
     [sessions, athleteProfile, today])
@@ -75,7 +77,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
     </EntryWindow></>
     if (selectedFeature === 'profile' || selectedFeature === 'archive') return (
       <>{dashboard}<EntryWindow key={selectedFeature} title={selectedFeature === 'profile' ? 'Mein Profil' : 'Archiv'}
-        subtitle={selectedFeature === 'profile' ? 'DEIN KONTO' : 'DEINE EINTRÄGE'}
+        subtitle={selectedFeature === 'profile' ? '' : 'DEINE EINTRÄGE'}
         onClose={goBack}>
       <section className="home-functional-detail">
         {selectedFeature === 'profile' ? <>
@@ -85,12 +87,10 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
               Kontoeinrichtung abschließen <UIIcon name="chevron" />
             </button>
           </div>}
-          <section className="home-profile-card" aria-labelledby="personal-data-title">
-            <h3 id="personal-data-title">Persönliche Daten</h3>
-            <ProfileForm profile={athleteProfile}
-              onSave={(values) => setAthleteProfile((profile) => ({ ...profile, ...values }))} />
-          </section>
-          {children}
+          <ProfileOverview profile={athleteProfile} email={accountEmail}
+            onEdit={() => setProfileSubview('edit')}
+            onArchive={() => setProfileSubview('trainingArchive')}
+            onData={() => setProfileSubview('data')} />
         </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
       </section>
       </EntryWindow>
@@ -101,7 +101,19 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
             onSave={(values) => setAthleteProfile((current) => ({ ...current, ...values }))}
             onComplete={() => setShowProfileSetup(false)} />
         </section>
-      </EntryWindow>}</>
+      </EntryWindow>}
+      {selectedFeature === 'profile' && profileSubview === 'edit' && <EntryWindow title="Profil bearbeiten" subtitle=""
+        onClose={() => setProfileSubview(null)} layer={1}>
+        <ProfileForm profile={athleteProfile}
+          onSave={(values) => setAthleteProfile((current) => ({ ...current, ...values }))}
+          onSaved={() => setProfileSubview(null)} />
+      </EntryWindow>}
+      {selectedFeature === 'profile' && profileSubview === 'trainingArchive' && <EntryWindow title="Trainingsarchiv" subtitle=""
+        onClose={() => setProfileSubview(null)} layer={1}>
+        <ArchiveView sessions={sessions} volleyballDays={[]} trainingOnly layer={1} />
+      </EntryWindow>}
+      {selectedFeature === 'profile' && profileSubview === 'data' && <EntryWindow title="Konto & Daten" subtitle=""
+        onClose={() => setProfileSubview(null)} layer={1}>{children}</EntryWindow>}</>
     )
     const feature = FEATURES[selectedFeature]
     return (

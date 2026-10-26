@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { BEACH_POSITIONS, INDOOR_POSITIONS, MEASUREMENT_CAPABILITIES,
-  missingSetupSteps, parseProfileNumber, selectedDiscipline, VOLLEYBALL_DISCIPLINES } from './athleteProfile.js'
+  missingSetupSteps, parseProfileNumber, profilePositionLabel, selectedDiscipline, VOLLEYBALL_DISCIPLINES } from './athleteProfile.js'
 import UIIcon from './UIIcon.jsx'
 
 const questions = [
@@ -11,7 +11,7 @@ const questions = [
   ['Deine Trainingsdaten.', 'Wie genau kannst du deine Leistungen dokumentieren?'],
 ]
 
-export default function ProfileForm({ profile, onSave, onboarding = false, onComplete }) {
+export default function ProfileForm({ profile, onSave, onboarding = false, onComplete, onSaved }) {
   const [wizardSteps] = useState(() => onboarding ? missingSetupSteps(profile) : [])
   const [index, setIndex] = useState(0)
   const step = onboarding ? (wizardSteps[index] ?? 5) : 0
@@ -29,12 +29,15 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
   const show = (number) => !onboarding || step === number
   const positions = discipline === 'beach' ? BEACH_POSITIONS : discipline === 'indoor' ? INDOOR_POSITIONS : []
   const position = discipline === 'beach' ? beachPosition : indoorPosition
+  const sportLabel = VOLLEYBALL_DISCIPLINES.find((item) => item.id === discipline)?.label ?? ''
+  const positionSummary = profilePositionLabel({ volleyballDiscipline: discipline, beachPosition, indoorPosition })
   function advance(values) {
     onSave(values)
     setIndex((current) => current + 1)
     setMessage('')
   }
   function chooseDiscipline(id) {
+    if (discipline === id && !onboarding) return
     setDiscipline(id)
     setBeachPosition('')
     setIndoorPosition('')
@@ -79,7 +82,8 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
       indoorPosition: discipline === 'indoor' ? indoorPosition : '', measurementCapability: measurement })
     setHeight(heightCm)
     setWeight(bodyweightKg)
-    setMessage('Deine Profildaten sind gespeichert.')
+    if (onSaved) onSaved()
+    else setMessage('Deine Profildaten sind gespeichert.')
   }
 
   return <form className="profile-form" onSubmit={submit}>
@@ -89,14 +93,18 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
           onClick={() => { setIndex((current) => current - 1); setMessage('') }}><UIIcon name="back" /></button>}
         <p className="eyebrow">DEIN START · SCHRITT {index + 1} VON {wizardSteps.length + 1}</p>
       </div>
-      <h1 ref={heading} tabIndex={-1}>{step === 5 ? 'Alles bereit.' : questions[step][0]}</h1>
+      <h1 ref={heading} tabIndex={-1}>{step === 5 ? 'Dein nächster Zug.' : questions[step][0]}</h1>
       <p className="profile-intro">{step === 5
-        ? 'Dein Profil ist eingerichtet. Du kannst deine Angaben jederzeit unter „Mein Profil“ ändern.'
+        ? 'Alles eingerichtet. Ab jetzt gehört die Bühne dir.'
         : questions[step][1]}</p>
     </>}
 
+    {onboarding && step === 5 && <div className="profile-finish-identity">
+      <strong>{firstName.trim()}</strong><span>{sportLabel}{positionSummary ? ` · ${positionSummary}` : ''}</span>
+    </div>}
+
     {show(0) && <div className="profile-question">
-      {!onboarding && <h3>Persönliche Angaben</h3>}
+      {!onboarding && <h3>Dein Name</h3>}
       <label className="field-label" htmlFor="profile-first-name">Vorname
         <input id="profile-first-name" className="field" type="text" autoComplete="given-name" maxLength={60}
           value={firstName} onChange={(event) => setFirstName(event.target.value)} required={onboarding} />
@@ -104,7 +112,7 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
     </div>}
 
     {show(1) && <div className="profile-question">
-      {!onboarding && <h3>Körperdaten</h3>}
+      {!onboarding && <h3>Meine Daten</h3>}
       <p id="profile-body-help" className="profile-explanation">Dein Körpergewicht hilft uns, deine relative Kraft zu ermitteln und deine Kraftleistungen einzuordnen. Deine Körpergröße ergänzt dein persönliches Profil.</p>
       <div className="profile-body-fields">
         <label className="field-label" htmlFor="profile-height">Körpergröße (cm)
@@ -118,11 +126,11 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
             value={weight} onChange={(event) => setWeight(event.target.value)} />
         </label>
       </div>
-      <p id="profile-reminder" className="profile-reminder"><UIIcon name="profile" />Du kannst diese Angaben jederzeit unter „Mein Profil“ ändern. Halte besonders dein Gewicht aktuell.</p>
+      <p id="profile-reminder" className="profile-reminder"><UIIcon name="profile" />Halte dein Gewicht aktuell, damit deine relative Kraft korrekt berechnet werden kann.</p>
     </div>}
 
     {show(2) && <fieldset className="profile-question profile-options">
-      <legend>Welche Volleyballart passt zu dir?</legend>
+      <legend>{onboarding ? 'Welche Volleyballart passt zu dir?' : 'Dein Volleyball'}</legend>
       <p>Wenn du Beach und Halle spielst, entscheide dich für die Sportart, mit der du dich mehr identifizierst oder für die du diese App jetzt nutzen möchtest.</p>
       {VOLLEYBALL_DISCIPLINES.map((item) => <button className={'profile-choice' + (discipline === item.id ? ' is-selected' : '')}
         type="button" key={item.id} aria-pressed={discipline === item.id}
@@ -138,15 +146,20 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
     </fieldset>}
 
     {show(4) && <fieldset className="profile-question profile-options">
-      <legend>Wie erfasst du deine Trainingsleistungen?</legend>
-      <p>Diese Auswahl beschreibt deine Messmöglichkeiten, nicht dein sportliches Können.</p>
+      <legend>{onboarding ? 'Wie erfasst du deine Trainingsleistungen?' : 'Trainingsdaten'}</legend>
+      <p>{onboarding ? 'Diese Auswahl beschreibt deine Messmöglichkeiten, nicht dein sportliches Können.'
+        : 'Wie erfasst du deine Trainingsleistungen? Diese Auswahl beschreibt deine Messmöglichkeiten, nicht dein sportliches Können.'}</p>
       {MEASUREMENT_CAPABILITIES.map((item) => <button className={'profile-choice profile-choice-detailed' + (measurement === item.id ? ' is-selected' : '')}
         type="button" key={item.id} aria-pressed={measurement === item.id}
         onClick={() => chooseMeasurement(item.id)}><span><strong>{item.label}</strong><small>{item.detail}</small></span><UIIcon name="chevron" /></button>)}
     </fieldset>}
 
     {message && <p className="helper-text" role="alert">{message}</p>}
-    {(!onboarding || step === 0 || step === 1 || step === 5) && <button className="primary-button" type="submit">{onboarding
-      ? step === 5 ? 'Zur App' : 'Weiter' : 'Änderungen speichern'}</button>}
+    {(!onboarding || step === 0 || step === 1 || step === 5) && (onboarding && step === 5
+      ? <button className="primary-button profile-finish-button" type="submit" aria-label="Zur App">
+        <span className="profile-finish-copy"><strong>Zur App</strong><small>Dein Training wartet</small></span>
+        <UIIcon name="ball" className="profile-finish-ball" />
+      </button>
+      : <button className="primary-button" type="submit">{onboarding ? 'Weiter' : 'Änderungen speichern'}</button>)}
   </form>
 }

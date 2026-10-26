@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { initialProfileData, isAthleteProfile, missingSetupSteps, nextOnboardingStep, selectedDiscipline, withoutLastName,
+import { initialProfileData, isAthleteProfile, missingSetupSteps, nextOnboardingStep, profilePositionLabel,
+  selectedDiscipline, withoutLastName,
   parseProfileNumber } from '../src/athleteProfile.js'
 import { greetingName } from '../src/homeSummary.js'
 import { dataHash, hasPersonalData, isAthleteData, localDataForAccount } from '../src/syncPolicy.js'
@@ -71,6 +72,14 @@ test('volleyball positions and measurement capability remain valid sync data', (
   assert.equal(isAthleteProfile({ ...both, measurementCapability: 'expert' }), false)
   assert.equal(isAthleteProfile({ ...both, volleyballDiscipline: 'both' }), false)
   assert.equal(hasPersonalData({ ...empty(), athleteProfile: { lastName: 'Muster' } }, []), false)
+})
+
+test('beach defender keeps its stored ID while the selection and profile use distinct labels', () => {
+  const profile = { volleyballDiscipline: 'beach', beachPosition: 'defender' }
+  assert.equal(profilePositionLabel(profile), 'Abwehr')
+  assert.equal(profilePositionLabel({ ...profile, beachPosition: 'blocker' }), 'Blocker')
+  assert.equal(profilePositionLabel({ volleyballDiscipline: 'indoor', indoorPosition: 'libero' }), 'Libero')
+  assert.equal(isAthleteProfile(profile), true)
 })
 
 test('legacy surnames are removed from active profiles and sync comparisons', () => {

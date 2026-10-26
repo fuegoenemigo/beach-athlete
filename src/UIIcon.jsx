@@ -12,6 +12,7 @@ const paths = {
   card: 'M5 3h14v18H5V3ZM9 8h6M9 12h6M9 16h3',
   archive: 'M4 8h16v12H4V8ZM3 4h18v4H3V4ZM9 12h6',
   profile: 'M16 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0ZM4 21v-2a8 8 0 0 1 16 0v2',
+  edit: 'm4 20 4.5-1 11-11a2 2 0 0 0-3-3L5.5 16 4 20ZM14.5 6.5l3 3',
   plus: 'M12 5v14M5 12h14',
   more: 'M5 12h.01M12 12h.01M19 12h.01',
   chevron: 'm9 5 7 7-7 7',

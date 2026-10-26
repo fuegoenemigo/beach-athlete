@@ -40,9 +40,9 @@ export function activityEntries(sessions, volleyballDays, completedOnly = false)
     b.date.localeCompare(a.date) || (b.item.createdAt ?? '').localeCompare(a.item.createdAt ?? ''))
 }
 
-export function monthlyArchive(sessions, volleyballDays) {
+export function monthlyArchive(sessions, volleyballDays, completedOnly = true) {
   const months = new Map()
-  for (const entry of activityEntries(sessions, volleyballDays, true)) {
+  for (const entry of activityEntries(sessions, volleyballDays, completedOnly)) {
     const key = entry.date.slice(0, 7)
     if (!months.has(key)) months.set(key, { key, counts: { training: 0, beach: 0, indoor: 0 }, entries: [] })
     const month = months.get(key)

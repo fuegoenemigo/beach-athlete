@@ -90,7 +90,7 @@ export default function EntryWindow({ title, subtitle, onClose, children, layer 
         <button type="button" className="entry-window-back" aria-label="Zurück" onClick={() => goBack()}>
           <UIIcon name="back" />
         </button>
-        <div><p className="eyebrow">{subtitle}</p>
+        <div>{subtitle && <p className="eyebrow">{subtitle}</p>}
           <h2 id={titleId} tabIndex="-1" ref={titleRef}>{title}</h2></div>
       </header>
       <div className="entry-window-content">{children}</div>

@@ -5,7 +5,7 @@ export const VOLLEYBALL_DISCIPLINES = [
 
 export const BEACH_POSITIONS = [
   { id: 'blocker', label: 'Blocker' },
-  { id: 'defender', label: 'Verteidiger' },
+  { id: 'defender', label: 'Abwehrspieler' },
 ]
 
 export const INDOOR_POSITIONS = [
@@ -27,6 +27,14 @@ export function selectedDiscipline(profile) {
   if (VOLLEYBALL_DISCIPLINES.some((item) => item.id === profile?.volleyballDiscipline))
     return profile.volleyballDiscipline
   return profile?.volleyballDisciplines?.length === 1 ? profile.volleyballDisciplines[0] : ''
+}
+
+export function profilePositionLabel(profile) {
+  const discipline = selectedDiscipline(profile)
+  if (discipline === 'beach') return profile?.beachPosition === 'defender'
+    ? 'Abwehr' : BEACH_POSITIONS.find((item) => item.id === profile?.beachPosition)?.label ?? ''
+  if (discipline === 'indoor') return INDOOR_POSITIONS.find((item) => item.id === profile?.indoorPosition)?.label ?? ''
+  return ''
 }
 
 export function missingSetupSteps(profile) {

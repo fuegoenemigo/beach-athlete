@@ -36,4 +36,8 @@ test('archive groups only completed entries by month and sport', () => {
     ['2026-10', { training: 1, beach: 0, indoor: 0 }],
     ['2026-09', { training: 1, beach: 1, indoor: 1 }],
   ])
+  const allTraining = monthlyArchive(sessions, [], false)
+  assert.deepEqual(allTraining.map((month) => [month.key, month.counts.training]), [
+    ['2026-10', 1], ['2026-09', 2],
+  ])
 })

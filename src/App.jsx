@@ -594,7 +594,7 @@ function App() {
         }}>
       {areaVisible("home") && <div className={`app-area-page${pageSlide?.from === 'home' ? ' is-from' : ''}${pageSlide?.to === 'home' ? ' is-to' : ''}`}
         style={areaStyle('home')}><HomeView key={homeViewKey}
-        athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
+        athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile} accountEmail={cloudState.email}
         today={currentDate} selectedDate={selectedDate} entryDates={entryDates} onSelectDate={setChosenDate}
         sessions={sessions} volleyballDays={volleyballDays}
         initialView={activeArea === 'home' ? homeInitialView : null}
