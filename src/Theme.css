@@ -493,12 +493,7 @@ select.field { padding-right: 6px; }
 :is(.app, .entry-window) .home-card-art .card-kicker { font: 700 17px Arial, sans-serif; letter-spacing: 7px; }
 :is(.app, .entry-window) .home-card-art .card-rating { font: 800 79px Arial, sans-serif; letter-spacing: -5px; }
 :is(.app, .entry-window) .home-card-art .card-label { font: 700 20px Arial, sans-serif; letter-spacing: 4px; }
-:is(.app, .entry-window) .home-card-art .card-code { font: 800 32px Arial, sans-serif; letter-spacing: 2px; }
-:is(.app, .entry-window) .home-card-art .card-crest { font: 700 126px Georgia, serif; letter-spacing: -13px; }
-:is(.app, .entry-window) .home-card-art .card-crest-sub { font: 700 14px Arial, sans-serif; letter-spacing: 5px; }
-:is(.app, .entry-window) .home-card-art .card-name { font: 700 65px Georgia, serif; letter-spacing: 5px; }
-:is(.app, .entry-window) .home-card-art .card-position { font: 700 21px Arial, sans-serif; letter-spacing: 4px; text-transform: uppercase; }
+:is(.app, .entry-window) .home-card-art .card-polaroid-name { font: 700 20px Georgia, serif; letter-spacing: 2px; }
 :is(.app, .entry-window) .home-card-art .card-stat-label { font: 700 18px Arial, sans-serif; letter-spacing: 2px; }
 :is(.app, .entry-window) .home-card-art .card-stat-value { font: 800 37px Arial, sans-serif; }
-:is(.app, .entry-window) .home-card-art .card-footer { font: 700 14px Arial, sans-serif; letter-spacing: 3px; }
 :is(.app, .entry-window) .home-card-art .card-monogram { font: 800 10px Arial, sans-serif; }

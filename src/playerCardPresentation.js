@@ -10,7 +10,7 @@ export const CARD_STATS = [
   { id: 'jump', short: 'SPR' },
   { id: 'agility', short: 'AGI' },
   { id: 'endurance', short: 'AUS' },
-  { id: 'control', short: 'KON' },
+  { id: 'control', short: 'KTR' },
 ]
 
 export function playerCardIdentity(profile = {}) {

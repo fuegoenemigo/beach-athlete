@@ -16,7 +16,7 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
   const id = useId().replaceAll(':', '')
   const rating = Math.round(score)
   const name = identity.name.toLocaleUpperCase('de-DE')
-  const textLength = name.length > 10 ? Math.max(340, 490 - (name.length - 10) * 15) : undefined
+  const polaroidNameLength = name.length > 9 ? 115 : undefined
 
   return <div className={`home-card-art is-${identity.discipline || 'neutral'}${preview ? ' is-preview' : ''}`}
     role="img" aria-label={`Athlete Card für ${identity.name}, ${identity.position || 'Position noch offen'}, Gesamtwert ${rating} von 99`}>
@@ -36,7 +36,36 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
           <stop stopColor="#fff" stopOpacity=".76" /><stop offset=".45" stopColor="#fff" stopOpacity=".12" />
           <stop offset="1" stopColor="#fff" stopOpacity=".55" />
         </linearGradient>
+        <linearGradient id={`${id}-photo`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#101313" /><stop offset=".55" stopColor="#060808" />
+          <stop offset="1" stopColor="#1b1d1c" />
+        </linearGradient>
+        <linearGradient id={`${id}-paper-bend`} x1="0" y1="0" x2="1" y2="0">
+          <stop stopColor="#8f8878" stopOpacity=".22" />
+          <stop offset=".18" stopColor="#bcb6a8" stopOpacity=".1" />
+          <stop offset=".5" stopColor="#fff" stopOpacity="0" />
+          <stop offset=".82" stopColor="#bcb6a8" stopOpacity=".07" />
+          <stop offset="1" stopColor="#847c6c" stopOpacity=".16" />
+        </linearGradient>
+        <linearGradient id={`${id}-paper-lift`} x1="0" y1="0" x2="0" y2="1">
+          <stop stopColor="#fff" stopOpacity="0" />
+          <stop offset=".62" stopColor="#fff" stopOpacity="0" />
+          <stop offset=".84" stopColor="#d1cbbb" stopOpacity=".13" />
+          <stop offset="1" stopColor="#8c8273" stopOpacity=".25" />
+        </linearGradient>
+        <filter id={`${id}-polaroid-shadow`} x="-30%" y="-30%" width="170%" height="170%">
+          <feDropShadow dx="-8" dy="12" stdDeviation="8" floodColor="#3b2b13" floodOpacity=".36" />
+        </filter>
+        <filter id={`${id}-lifted-edge-shadow`} x="-30%" y="-70%" width="170%" height="240%">
+          <feGaussianBlur stdDeviation="9" />
+        </filter>
         <clipPath id={`${id}-clip`}><path d={OUTLINE} /></clipPath>
+        <clipPath id={`${id}-polaroid-clip`}>
+          <path d="M69 178 Q155 181 241 178 C243 261 245 357 252 429 Q155 443 59 429 C63 344 68 252 69 178 Z" />
+        </clipPath>
+        <clipPath id={`${id}-photo-clip`}>
+          <path d="M81 191 Q154 193 228 191 C229 252 231 317 234 365 Q155 374 76 365 C79 310 81 247 81 191 Z" />
+        </clipPath>
       </defs>
       <path d={OUTLINE} fill={`url(#${id}-surface)`} stroke={`url(#${id}-foil)`} strokeWidth="8" />
       <g clipPath={`url(#${id}-clip)`}>
@@ -54,18 +83,37 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
         fill="none" stroke="#fff" strokeWidth="3" opacity=".85" />
       <path d="M300 48 L310 60 L300 72 L290 60 Z" fill="#525752" />
       <text x="300" y="109" textAnchor="middle" className="card-kicker">BEACH ATHLETE</text>
-      <text x="103" y="204" className="card-rating">{rating}</text>
-      <text x="107" y="234" className="card-label">GES</text>
-      <path d="M105 250 H193" stroke={palette.line} strokeWidth="3" />
-      <text x="107" y="293" className="card-code">{identity.code}</text>
-      <circle cx="312" cy="351" r="160" fill={palette.light} opacity=".28" stroke={palette.line} strokeWidth="3" />
-      <circle cx="312" cy="351" r="146" fill="none" stroke="#fff" strokeWidth="5" opacity=".7" />
-      <path d="M176 351 H448 M312 205 V497" stroke={palette.line} strokeWidth="1.5" opacity=".24" />
-      <text x="312" y="405" textAnchor="middle" className="card-crest">BA</text>
-      <text x="312" y="440" textAnchor="middle" className="card-crest-sub">ATHLETE</text>
-      <text x="300" y="596" textAnchor="middle" className="card-name" textLength={textLength}
-        lengthAdjust="spacingAndGlyphs">{name}</text>
-      <text x="300" y="631" textAnchor="middle" className="card-position">{identity.position || 'POSITION WÄHLEN'}</text>
+      <text x="426" y="204" className="card-rating">{rating}</text>
+      <text x="434" y="234" className="card-label">GES</text>
+      <path d="M429 250 H516" stroke={palette.line} strokeWidth="3" />
+      <g transform="translate(-30 -51) scale(1.32) rotate(-6 155 300)"
+        filter={`url(#${id}-polaroid-shadow)`}>
+        <ellipse cx="143" cy="431" rx="107" ry="21" fill="#35260f" opacity=".24"
+          filter={`url(#${id}-lifted-edge-shadow)`} />
+        <path d="M69 178 Q155 181 241 178 C243 261 245 357 252 429 Q155 443 59 429 C63 344 68 252 69 178 Z"
+          fill="#fffdf8" />
+        <g clipPath={`url(#${id}-polaroid-clip)`}>
+          <rect x="58" y="176" width="196" height="270" fill={`url(#${id}-paper-bend)`} />
+          <rect x="58" y="176" width="196" height="270" fill={`url(#${id}-paper-lift)`} />
+        </g>
+        <g clipPath={`url(#${id}-photo-clip)`}>
+          <rect x="74" y="190" width="163" height="185" fill={`url(#${id}-photo)`} />
+        </g>
+        <path d="M81 191 Q154 193 228 191 C229 252 231 317 234 365 Q155 374 76 365 C79 310 81 247 81 191 Z"
+          fill="none" stroke="#c3c0b7" strokeWidth="1" />
+        <path d="M70 377 Q155 383 242 377 M70 381 Q155 387 243 381"
+          fill="none" stroke="#c8c4b8" strokeOpacity=".31" strokeWidth="1" />
+        <path d="M60 429 Q155 441 251 429" fill="none" stroke="#958a75"
+          strokeOpacity=".4" strokeWidth="1.3" />
+        <text x="155" y="409" textAnchor="middle" className="card-polaroid-name"
+          textLength={polaroidNameLength} lengthAdjust="spacingAndGlyphs">{name}</text>
+      </g>
+      <g transform="translate(-30 -51) scale(1.32) rotate(-6 155 300)">
+        <g transform="rotate(-7 154 181)">
+          <rect x="105" y="163" width="99" height="32" rx="2" fill="#d8cda9" opacity=".72" />
+          <path d="M108 170 H199 M108 185 H199" stroke="#f8f2df" strokeWidth="1" opacity=".6" />
+        </g>
+      </g>
       <path d="M91 647 H509" stroke={palette.line} strokeWidth="2.5" opacity=".8" />
       {CARD_STATS.map(({ id: statId, short }, index) => {
         const x = 112 + index * 94
@@ -75,7 +123,6 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
         </g>
       })}
       <path d="M91 766 H509" stroke={palette.line} strokeWidth="2" opacity=".65" />
-      <text x="300" y="801" textAnchor="middle" className="card-footer">DEINE DATEN · DEINE ENTWICKLUNG</text>
       <path d="M282 824 L300 812 L318 824 L300 836 Z" fill={palette.light} stroke={palette.line} strokeWidth="2" />
       <text x="300" y="828" textAnchor="middle" className="card-monogram">BA</text>
     </svg>
