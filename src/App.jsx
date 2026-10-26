@@ -15,7 +15,7 @@ import { adjacentArea, swipeDirection } from "./swipeNavigation.js";
 import UIIcon from "./UIIcon.jsx";
 import AppChrome from "./AppChrome.jsx";
 import ProfileForm from "./ProfileForm.jsx";
-import { isAthleteProfile, nextOnboardingStep } from "./athleteProfile.js";
+import { isAthleteProfile, nextOnboardingStep, withoutLastName } from "./athleteProfile.js";
 
 
 
@@ -59,7 +59,7 @@ function loadAthleteProfile() {
   try {
     const stored = JSON.parse(localStorage.getItem("beach-athlete-profile"));
     if (isAthleteProfile(stored)) {
-      return { ...stored, bodyweightKg: stored.bodyweightKg ?? "" };
+      return { ...withoutLastName(stored), bodyweightKg: stored.bodyweightKg ?? "" };
     }
   } catch { /* Keep the training log available even if this optional field is damaged. */ }
   return { bodyweightKg: "" };
@@ -195,7 +195,7 @@ function App() {
         setExerciseLibrary(data.exerciseLibrary);
         setTrainingPlans(data.trainingPlans);
         setVolleyballDays(data.volleyballDays);
-        setAthleteProfile(data.athleteProfile ?? { bodyweightKg: "" });
+        setAthleteProfile(withoutLastName(data.athleteProfile) ?? { bodyweightKg: "" });
       },
       defaultLibrary: DEFAULT_EXERCISES,
     });
@@ -290,7 +290,7 @@ function App() {
         sessions: backup.sessions,
         exerciseLibrary: backup.exerciseLibrary,
         trainingPlans: backup.trainingPlans ?? [],
-        athleteProfile: backup.athleteProfile ?? { bodyweightKg: "" },
+        athleteProfile: withoutLastName(backup.athleteProfile) ?? { bodyweightKg: "" },
         volleyballDays: backup.volleyballDays ?? [],
       };
       if (!isAthleteData(imported)) {

@@ -1,4 +1,4 @@
-import { isAthleteProfile } from './athleteProfile.js'
+import { isAthleteProfile, withoutLastName } from './athleteProfile.js'
 import { isRating, strengthOptions } from './volleyballValues.js'
 import { isLoggedTrainingExercise, isTrainingPlan } from './trainingModel.js'
 
@@ -79,7 +79,7 @@ export function dataHash(data) {
     exerciseLibrary: data.exerciseLibrary,
     volleyballDays: data.volleyballDays,
     trainingPlans: data.trainingPlans ?? [],
-    athleteProfile: data.athleteProfile ?? { bodyweightKg: '' },
+    athleteProfile: withoutLastName(data.athleteProfile) ?? { bodyweightKg: '' },
   })
 }
 
@@ -89,7 +89,6 @@ export function hasPersonalData(data, defaultLibrary) {
     || Boolean(data.athleteProfile?.bodyweightKg)
     || Boolean(data.athleteProfile?.heightCm)
     || Boolean(data.athleteProfile?.firstName)
-    || Boolean(data.athleteProfile?.lastName)
     || Boolean(data.athleteProfile?.volleyballDiscipline)
     || Boolean(data.athleteProfile?.volleyballDisciplines?.length)
     || Boolean(data.athleteProfile?.measurementCapability)

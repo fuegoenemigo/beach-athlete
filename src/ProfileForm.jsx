@@ -16,7 +16,6 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
   const [index, setIndex] = useState(0)
   const step = onboarding ? (wizardSteps[index] ?? 5) : 0
   const [firstName, setFirstName] = useState(profile.firstName ?? '')
-  const [lastName, setLastName] = useState(profile.lastName ?? '')
   const [height, setHeight] = useState(profile.heightCm ?? '')
   const [weight, setWeight] = useState(profile.bodyweightKg ?? '')
   const [discipline, setDiscipline] = useState(selectedDiscipline(profile))
@@ -56,13 +55,12 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
   function submit(event) {
     event.preventDefault()
     const name = firstName.trim()
-    const surname = lastName.trim()
     const heightCm = parseProfileNumber(height)
     const bodyweightKg = parseProfileNumber(weight)
     if (onboarding) {
       if (step === 0) {
-        if (!name || !surname) return setMessage('Bitte gib deinen Vor- und Nachnamen ein.')
-        advance({ firstName: name, lastName: surname })
+        if (!name) return setMessage('Bitte gib deinen Vornamen ein.')
+        advance({ firstName: name })
       } else if (step === 1) {
         if (!heightCm || !bodyweightKg) return setMessage('Bitte gib gültige Werte für Körpergröße und Gewicht ein.')
         advance({ heightCm, bodyweightKg })
@@ -75,7 +73,7 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
     if (heightCm === null || bodyweightKg === null)
       return setMessage('Bitte gib für Größe und Gewicht eine Zahl größer als 0 und höchstens 300 ein.')
     if (discipline && !position) return setMessage('Bitte wähle eine Position für deine Volleyballart aus.')
-    onSave({ firstName: name, lastName: surname, heightCm, bodyweightKg,
+    onSave({ firstName: name, heightCm, bodyweightKg,
       volleyballDiscipline: discipline, volleyballDisciplines: discipline ? [discipline] : [],
       beachPosition: discipline === 'beach' ? beachPosition : '',
       indoorPosition: discipline === 'indoor' ? indoorPosition : '', measurementCapability: measurement })
@@ -102,10 +100,6 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
       <label className="field-label" htmlFor="profile-first-name">Vorname
         <input id="profile-first-name" className="field" type="text" autoComplete="given-name" maxLength={60}
           value={firstName} onChange={(event) => setFirstName(event.target.value)} required={onboarding} />
-      </label>
-      <label className="field-label" htmlFor="profile-last-name">Nachname
-        <input id="profile-last-name" className="field" type="text" autoComplete="family-name" maxLength={60}
-          value={lastName} onChange={(event) => setLastName(event.target.value)} required={onboarding} />
       </label>
     </div>}
 

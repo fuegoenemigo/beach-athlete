@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { initialProfileData, isAthleteProfile, missingSetupSteps, nextOnboardingStep, selectedDiscipline,
+import { initialProfileData, isAthleteProfile, missingSetupSteps, nextOnboardingStep, selectedDiscipline, withoutLastName,
   parseProfileNumber } from '../src/athleteProfile.js'
 import { greetingName } from '../src/homeSummary.js'
 import { dataHash, hasPersonalData, isAthleteData, localDataForAccount } from '../src/syncPolicy.js'
@@ -39,12 +39,13 @@ test('chosen first name takes precedence over the email without changing its spe
 })
 
 test('new profile questions resume at the first missing answer and preserve older profiles', () => {
-  const name = { firstName: 'Lea', lastName: 'Muster' }
+  const name = { firstName: 'Lea' }
   const body = { ...name, heightCm: '180', bodyweightKg: '75.5' }
   const sports = { ...body, volleyballDiscipline: 'beach', volleyballDisciplines: ['beach'] }
   const positions = { ...sports, beachPosition: 'blocker' }
   assert.equal(nextOnboardingStep({}), 0)
-  assert.equal(nextOnboardingStep({ firstName: 'Lea' }), 0)
+  assert.equal(nextOnboardingStep({ firstName: 'Lea' }), 1)
+  assert.equal(nextOnboardingStep({ firstName: 'Lea', lastName: '' }), 1)
   assert.equal(nextOnboardingStep(name), 1)
   assert.equal(nextOnboardingStep(body), 2)
   assert.equal(nextOnboardingStep(sports), 3)
@@ -59,7 +60,7 @@ test('new profile questions resume at the first missing answer and preserve olde
 })
 
 test('volleyball positions and measurement capability remain valid sync data', () => {
-  const both = { firstName: 'Lea', lastName: 'Muster', heightCm: '180', bodyweightKg: '75.5',
+  const both = { firstName: 'Lea', heightCm: '180', bodyweightKg: '75.5',
     volleyballDisciplines: ['beach', 'indoor'], beachPosition: 'defender',
     indoorPosition: 'libero', measurementCapability: 'standard', onboardingCompleted: true }
   assert.equal(isAthleteData({ ...empty(), athleteProfile: both }), true)
@@ -69,5 +70,17 @@ test('volleyball positions and measurement capability remain valid sync data', (
   assert.equal(isAthleteProfile({ ...both, indoorPosition: 'blocker' }), false)
   assert.equal(isAthleteProfile({ ...both, measurementCapability: 'expert' }), false)
   assert.equal(isAthleteProfile({ ...both, volleyballDiscipline: 'both' }), false)
-  assert.equal(hasPersonalData({ ...empty(), athleteProfile: { lastName: 'Muster' } }, []), true)
+  assert.equal(hasPersonalData({ ...empty(), athleteProfile: { lastName: 'Muster' } }, []), false)
+})
+
+test('legacy surnames are removed from active profiles and sync comparisons', () => {
+  const profile = { firstName: 'Lea', lastName: 'Muster', bodyweightKg: '75' }
+  assert.deepEqual(withoutLastName(profile), { firstName: 'Lea', bodyweightKg: '75' })
+  assert.equal(profile.lastName, 'Muster')
+  assert.equal(isAthleteProfile(profile), true)
+  assert.equal(dataHash({ ...empty(), athleteProfile: profile }),
+    dataHash({ ...empty(), athleteProfile: withoutLastName(profile) }))
+  const complete = { firstName: 'Lea', heightCm: '180', bodyweightKg: '75',
+    volleyballDiscipline: 'beach', beachPosition: 'blocker', measurementCapability: 'standard' }
+  assert.equal(nextOnboardingStep({ ...complete, lastName: '' }), 5)
 })

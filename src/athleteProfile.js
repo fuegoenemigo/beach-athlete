@@ -32,7 +32,7 @@ export function selectedDiscipline(profile) {
 export function missingSetupSteps(profile) {
   const discipline = selectedDiscipline(profile)
   const missing = []
-  if (!profile?.firstName?.trim() || !profile?.lastName?.trim()) missing.push(0)
+  if (!profile?.firstName?.trim()) missing.push(0)
   if (!profile?.heightCm || !profile?.bodyweightKg) missing.push(1)
   if (!discipline) missing.push(2)
   if (!discipline || !(discipline === 'beach' ? profile.beachPosition : profile.indoorPosition)) missing.push(3)
@@ -44,10 +44,16 @@ export function nextOnboardingStep(profile) {
   return missingSetupSteps(profile)[0] ?? 5
 }
 
+export function withoutLastName(profile) {
+  if (!profile || !Object.hasOwn(profile, 'lastName')) return profile
+  const cleaned = { ...profile }
+  delete cleaned.lastName
+  return cleaned
+}
+
 export function isAthleteProfile(profile) {
   return Boolean(profile && typeof profile === 'object' && !Array.isArray(profile)
     && (profile.firstName === undefined || (typeof profile.firstName === 'string' && profile.firstName.length <= 60))
-    && (profile.lastName === undefined || (typeof profile.lastName === 'string' && profile.lastName.length <= 60))
     && (profile.volleyballDiscipline === undefined || profile.volleyballDiscipline === ''
       || VOLLEYBALL_DISCIPLINES.some((item) => item.id === profile.volleyballDiscipline))
     && (profile.volleyballDisciplines === undefined || (Array.isArray(profile.volleyballDisciplines)

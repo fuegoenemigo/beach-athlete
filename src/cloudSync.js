@@ -1,4 +1,4 @@
-import { initialProfileData } from './athleteProfile.js'
+import { initialProfileData, withoutLastName } from './athleteProfile.js'
 import { onAuthStateChanged } from 'firebase/auth'
 import {
   arrayUnion,
@@ -209,6 +209,7 @@ export class CloudSync {
       } else if (decision === 'ready') {
         this.remember(remote.revision, localHash)
         this.ready()
+        if (Object.hasOwn(remote.athleteProfile ?? {}, 'lastName')) this.schedule()
       } else if (decision === 'download') {
         this.applyRemote(remote)
       } else {
@@ -237,13 +238,14 @@ export class CloudSync {
       exerciseLibrary: remote.exerciseLibrary,
       volleyballDays: remote.volleyballDays,
       trainingPlans: remote.trainingPlans ?? [],
-      athleteProfile: remote.athleteProfile ?? { bodyweightKg: '' },
+      athleteProfile: withoutLastName(remote.athleteProfile) ?? { bodyweightKg: '' },
     }
     this.data = data
     this.remember(remote.revision, dataHash(data))
     this.onApply(data)
     this.conflict = null
     this.ready()
+    if (Object.hasOwn(remote.athleteProfile ?? {}, 'lastName')) this.schedule()
   }
 
   ready() {
@@ -280,6 +282,7 @@ export class CloudSync {
     } else if (dataHash(this.data) === dataHash(remote)) {
       this.remember(remote.revision, dataHash(remote))
       this.publish('ready')
+      if (Object.hasOwn(remote.athleteProfile ?? {}, 'lastName')) this.schedule()
     } else if (this.meta?.hash === dataHash(this.data)) {
       this.applyRemote(remote)
     } else {
@@ -307,7 +310,7 @@ export class CloudSync {
       exerciseLibrary: this.data.exerciseLibrary,
       volleyballDays: this.data.volleyballDays,
       trainingPlans: this.data.trainingPlans ?? [],
-      athleteProfile: this.data.athleteProfile ?? { bodyweightKg: '' },
+      athleteProfile: withoutLastName(this.data.athleteProfile) ?? { bodyweightKg: '' },
     }
     if (!isAthleteData(payload)) {
       this.publish('error', 'Lokale Daten haben ein ungültiges Format. Bitte sichere sie als Datei.')
