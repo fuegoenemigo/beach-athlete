@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { initialProfileData, isAthleteProfile, nextOnboardingStep,
+import { initialProfileData, isAthleteProfile, missingSetupSteps, nextOnboardingStep, selectedDiscipline,
   parseProfileNumber } from '../src/athleteProfile.js'
 import { greetingName } from '../src/homeSummary.js'
 import { dataHash, hasPersonalData, isAthleteData, localDataForAccount } from '../src/syncPolicy.js'
@@ -41,14 +41,20 @@ test('chosen first name takes precedence over the email without changing its spe
 test('new profile questions resume at the first missing answer and preserve older profiles', () => {
   const name = { firstName: 'Lea', lastName: 'Muster' }
   const body = { ...name, heightCm: '180', bodyweightKg: '75.5' }
-  const sports = { ...body, volleyballDisciplines: ['beach', 'indoor'] }
-  const positions = { ...sports, beachPosition: 'blocker', indoorPosition: 'setter' }
+  const sports = { ...body, volleyballDiscipline: 'beach', volleyballDisciplines: ['beach'] }
+  const positions = { ...sports, beachPosition: 'blocker' }
   assert.equal(nextOnboardingStep({}), 0)
   assert.equal(nextOnboardingStep({ firstName: 'Lea' }), 0)
   assert.equal(nextOnboardingStep(name), 1)
   assert.equal(nextOnboardingStep(body), 2)
   assert.equal(nextOnboardingStep(sports), 3)
   assert.equal(nextOnboardingStep(positions), 4)
+  assert.equal(nextOnboardingStep({ ...positions, measurementCapability: 'standard' }), 5)
+  assert.deepEqual(missingSetupSteps({ ...positions, measurementCapability: 'standard' }), [])
+  assert.deepEqual(missingSetupSteps({ ...body, measurementCapability: 'standard' }), [2, 3])
+  assert.equal(selectedDiscipline({ volleyballDisciplines: ['indoor'] }), 'indoor')
+  assert.equal(selectedDiscipline({ volleyballDisciplines: ['beach', 'indoor'] }), '')
+  assert.equal(nextOnboardingStep({ ...positions, volleyballDiscipline: '', volleyballDisciplines: ['beach', 'indoor'] }), 2)
   assert.equal(isAthleteProfile({ firstName: 'Lea', bodyweightKg: '75' }), true)
 })
 
@@ -62,5 +68,6 @@ test('volleyball positions and measurement capability remain valid sync data', (
   assert.equal(isAthleteProfile({ ...both, beachPosition: 'setter' }), false)
   assert.equal(isAthleteProfile({ ...both, indoorPosition: 'blocker' }), false)
   assert.equal(isAthleteProfile({ ...both, measurementCapability: 'expert' }), false)
+  assert.equal(isAthleteProfile({ ...both, volleyballDiscipline: 'both' }), false)
   assert.equal(hasPersonalData({ ...empty(), athleteProfile: { lastName: 'Muster' } }, []), true)
 })

@@ -15,7 +15,7 @@ import { adjacentArea, swipeDirection } from "./swipeNavigation.js";
 import UIIcon from "./UIIcon.jsx";
 import AppChrome from "./AppChrome.jsx";
 import ProfileForm from "./ProfileForm.jsx";
-import { isAthleteProfile } from "./athleteProfile.js";
+import { isAthleteProfile, nextOnboardingStep } from "./athleteProfile.js";
 
 
 
@@ -518,7 +518,8 @@ function App() {
       onWheelCapture={moveIntroWheel}
       onClickCapture={() => { if (notice) setNotice(""); }}>
       <AppChrome state={cloudState} onProfile={() => openHomeView("profile")}
-        today={currentDate} firstName={athleteProfile.firstName} introProgress={introProgress} />
+        today={currentDate} firstName={athleteProfile.firstName} introProgress={introProgress}
+        needsProfileSetup={nextOnboardingStep(athleteProfile) < 5} />
 
       <nav className="main-navigation" aria-label="Hauptnavigation">
 

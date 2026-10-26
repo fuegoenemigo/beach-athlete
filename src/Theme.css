@@ -41,6 +41,10 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .app-intro h1 > .app-intro-name { font-size: calc(2rem + 1.8rem * var(--intro-open)); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 .app-intro p { max-height: calc(40px * var(--intro-open)); overflow: hidden; margin: calc(7px * var(--intro-open)) 0 0; opacity: var(--intro-opacity); color: #c0c0c0; font-size: .8rem; line-height: 1.4; }
 .home-avatar.app-header-avatar { width: 38px; height: 38px; margin: 0; font-size: 1rem; }
+.app-header-avatar { position: relative; overflow: visible; }
+.app-profile-badge { position: absolute; left: -7px; bottom: -5px; display: grid; place-items: center;
+  width: 18px; height: 18px; border: 2px solid #101010; border-radius: 50%;
+  color: #fff; background: #c53535; font: 700 10px/1 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
 .main-navigation {
   position: fixed; z-index: 30; left: 50%; right: auto; bottom: 0; transform: translateX(-50%);
@@ -344,6 +348,23 @@ select.field { padding-right: 6px; }
 .profile-option-detailed strong { font-size: .88rem; font-weight: 650; }
 .profile-option-detailed small { color: #aeb0ae; font-size: .76rem; line-height: 1.45; }
 .profile-option-detailed:has(input:checked) small { color: #4a4a4a; }
+.profile-choice { display: flex; align-items: center; justify-content: space-between; gap: 15px;
+  width: 100%; min-height: 54px; margin: 0 0 9px; padding: 12px 15px;
+  border: 1px solid #595959; border-radius: 0; color: #f3f3f3; background: #181818;
+  cursor: pointer; text-align: left; font: inherit; font-size: .9rem; }
+.profile-choice:hover, .profile-choice:focus-visible { border-color: #eaeaea; background: #292929; }
+.profile-choice.is-selected { border-color: #f0f0f0; color: #111; background: #f0f0f0; }
+.profile-choice .ui-icon { width: 18px; height: 18px; opacity: .68; }
+.profile-choice-detailed > span { display: grid; gap: 6px; }
+.profile-choice-detailed strong { font-size: .9rem; font-weight: 600; }
+.profile-choice-detailed small { color: #aaa; font-size: .77rem; line-height: 1.45; }
+.profile-choice-detailed.is-selected small { color: #444; }
+.profile-setup-notice { margin: 0 0 16px; padding: 12px 4px 20px; border-bottom: 1px solid transparent;
+  border-image: var(--section-rule) 1; }
+.profile-setup-notice p { margin: 0 0 12px; color: #d0d0d0; font-size: .85rem; line-height: 1.5; }
+.profile-setup-notice .primary-button { display: flex; align-items: center; justify-content: space-between;
+  width: 100%; border-radius: 0; }
+.profile-setup-notice .ui-icon { width: 18px; height: 18px; }
 @media (max-width: 370px) { .profile-body-fields { grid-template-columns: 1fr; gap: 0; } }
 /* Open sections: shared horizontal rules fade over the outer 18px. */
 :root { --section-rule: linear-gradient(to right, transparent, #ffffff70 18px, #ffffff70 calc(100% - 18px), transparent); }

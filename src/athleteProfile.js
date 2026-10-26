@@ -23,19 +23,33 @@ export const MEASUREMENT_CAPABILITIES = [
     detail: 'Übungen, Gewichte, Wiederholungen und Dauer kann ich erfassen; spezielle Messwerte meist nicht.' },
 ]
 
+export function selectedDiscipline(profile) {
+  if (VOLLEYBALL_DISCIPLINES.some((item) => item.id === profile?.volleyballDiscipline))
+    return profile.volleyballDiscipline
+  return profile?.volleyballDisciplines?.length === 1 ? profile.volleyballDisciplines[0] : ''
+}
+
+export function missingSetupSteps(profile) {
+  const discipline = selectedDiscipline(profile)
+  const missing = []
+  if (!profile?.firstName?.trim() || !profile?.lastName?.trim()) missing.push(0)
+  if (!profile?.heightCm || !profile?.bodyweightKg) missing.push(1)
+  if (!discipline) missing.push(2)
+  if (!discipline || !(discipline === 'beach' ? profile.beachPosition : profile.indoorPosition)) missing.push(3)
+  if (!profile?.measurementCapability) missing.push(4)
+  return missing
+}
+
 export function nextOnboardingStep(profile) {
-  if (!profile.firstName?.trim() || !profile.lastName?.trim()) return 0
-  if (!profile.heightCm || !profile.bodyweightKg) return 1
-  if (!profile.volleyballDisciplines?.length) return 2
-  if ((profile.volleyballDisciplines.includes('beach') && !profile.beachPosition)
-    || (profile.volleyballDisciplines.includes('indoor') && !profile.indoorPosition)) return 3
-  return 4
+  return missingSetupSteps(profile)[0] ?? 5
 }
 
 export function isAthleteProfile(profile) {
   return Boolean(profile && typeof profile === 'object' && !Array.isArray(profile)
     && (profile.firstName === undefined || (typeof profile.firstName === 'string' && profile.firstName.length <= 60))
     && (profile.lastName === undefined || (typeof profile.lastName === 'string' && profile.lastName.length <= 60))
+    && (profile.volleyballDiscipline === undefined || profile.volleyballDiscipline === ''
+      || VOLLEYBALL_DISCIPLINES.some((item) => item.id === profile.volleyballDiscipline))
     && (profile.volleyballDisciplines === undefined || (Array.isArray(profile.volleyballDisciplines)
       && new Set(profile.volleyballDisciplines).size === profile.volleyballDisciplines.length
       && profile.volleyballDisciplines.every((id) => VOLLEYBALL_DISCIPLINES.some((item) => item.id === id))))

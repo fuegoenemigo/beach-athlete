@@ -1,190 +1,158 @@
 import { useEffect, useRef, useState } from 'react'
 import { BEACH_POSITIONS, INDOOR_POSITIONS, MEASUREMENT_CAPABILITIES,
-  nextOnboardingStep, parseProfileNumber, VOLLEYBALL_DISCIPLINES } from './athleteProfile.js'
+  missingSetupSteps, parseProfileNumber, selectedDiscipline, VOLLEYBALL_DISCIPLINES } from './athleteProfile.js'
 import UIIcon from './UIIcon.jsx'
 
-const steps = [
-  { title: 'Schön, dass du da bist.', intro: 'Wie heißt du? So begrüßen wir dich künftig in deiner App.' },
-  { title: 'Dein Körper.', intro: 'Diese Angaben helfen uns, deine Kraftleistungen einzuordnen.' },
-  { title: 'Dein Volleyball.', intro: 'Wähle beide Bereiche, wenn du Beach und Halle regelmäßig spielst.' },
-  { title: 'Deine Position.', intro: 'Für jede ausgewählte Sportart kannst du eine Position angeben.' },
-  { title: 'Deine Trainingsdaten.', intro: 'Wie genau kannst du deine Leistungen dokumentieren?' },
+const questions = [
+  ['Schön, dass du da bist.', 'Wie heißt du? So begrüßen wir dich künftig in deiner App.'],
+  ['Dein Körper.', 'Diese Angaben helfen uns, deine Kraftleistungen einzuordnen.'],
+  ['Dein Volleyball.', 'Entscheide dich für eine Hauptsportart.'],
+  ['Deine Position.', 'Welche Position spielst du hauptsächlich?'],
+  ['Deine Trainingsdaten.', 'Wie genau kannst du deine Leistungen dokumentieren?'],
 ]
 
-export default function ProfileForm({ profile, onSave, onboarding = false }) {
-  const [step, setStep] = useState(() => onboarding ? nextOnboardingStep(profile) : 0)
+export default function ProfileForm({ profile, onSave, onboarding = false, onComplete }) {
+  const [wizardSteps] = useState(() => onboarding ? missingSetupSteps(profile) : [])
+  const [index, setIndex] = useState(0)
+  const step = onboarding ? (wizardSteps[index] ?? 5) : 0
   const [firstName, setFirstName] = useState(profile.firstName ?? '')
   const [lastName, setLastName] = useState(profile.lastName ?? '')
   const [height, setHeight] = useState(profile.heightCm ?? '')
   const [weight, setWeight] = useState(profile.bodyweightKg ?? '')
-  const [disciplines, setDisciplines] = useState(profile.volleyballDisciplines ?? [])
+  const [discipline, setDiscipline] = useState(selectedDiscipline(profile))
   const [beachPosition, setBeachPosition] = useState(profile.beachPosition ?? '')
   const [indoorPosition, setIndoorPosition] = useState(profile.indoorPosition ?? '')
-  const [measurementCapability, setMeasurementCapability] = useState(profile.measurementCapability ?? '')
+  const [measurement, setMeasurement] = useState(profile.measurementCapability ?? '')
   const [message, setMessage] = useState('')
-  const [invalid, setInvalid] = useState(false)
   const heading = useRef(null)
-  useEffect(() => { if (onboarding) heading.current?.focus() }, [step, onboarding])
+  useEffect(() => { if (onboarding) heading.current?.focus() }, [index, onboarding])
 
-  const showName = !onboarding || step === 0
-  const showBody = !onboarding || step === 1
-  const showSports = !onboarding || step === 2
-  const showPositions = !onboarding || step === 3
-  const showPrecision = !onboarding || step === 4
-
-  function fail(text) { setInvalid(true); setMessage(text) }
-  function advance(values, next) {
+  const show = (number) => !onboarding || step === number
+  const positions = discipline === 'beach' ? BEACH_POSITIONS : discipline === 'indoor' ? INDOOR_POSITIONS : []
+  const position = discipline === 'beach' ? beachPosition : indoorPosition
+  function advance(values) {
     onSave(values)
-    setStep(next)
-    setInvalid(false)
+    setIndex((current) => current + 1)
     setMessage('')
   }
-
-  function toggleDiscipline(id) {
-    setDisciplines((current) => current.includes(id)
-      ? current.filter((item) => item !== id) : [...current, id])
-    if (id === 'beach') setBeachPosition('')
-    if (id === 'indoor') setIndoorPosition('')
+  function chooseDiscipline(id) {
+    setDiscipline(id)
+    setBeachPosition('')
+    setIndoorPosition('')
     setMessage('')
+    if (onboarding) advance({ volleyballDiscipline: id, volleyballDisciplines: [id], beachPosition: '', indoorPosition: '' })
   }
-
+  function choosePosition(id) {
+    if (discipline === 'beach') setBeachPosition(id)
+    else setIndoorPosition(id)
+    setMessage('')
+    if (onboarding) advance({ beachPosition: discipline === 'beach' ? id : '', indoorPosition: discipline === 'indoor' ? id : '' })
+  }
+  function chooseMeasurement(id) {
+    setMeasurement(id)
+    setMessage('')
+    if (onboarding) advance({ measurementCapability: id })
+  }
   function submit(event) {
     event.preventDefault()
     const name = firstName.trim()
     const surname = lastName.trim()
     const heightCm = parseProfileNumber(height)
     const bodyweightKg = parseProfileNumber(weight)
-    const selectedBeachPosition = disciplines.includes('beach') ? beachPosition : ''
-    const selectedIndoorPosition = disciplines.includes('indoor') ? indoorPosition : ''
-
     if (onboarding) {
       if (step === 0) {
-        if (!name || !surname) return fail('Bitte gib deinen Vor- und Nachnamen ein.')
-        advance({ firstName: name, lastName: surname }, 1)
-        return
+        if (!name || !surname) return setMessage('Bitte gib deinen Vor- und Nachnamen ein.')
+        advance({ firstName: name, lastName: surname })
+      } else if (step === 1) {
+        if (!heightCm || !bodyweightKg) return setMessage('Bitte gib gültige Werte für Körpergröße und Gewicht ein.')
+        advance({ heightCm, bodyweightKg })
+      } else if (step === 5) {
+        onSave({ onboardingCompleted: true })
+        onComplete?.()
       }
-      if (step === 1) {
-        if (!heightCm || !bodyweightKg) return fail('Bitte gib eine gültige Körpergröße und ein gültiges Körpergewicht ein. Komma oder Punkt sind möglich.')
-        advance({ heightCm, bodyweightKg }, 2)
-        return
-      }
-      if (step === 2) {
-        if (!disciplines.length) return fail('Wähle mindestens eine Volleyballart aus.')
-        advance({ volleyballDisciplines: disciplines, beachPosition: selectedBeachPosition,
-          indoorPosition: selectedIndoorPosition }, 3)
-        return
-      }
-      if (step === 3) {
-        if ((disciplines.includes('beach') && !selectedBeachPosition)
-          || (disciplines.includes('indoor') && !selectedIndoorPosition))
-          return fail('Wähle für jede deiner Volleyballarten eine Position aus.')
-        advance({ beachPosition: selectedBeachPosition, indoorPosition: selectedIndoorPosition }, 4)
-        return
-      }
-      if (!measurementCapability) return fail('Wähle aus, wie du deine Trainingsleistungen erfassen kannst.')
-      onSave({ measurementCapability, onboardingCompleted: true })
-    } else {
-      if (heightCm === null || bodyweightKg === null)
-        return fail('Bitte gib für Größe und Gewicht eine Zahl größer als 0 und höchstens 300 ein. Komma oder Punkt sind möglich.')
-      if ((disciplines.includes('beach') && !selectedBeachPosition)
-        || (disciplines.includes('indoor') && !selectedIndoorPosition))
-        return fail('Wähle für jede ausgewählte Volleyballart eine Position aus.')
-      onSave({ firstName: name, lastName: surname, heightCm, bodyweightKg,
-        volleyballDisciplines: disciplines, beachPosition: selectedBeachPosition,
-        indoorPosition: selectedIndoorPosition, measurementCapability })
-      setHeight(heightCm)
-      setWeight(bodyweightKg)
-      setMessage('Deine Profildaten sind gespeichert.')
+      return
     }
-    setInvalid(false)
+    if (heightCm === null || bodyweightKg === null)
+      return setMessage('Bitte gib für Größe und Gewicht eine Zahl größer als 0 und höchstens 300 ein.')
+    if (discipline && !position) return setMessage('Bitte wähle eine Position für deine Volleyballart aus.')
+    onSave({ firstName: name, lastName: surname, heightCm, bodyweightKg,
+      volleyballDiscipline: discipline, volleyballDisciplines: discipline ? [discipline] : [],
+      beachPosition: discipline === 'beach' ? beachPosition : '',
+      indoorPosition: discipline === 'indoor' ? indoorPosition : '', measurementCapability: measurement })
+    setHeight(heightCm)
+    setWeight(bodyweightKg)
+    setMessage('Deine Profildaten sind gespeichert.')
   }
 
   return <form className="profile-form" onSubmit={submit}>
     {onboarding && <>
       <div className="setup-progress">
-        {step > 0 && <button className="entry-window-back" type="button"
-          aria-label={step === 1 ? 'Zurück zum Namen' : 'Zurück zum vorherigen Schritt'}
-          onClick={() => { setStep((current) => current - 1); setMessage('') }}><UIIcon name="back" /></button>}
-        <p className="eyebrow">DEIN START · SCHRITT {step + 1} VON {steps.length}</p>
+        {index > 0 && <button className="entry-window-back" type="button" aria-label="Zurück zur vorherigen Frage"
+          onClick={() => { setIndex((current) => current - 1); setMessage('') }}><UIIcon name="back" /></button>}
+        <p className="eyebrow">DEIN START · SCHRITT {index + 1} VON {wizardSteps.length + 1}</p>
       </div>
-      <h1 ref={heading} tabIndex={-1}>{steps[step].title}</h1>
-      <p className="profile-intro">{steps[step].intro}</p>
+      <h1 ref={heading} tabIndex={-1}>{step === 5 ? 'Alles bereit.' : questions[step][0]}</h1>
+      <p className="profile-intro">{step === 5
+        ? 'Dein Profil ist eingerichtet. Du kannst deine Angaben jederzeit unter „Mein Profil“ ändern.'
+        : questions[step][1]}</p>
     </>}
 
-    {showName && <div className="profile-question">
+    {show(0) && <div className="profile-question">
       {!onboarding && <h3>Persönliche Angaben</h3>}
       <label className="field-label" htmlFor="profile-first-name">Vorname
         <input id="profile-first-name" className="field" type="text" autoComplete="given-name" maxLength={60}
-          value={firstName} onChange={(event) => { setFirstName(event.target.value); setMessage('') }} required={onboarding} />
+          value={firstName} onChange={(event) => setFirstName(event.target.value)} required={onboarding} />
       </label>
       <label className="field-label" htmlFor="profile-last-name">Nachname
         <input id="profile-last-name" className="field" type="text" autoComplete="family-name" maxLength={60}
-          value={lastName} onChange={(event) => { setLastName(event.target.value); setMessage('') }} required={onboarding} />
+          value={lastName} onChange={(event) => setLastName(event.target.value)} required={onboarding} />
       </label>
     </div>}
 
-    {showBody && <div className="profile-question">
+    {show(1) && <div className="profile-question">
       {!onboarding && <h3>Körperdaten</h3>}
       <p id="profile-body-help" className="profile-explanation">Dein Körpergewicht hilft uns, deine relative Kraft zu ermitteln und deine Kraftleistungen einzuordnen. Deine Körpergröße ergänzt dein persönliches Profil.</p>
       <div className="profile-body-fields">
         <label className="field-label" htmlFor="profile-height">Körpergröße (cm)
           <input id="profile-height" className="field" type="text" inputMode="decimal" maxLength={8}
             aria-describedby="profile-body-help" placeholder="z. B. 180" required={onboarding}
-            value={height} onChange={(event) => { setHeight(event.target.value); setMessage('') }} />
+            value={height} onChange={(event) => setHeight(event.target.value)} />
         </label>
         <label className="field-label" htmlFor="profile-weight">Körpergewicht (kg)
           <input id="profile-weight" className="field" type="text" inputMode="decimal" maxLength={8}
             aria-describedby="profile-body-help profile-reminder" placeholder="z. B. 75,5" required={onboarding}
-            value={weight} onChange={(event) => { setWeight(event.target.value); setMessage('') }} />
+            value={weight} onChange={(event) => setWeight(event.target.value)} />
         </label>
       </div>
-      <p id="profile-reminder" className="profile-reminder"><UIIcon name="profile" />Du kannst diese Angaben jederzeit unter „Mein Profil“ ändern. Halte besonders dein Gewicht aktuell, damit neue Trainings mit dem passenden Körpergewicht erfasst werden.</p>
+      <p id="profile-reminder" className="profile-reminder"><UIIcon name="profile" />Du kannst diese Angaben jederzeit unter „Mein Profil“ ändern. Halte besonders dein Gewicht aktuell.</p>
     </div>}
 
-    {showSports && <fieldset className="profile-question profile-options">
-      <legend>Welche Volleyballarten spielst du?</legend>
-      <p>Mehrfachauswahl möglich.</p>
-      {VOLLEYBALL_DISCIPLINES.map((item) => <label className="profile-option" key={item.id}>
-        <input type="checkbox" checked={disciplines.includes(item.id)}
-          onChange={() => toggleDiscipline(item.id)} />
-        <span>{item.label}</span>
-      </label>)}
+    {show(2) && <fieldset className="profile-question profile-options">
+      <legend>Welche Volleyballart passt zu dir?</legend>
+      <p>Wenn du Beach und Halle spielst, entscheide dich für die Sportart, mit der du dich mehr identifizierst oder für die du diese App jetzt nutzen möchtest.</p>
+      {VOLLEYBALL_DISCIPLINES.map((item) => <button className={'profile-choice' + (discipline === item.id ? ' is-selected' : '')}
+        type="button" key={item.id} aria-pressed={discipline === item.id}
+        onClick={() => chooseDiscipline(item.id)}><span>{item.label}</span><UIIcon name="chevron" /></button>)}
     </fieldset>}
 
-    {showPositions && <div className="profile-question">
-      {!onboarding && <h3>Deine Positionen</h3>}
-      {disciplines.includes('beach') && <fieldset className="profile-options">
-        <legend>Position im Beachvolleyball</legend>
-        {BEACH_POSITIONS.map((item) => <label className="profile-option" key={item.id}>
-          <input type="radio" name="profile-beach-position" value={item.id}
-            checked={beachPosition === item.id} onChange={() => { setBeachPosition(item.id); setMessage('') }} />
-          <span>{item.label}</span>
-        </label>)}
-      </fieldset>}
-      {disciplines.includes('indoor') && <fieldset className="profile-options">
-        <legend>Position im Hallenvolleyball</legend>
-        {INDOOR_POSITIONS.map((item) => <label className="profile-option" key={item.id}>
-          <input type="radio" name="profile-indoor-position" value={item.id}
-            checked={indoorPosition === item.id} onChange={() => { setIndoorPosition(item.id); setMessage('') }} />
-          <span>{item.label}</span>
-        </label>)}
-      </fieldset>}
-      {!disciplines.length && <p className="profile-explanation">Wähle zuerst mindestens eine Volleyballart aus.</p>}
-    </div>}
+    {show(3) && <fieldset className="profile-question profile-options">
+      <legend>{discipline ? `Deine Position im ${discipline === 'beach' ? 'Beachvolleyball' : 'Hallenvolleyball'}` : 'Deine Position'}</legend>
+      {positions.map((item) => <button className={'profile-choice' + (position === item.id ? ' is-selected' : '')}
+        type="button" key={item.id} aria-pressed={position === item.id}
+        onClick={() => choosePosition(item.id)}><span>{item.label}</span><UIIcon name="chevron" /></button>)}
+      {!discipline && <p className="profile-explanation">Wähle zuerst eine Volleyballart aus.</p>}
+    </fieldset>}
 
-    {showPrecision && <fieldset className="profile-question profile-options">
+    {show(4) && <fieldset className="profile-question profile-options">
       <legend>Wie erfasst du deine Trainingsleistungen?</legend>
       <p>Diese Auswahl beschreibt deine Messmöglichkeiten, nicht dein sportliches Können.</p>
-      {MEASUREMENT_CAPABILITIES.map((item) => <label className="profile-option profile-option-detailed" key={item.id}>
-        <input type="radio" name="profile-measurement" value={item.id}
-          checked={measurementCapability === item.id}
-          onChange={() => { setMeasurementCapability(item.id); setMessage('') }} />
-        <span><strong>{item.label}</strong><small>{item.detail}</small></span>
-      </label>)}
+      {MEASUREMENT_CAPABILITIES.map((item) => <button className={'profile-choice profile-choice-detailed' + (measurement === item.id ? ' is-selected' : '')}
+        type="button" key={item.id} aria-pressed={measurement === item.id}
+        onClick={() => chooseMeasurement(item.id)}><span><strong>{item.label}</strong><small>{item.detail}</small></span><UIIcon name="chevron" /></button>)}
     </fieldset>}
 
-    {message && <p className="helper-text" role={invalid ? 'alert' : 'status'}>{message}</p>}
-    <button className="primary-button" type="submit">{onboarding
-      ? step === steps.length - 1 ? 'Los geht’s' : 'Weiter' : 'Änderungen speichern'}</button>
+    {message && <p className="helper-text" role="alert">{message}</p>}
+    {(!onboarding || step === 0 || step === 1 || step === 5) && <button className="primary-button" type="submit">{onboarding
+      ? step === 5 ? 'Zur App' : 'Weiter' : 'Änderungen speichern'}</button>}
   </form>
 }

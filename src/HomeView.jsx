@@ -8,6 +8,7 @@ import HomeDashboard from './HomeDashboard.jsx'
 import PlayerCardArt from './PlayerCardArt.jsx'
 import UIIcon from './UIIcon.jsx'
 import ProfileForm from './ProfileForm.jsx'
+import { nextOnboardingStep } from './athleteProfile.js'
 import './HomeView.css'
 
 const FEATURES = {
@@ -30,6 +31,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
   const selectedFeature = featureStack.at(-1)
   const [focusedArchiveTarget, setFocusedArchiveTarget] = useState(archiveTarget)
   const [featureDate, setFeatureDate] = useState(null)
+  const [showProfileSetup, setShowProfileSetup] = useState(false)
   const training = useMemo(() => trainingProgress(sessions), [sessions])
   const rating = useMemo(() => athleteRating(sessions, athleteProfile, today),
     [sessions, athleteProfile, today])
@@ -77,6 +79,12 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
         onClose={goBack}>
       <section className="home-functional-detail">
         {selectedFeature === 'profile' ? <>
+          {nextOnboardingStep(athleteProfile) < 5 && <div className="profile-setup-notice">
+            <p>Deinem Profil fehlen noch Angaben für die persönliche Einordnung.</p>
+            <button type="button" className="primary-button" onClick={() => setShowProfileSetup(true)}>
+              Kontoeinrichtung abschließen <UIIcon name="chevron" />
+            </button>
+          </div>}
           <section className="home-profile-card" aria-labelledby="personal-data-title">
             <h3 id="personal-data-title">Persönliche Daten</h3>
             <ProfileForm profile={athleteProfile}
@@ -85,7 +93,15 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile,
           {children}
         </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
       </section>
-      </EntryWindow></>
+      </EntryWindow>
+      {selectedFeature === 'profile' && showProfileSetup && <EntryWindow title="Kontoeinrichtung" subtitle="DEIN PROFIL"
+        onClose={() => setShowProfileSetup(false)} layer={1}>
+        <section className="setup-card">
+          <ProfileForm profile={athleteProfile} onboarding
+            onSave={(values) => setAthleteProfile((current) => ({ ...current, ...values }))}
+            onComplete={() => setShowProfileSetup(false)} />
+        </section>
+      </EntryWindow>}</>
     )
     const feature = FEATURES[selectedFeature]
     return (

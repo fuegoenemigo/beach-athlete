@@ -90,6 +90,7 @@ export function hasPersonalData(data, defaultLibrary) {
     || Boolean(data.athleteProfile?.heightCm)
     || Boolean(data.athleteProfile?.firstName)
     || Boolean(data.athleteProfile?.lastName)
+    || Boolean(data.athleteProfile?.volleyballDiscipline)
     || Boolean(data.athleteProfile?.volleyballDisciplines?.length)
     || Boolean(data.athleteProfile?.measurementCapability)
     || data.athleteProfile?.onboardingCompleted !== undefined
