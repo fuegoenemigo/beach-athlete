@@ -372,7 +372,7 @@ select.field { padding-right: 6px; }
 .profile-finish-identity span { color: #c7c7c7; font-size: .78rem; text-align: right; }
 .profile-form > .primary-button.profile-finish-button { position: relative; isolation: isolate;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  min-height: 150px; overflow: hidden; margin-top: 18px; padding: 16px 20px;
+  height: 76px; min-height: 76px; overflow: hidden; margin-top: 18px; padding: 12px 20px;
   border: 1px solid #a5dfae; border-radius: 3px; color: #f5fff6;
   background: linear-gradient(103deg, #12241b 0%, #193827 42%, #397f57 68%, #a8e3a7 100%);
   text-align: left; box-shadow: 0 8px 24px #55bd7730; transition: transform .24s ease, box-shadow .24s ease; }
@@ -387,10 +387,11 @@ select.field { padding-right: 6px; }
 .profile-finish-copy { position: relative; z-index: 1; display: grid; gap: 6px; }
 .profile-finish-copy strong { font-size: 1.35rem; font-weight: 600; }
 .profile-finish-copy small { color: #d3ead6; font-size: .78rem; font-weight: 400; }
-.profile-finish-ball.ui-icon { position: relative; z-index: 1; flex: 0 0 106px;
-  width: 106px; height: 106px; margin-right: 8px; color: #173c28;
-  stroke-width: 1.2px; filter: drop-shadow(0 3px 5px #0a2c1a70);
+.profile-finish-ball { position: relative; z-index: 1; display: grid; place-items: center; flex: 0 0 42px;
+  width: 42px; height: 42px; margin-right: 8px; color: #173c28;
+  filter: drop-shadow(0 3px 5px #0a2c1a70);
   animation: profile-ball-arc 3.6s ease-in-out infinite alternate; }
+.profile-finish-ball > .ui-icon { width: 42px; height: 42px; color: inherit; transform: scale(2); transform-origin: center; }
 @keyframes profile-ball-arc {
   0% { transform: translate(-13px, 13px) rotate(-15deg) scale(.96); }
   32% { transform: translate(-5px, 0) rotate(-5deg) scale(1); }
@@ -398,13 +399,12 @@ select.field { padding-right: 6px; }
   100% { transform: translate(12px, -12px) rotate(14deg) scale(1.06); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .profile-finish-ball.ui-icon { animation: none; }
+  .profile-finish-ball { animation: none; }
   .profile-form > .primary-button.profile-finish-button { transition: none; }
 }
 @media (max-width: 370px) {
   .profile-finish-identity { display: grid; }
   .profile-finish-identity span { text-align: left; }
-  .profile-finish-ball.ui-icon { flex-basis: 90px; width: 90px; height: 90px; }
 }
 @media (max-width: 370px) { .profile-body-fields { grid-template-columns: 1fr; gap: 0; } }
 /* Open sections: shared horizontal rules fade over the outer 18px. */

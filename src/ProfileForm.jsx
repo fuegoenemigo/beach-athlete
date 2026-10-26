@@ -158,7 +158,7 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
     {(!onboarding || step === 0 || step === 1 || step === 5) && (onboarding && step === 5
       ? <button className="primary-button profile-finish-button" type="submit" aria-label="Zur App">
         <span className="profile-finish-copy"><strong>Zur App</strong><small>Dein Training wartet</small></span>
-        <UIIcon name="ball" className="profile-finish-ball" />
+        <span className="profile-finish-ball"><UIIcon name="ball" /></span>
       </button>
       : <button className="primary-button" type="submit">{onboarding ? 'Weiter' : 'Änderungen speichern'}</button>)}
   </form>
