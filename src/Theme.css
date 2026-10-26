@@ -275,6 +275,7 @@ select.field { padding-right: 6px; }
 }
 @media (max-width: 699px) {
   .app { --usable-height: calc(100svh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); padding-top: calc(8px + env(safe-area-inset-top, 0px)); }
+  .app-signed-in { padding-top: max(52px, calc(8px + env(safe-area-inset-top, 0px))); }
   .home-dashboard { gap: 10px; }
   .home-date { width: 46px; height: 46px; }
   .home-today-card, .home-week-card { padding: 12px 14px; }
