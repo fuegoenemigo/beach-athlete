@@ -480,7 +480,7 @@ select.field { padding-right: 6px; }
 /* The original white card silhouette stays identical for both sports. Only its finish changes. */
 :is(.app, .entry-window) .home-card-art,
 .app .home-athlete-preview .home-card-art.is-preview {
-  width: min(100%, 350px); min-height: 0; aspect-ratio: 2 / 3;
+  width: 100%; min-height: 0; aspect-ratio: 560 / 900;
   margin: 0 auto; padding: 0; overflow: visible; border: 0;
   border-radius: 0; background: transparent; box-shadow: none;
 }
@@ -488,7 +488,11 @@ select.field { padding-right: 6px; }
 :is(.app, .entry-window) .home-card-art::after { display: none; }
 :is(.app, .entry-window) .home-card-art svg { display: block; width: 100%; height: 100%;
   overflow: visible; filter: drop-shadow(0 16px 16px #0008); }
-.app .home-athlete-preview .home-card-art.is-preview { width: min(100%, 248px); }
+.app .home-athlete-preview .home-card-art.is-preview { width: 100%; }
+.entry-window .player-card-detail { grid-template-columns: minmax(0, 1fr); }
+.entry-window .player-card-detail > .home-card-art {
+  width: min(calc(100% + 32px), 572px); justify-self: center;
+}
 :is(.app, .entry-window) .home-card-art svg text { fill: #303531; }
 :is(.app, .entry-window) .home-card-art .card-kicker { font: 700 17px Arial, sans-serif; letter-spacing: 7px; }
 :is(.app, .entry-window) .home-card-art .card-rating { font: 800 79px Arial, sans-serif; letter-spacing: -5px; }

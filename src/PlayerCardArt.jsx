@@ -20,7 +20,7 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
 
   return <div className={`home-card-art is-${identity.discipline || 'neutral'}${preview ? ' is-preview' : ''}`}
     role="img" aria-label={`Athlete Card für ${identity.name}, ${identity.position || 'Position noch offen'}, Gesamtwert ${rating} von 99`}>
-    <svg viewBox="0 0 600 900" aria-hidden="true" focusable="false">
+    <svg viewBox="20 0 560 900" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={`${id}-surface`} x1="0" y1="0" x2="1" y2="1">
           <stop stopColor={palette.light} /><stop offset=".25" stopColor={palette.middle} />
@@ -37,8 +37,8 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
           <stop offset="1" stopColor="#fff" stopOpacity=".55" />
         </linearGradient>
         <linearGradient id={`${id}-photo`} x1="0" y1="0" x2="1" y2="1">
-          <stop stopColor="#101313" /><stop offset=".55" stopColor="#060808" />
-          <stop offset="1" stopColor="#1b1d1c" />
+          <stop stopColor="#d5d2c8" /><stop offset=".6" stopColor="#a8ada9" />
+          <stop offset="1" stopColor="#7d8989" />
         </linearGradient>
         <linearGradient id={`${id}-paper-bend`} x1="0" y1="0" x2="1" y2="0">
           <stop stopColor="#8f8878" stopOpacity=".22" />
@@ -98,6 +98,10 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
         </g>
         <g clipPath={`url(#${id}-photo-clip)`}>
           <rect x="74" y="190" width="163" height="185" fill={`url(#${id}-photo)`} />
+          <g fill="#59655f" opacity=".64">
+            <circle cx="154" cy="249" r="30" />
+            <path d="M96 385 Q104 302 154 302 Q205 302 216 385 Z" />
+          </g>
         </g>
         <path d="M81 191 Q154 193 228 191 C229 252 231 317 234 365 Q155 374 76 365 C79 310 81 247 81 191 Z"
           fill="none" stroke="#c3c0b7" strokeWidth="1" />
