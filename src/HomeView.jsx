@@ -51,7 +51,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile, 
     else setFeatureStack((stack) => stack.slice(0, -1))
   }
   const dashboard = <HomeDashboard sessions={sessions} volleyballDays={volleyballDays} today={today}
-    selectedDate={selectedDate} entryDates={entryDates} onSelectDate={onSelectDate} cardScore={rating.overall.score} onFeature={openFeature}
+    selectedDate={selectedDate} entryDates={entryDates} onSelectDate={onSelectDate}
+    cardScore={rating.overall.score} cardAttributes={rating.attributes} athleteProfile={athleteProfile} onFeature={openFeature}
     onOpenActivity={openEntry} onCreateEntry={createEntry} />
 
   if (selectedFeature) {
@@ -131,7 +132,7 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile, 
         <p>{feature.text}</p>
         {selectedFeature === 'statistics' && <StatisticsView training={rating} progress={training} />}
         {selectedFeature === 'card' && <div className="player-card-detail">
-          <PlayerCardArt score={rating.overall.score} />
+          <PlayerCardArt score={rating.overall.score} profile={athleteProfile} attributes={rating.attributes} />
           <div className="player-card-attributes">
             {rating.attributes.map((attribute) => <div key={attribute.id}>
               <span>{attribute.name}</span><strong>{Math.round(attribute.score)}</strong>
