@@ -89,6 +89,9 @@ export function hasPersonalData(data, defaultLibrary) {
     || Boolean(data.athleteProfile?.bodyweightKg)
     || Boolean(data.athleteProfile?.heightCm)
     || Boolean(data.athleteProfile?.firstName)
+    || Boolean(data.athleteProfile?.lastName)
+    || Boolean(data.athleteProfile?.volleyballDisciplines?.length)
+    || Boolean(data.athleteProfile?.measurementCapability)
     || data.athleteProfile?.onboardingCompleted !== undefined
     || JSON.stringify(data.exerciseLibrary) !== JSON.stringify(defaultLibrary)
 }

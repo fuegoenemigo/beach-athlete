@@ -329,6 +329,21 @@ select.field { padding-right: 6px; }
 .profile-form .profile-reminder { display: flex; align-items: flex-start; gap: 10px; padding: 16px 0; border-top: 1px solid var(--border); color: #ccc; font-size: .8rem; line-height: 1.6; }
 .profile-reminder .ui-icon { width: 20px; height: 20px; margin-top: 3px; }
 .profile-form > .primary-button { width: 100%; margin-top: 12px; min-height: 48px; }
+.profile-question { min-width: 0; margin: 0 0 20px; padding: 18px 0 0; border: 0; border-top: 1px solid transparent; border-image: var(--section-rule) 1; }
+.profile-question h3, .profile-options legend { margin: 0 0 15px; color: var(--cream); font-family: var(--serif); font-size: 1.35rem; font-weight: 400; }
+.profile-options { min-width: 0; margin: 0 0 18px; padding: 0; border: 0; }
+.profile-question.profile-options { padding-top: 18px; border-top: 1px solid transparent; }
+.profile-options p { margin: 0 0 16px; color: #bdbdbd; font-size: .83rem; line-height: 1.5; }
+.profile-option { display: flex; align-items: center; gap: 12px; min-height: 48px; margin: 0 0 9px; padding: 11px 13px; border: 1px solid #545454; color: #e9e9e9; background: #171717; cursor: pointer; font-size: .88rem; }
+.profile-option:has(input:checked) { border-color: #f0f0f0; color: #171717; background: #f0f0f0; }
+.profile-option input { appearance: none; flex: 0 0 18px; width: 18px; height: 18px; min-height: 18px; margin: 0; padding: 0; border: 1px solid currentColor; border-radius: 0; background: transparent; }
+.profile-option input:checked { box-shadow: inset 0 0 0 4px #f0f0f0; background: #171717; }
+.profile-option input:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+.profile-option-detailed { align-items: flex-start; }
+.profile-option-detailed span { display: grid; gap: 5px; }
+.profile-option-detailed strong { font-size: .88rem; font-weight: 650; }
+.profile-option-detailed small { color: #aeb0ae; font-size: .76rem; line-height: 1.45; }
+.profile-option-detailed:has(input:checked) small { color: #4a4a4a; }
 @media (max-width: 370px) { .profile-body-fields { grid-template-columns: 1fr; gap: 0; } }
 /* Open sections: shared horizontal rules fade over the outer 18px. */
 :root { --section-rule: linear-gradient(to right, transparent, #ffffff70 18px, #ffffff70 calc(100% - 18px), transparent); }

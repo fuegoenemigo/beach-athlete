@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { initialProfileData, isAthleteProfile, parseProfileNumber } from '../src/athleteProfile.js'
+import { initialProfileData, isAthleteProfile, nextOnboardingStep,
+  parseProfileNumber } from '../src/athleteProfile.js'
 import { greetingName } from '../src/homeSummary.js'
 import { dataHash, hasPersonalData, isAthleteData, localDataForAccount } from '../src/syncPolicy.js'
 
@@ -35,4 +36,31 @@ test('chosen first name takes precedence over the email without changing its spe
   assert.equal(greetingName('marc@example.com', ' Anna-Lena '), 'Anna-Lena')
   assert.equal(greetingName('marc@example.com', 'Élodie'), 'Élodie')
   assert.equal(greetingName('marc@example.com', ''), 'Marc')
+})
+
+test('new profile questions resume at the first missing answer and preserve older profiles', () => {
+  const name = { firstName: 'Lea', lastName: 'Muster' }
+  const body = { ...name, heightCm: '180', bodyweightKg: '75.5' }
+  const sports = { ...body, volleyballDisciplines: ['beach', 'indoor'] }
+  const positions = { ...sports, beachPosition: 'blocker', indoorPosition: 'setter' }
+  assert.equal(nextOnboardingStep({}), 0)
+  assert.equal(nextOnboardingStep({ firstName: 'Lea' }), 0)
+  assert.equal(nextOnboardingStep(name), 1)
+  assert.equal(nextOnboardingStep(body), 2)
+  assert.equal(nextOnboardingStep(sports), 3)
+  assert.equal(nextOnboardingStep(positions), 4)
+  assert.equal(isAthleteProfile({ firstName: 'Lea', bodyweightKg: '75' }), true)
+})
+
+test('volleyball positions and measurement capability remain valid sync data', () => {
+  const both = { firstName: 'Lea', lastName: 'Muster', heightCm: '180', bodyweightKg: '75.5',
+    volleyballDisciplines: ['beach', 'indoor'], beachPosition: 'defender',
+    indoorPosition: 'libero', measurementCapability: 'standard', onboardingCompleted: true }
+  assert.equal(isAthleteData({ ...empty(), athleteProfile: both }), true)
+  assert.notEqual(dataHash({ ...empty(), athleteProfile: both }), dataHash(empty()))
+  assert.equal(isAthleteProfile({ ...both, volleyballDisciplines: ['beach', 'beach'] }), false)
+  assert.equal(isAthleteProfile({ ...both, beachPosition: 'setter' }), false)
+  assert.equal(isAthleteProfile({ ...both, indoorPosition: 'blocker' }), false)
+  assert.equal(isAthleteProfile({ ...both, measurementCapability: 'expert' }), false)
+  assert.equal(hasPersonalData({ ...empty(), athleteProfile: { lastName: 'Muster' } }, []), true)
 })
