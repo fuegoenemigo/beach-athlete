@@ -143,6 +143,10 @@ function App() {
     if (progress === 1) introDone.current = true;
   }
 
+  function completeIntro() {
+    if (!introDone.current) setIntroFromGesture(1);
+  }
+
   function startIntroTouch(event) {
     introTouch.current = null;
     if (introDone.current || event.touches.length !== 1 || document.querySelector('.entry-window')
@@ -323,6 +327,7 @@ function App() {
 
   function selectArea(area) {
     clearPageSlide();
+    if (area !== 'home') completeIntro();
     if (area === "home") {
       setArchiveTarget(null);
       setHomeInitialView(null);
@@ -336,6 +341,7 @@ function App() {
 
   function openHomeView(view, originArea = activeArea) {
     clearPageSlide();
+    if (view) completeIntro();
     setArchiveTarget(null);
     setHomeInitialView(view);
     setHomeReturnArea(originArea === 'home' ? null : originArea);
@@ -346,6 +352,7 @@ function App() {
 
   function openActivity(entry, returnView = null) {
     clearPageSlide();
+    completeIntro();
     const destination = activityDestination(entry);
     if (destination === "archive") {
       setArchiveTarget({ id: entry.id, type: entry.type, date: entry.date });
@@ -364,6 +371,7 @@ function App() {
 
   function createCalendarEntry(type, date, category, returnView = null) {
     clearPageSlide();
+    completeIntro();
     activityNavigationId.current += 1;
     setActivityTarget({ type, date, category, mode: "create", returnArea: activeArea,
       returnView, navigationId: activityNavigationId.current });
@@ -509,8 +517,7 @@ function App() {
       onTouchCancelCapture={() => { introTouch.current = null; }}
       onWheelCapture={moveIntroWheel}
       onClickCapture={() => { if (notice) setNotice(""); }}>
-      <AppChrome state={cloudState} updateAvailable={updateAvailable}
-        onInstallUpdate={installUpdate} onProfile={() => openHomeView("profile")}
+      <AppChrome state={cloudState} onProfile={() => openHomeView("profile")}
         today={currentDate} firstName={athleteProfile.firstName} introProgress={introProgress} />
 
       <nav className="main-navigation" aria-label="Hauptnavigation">

@@ -31,22 +31,16 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .app-scroll-region::-webkit-scrollbar { display: none; }
 .app-topline { display: flex; align-items: center; justify-content: space-between; gap: 6px; min-height: 45px; margin-bottom: 16px; border-bottom: 1px solid #818181; padding: 0 3px 8px; }
 .app-topline time { font-size: clamp(.69rem, 2.9vw, .87rem); color: #dfdfdf; }
-.app-notifications > span { position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 0; background: #a4a4a4; }
 .app-global-header { position: relative; flex: none; z-index: 20; width: 100%; max-width: 520px; margin: 0 auto 12px; padding: 0 0 7px; background: transparent; }
 .app-global-header .app-topline { height: 45px; min-height: 0; margin-bottom: 0; padding: 0 3px; overflow: hidden; }
-.app-global-header .app-notifications { display: grid; place-items: center; position: absolute; z-index: 3; top: 0; right: 3px; width: 44px; height: 44px; border: 0; background: transparent; color: var(--cream); }
 .app-intro { position: relative; height: var(--intro-height); overflow: hidden; }
-.app-intro-copy { padding: 12px 70px 12px 6px; }
+.app-intro-copy { padding: 12px 6px; }
 .app-intro h1 { margin: 0; font-family: var(--serif); line-height: 1.08; letter-spacing: -.04em; font-weight: 400; }
 .app-intro h1 > span { display: block; }
 .app-intro h1 > .app-intro-hello { height: calc(38px * var(--intro-open)); overflow: hidden; opacity: var(--intro-opacity); font-size: 2.2rem; }
 .app-intro h1 > .app-intro-name { font-size: calc(2rem + 1.8rem * var(--intro-open)); white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 .app-intro p { max-height: calc(40px * var(--intro-open)); overflow: hidden; margin: calc(7px * var(--intro-open)) 0 0; opacity: var(--intro-opacity); color: #c0c0c0; font-size: .8rem; line-height: 1.4; }
-.home-avatar.app-header-avatar { position: absolute; z-index: 2; top: var(--avatar-top); right: 6px; width: var(--avatar-size); height: var(--avatar-size); margin: 0; font-size: calc(var(--avatar-size) * .42); }
-.app-status-card { margin-bottom: 16px; padding: 18px; border: 1px solid var(--border); border-radius: 0; background: var(--panel); }
-.app-status-card > .ui-icon { color: var(--green); }
-.app-status-card h3 { margin: 12px 0 8px; }
-.app-status-card p { margin: 0; color: var(--muted); line-height: 1.5; }
+.home-avatar.app-header-avatar { width: 38px; height: 38px; margin: 0; font-size: 1rem; }
 
 .main-navigation {
   position: fixed; z-index: 30; left: 50%; right: auto; bottom: 0; transform: translateX(-50%);
@@ -341,7 +335,7 @@ select.field { padding-right: 6px; }
 :is(.app, .entry-window) :is(.home-today-card, .home-week-card, .home-athlete-preview,
   .diary-panel, .home-widget, .home-detail, .home-profile-card, .cloud-account, .access-gate-card,
   .athlete-card, .panel, .metric-panel, .create-plan, .selected-panel, .beach-calendar,
-  .app-status-card, .exercise-adder, .empty-state, .exercise-card, .history-item,
+  .exercise-adder, .empty-state, .exercise-card, .history-item,
   .volleyball-set-editor, .beach-opponent-editor, .statistics-section, .statistics-empty-chart,
   .statistics-detail-placeholder, .training-stat-group, .training-bodyweight, .training-plan-group,
   .training-exercise-description, .training-done-list, .training-current-set, .training-timer,
@@ -353,7 +347,7 @@ select.field { padding-right: 6px; }
   border-radius: 0; background: transparent; box-shadow: none;
 }
 :is(.app, .entry-window) :is(.home-today-card, .home-week-card, .home-athlete-preview, .diary-panel,
-  .home-profile-card, .home-detail, .cloud-account, .access-gate-card, .app-status-card) { padding: 22px 4px; }
+  .home-profile-card, .home-detail, .cloud-account, .access-gate-card) { padding: 22px 4px; }
 :is(.app, .entry-window) :is(.app-topline, .app-global-header, .app-header, .home-calendar-stage, .setup-card,
   .entry-window-header, .profile-reminder, .training-history-details, .training-history-exercise,
   .training-plan-group-content, .training-done-row, .training-add-activity, .training-library-list,
@@ -383,5 +377,5 @@ select.field { padding-right: 6px; }
 :is(.app, .entry-window) .home-card-art::after { display: none; }
 :is(.app, .entry-window) .home-card-crest { border: 0; background: transparent; }
 :is(.app, .entry-window) .home-avatar { border-radius: 50%; }
-:is(.app, .entry-window) .home-date-indicator, .app-notifications > span { border-radius: 50%; }
+:is(.app, .entry-window) .home-date-indicator { border-radius: 50%; }
 @media (max-width: 370px) { .app-intro h1 > .app-intro-name { font-size: calc(1.7rem + 1.3rem * var(--intro-open)); } }
