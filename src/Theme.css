@@ -477,51 +477,28 @@ select.field { padding-right: 6px; }
 .app-update-actions { display: grid; gap: 10px; margin-top: 28px; }
 .app-update-actions button { width: 100%; min-height: 48px; margin: 0; }
 
-/* Athlete Card keeps its values as live data over sport-specific artwork. */
-:is(.app, .entry-window) .home-card-art { isolation: isolate; width: min(100%, 350px); min-height: 0;
-  aspect-ratio: .75; margin: 0 auto; padding: 18px 20px 21px; overflow: hidden;
-  border: 2px solid; border-radius: 22px 22px 38px 38px;
-  background-size: cover; background-position: center; box-shadow: 0 18px 35px #0008; }
-:is(.app, .entry-window) .home-card-art::before { position: absolute; inset: 8px; content: ''; z-index: -1;
-  border: 1px solid currentColor; border-radius: 16px 16px 30px 30px; opacity: .42;
-  pointer-events: none; }
-:is(.app, .entry-window) .home-card-art.is-beach { color: #342719; border-color: #d6ad61;
-  background-image: linear-gradient(180deg, #fff2cc59 0%, #f4dfad35 38%, #f5dfacc9 70%, #dfb978ef 100%),
-    url('./assets/athlete-card-beach.jpg'); }
-:is(.app, .entry-window) .home-card-art.is-indoor { color: #f3f5f5; border-color: #b9c6ce;
-  background-image: linear-gradient(180deg, #1a243b60 0%, #1f293c62 36%, #1a202bd2 72%, #10151df5 100%),
-    url('./assets/athlete-card-indoor.jpg'); }
-:is(.app, .entry-window) .home-card-art.is-neutral { color: #eee; border-color: #aaa;
-  background: radial-gradient(ellipse at 70% 20%, #7777, transparent 54%), linear-gradient(145deg, #373737, #171717); }
-:is(.app, .entry-window) .home-card-topline { gap: 8px; font-size: .53rem; font-weight: 700; letter-spacing: .13em; }
-:is(.app, .entry-window) .home-card-upper { position: relative; z-index: 1; display: flex; align-items: flex-start;
-  justify-content: space-between; flex: 1; padding: 28px 7px 0; }
-:is(.app, .entry-window) .home-card-rating { display: grid; justify-items: start; gap: 2px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-:is(.app, .entry-window) .home-card-rating strong { font-size: clamp(3rem, 10vw, 4rem); font-weight: 800; line-height: .9; }
-:is(.app, .entry-window) .home-card-rating span { font-size: .64rem; font-weight: 700; letter-spacing: .16em; }
-:is(.app, .entry-window) .home-card-rating b { margin-top: 8px; font-size: 1.06rem; letter-spacing: .07em; }
-:is(.app, .entry-window) .home-card-art .home-card-crest { width: 68px; height: 68px; border: 1px solid currentColor;
-  border-radius: 50%; background: #ffffff1c; box-shadow: inset 0 0 0 5px #ffffff18;
-  font: 700 1.55rem/1 var(--serif); letter-spacing: -.08em; }
-:is(.app, .entry-window) .home-card-lower { position: relative; z-index: 1; display: grid; justify-items: center;
-  gap: 5px; padding: 0 2px 3px; text-align: center; }
-:is(.app, .entry-window) .home-card-name { max-width: 100%; overflow: hidden; text-overflow: ellipsis;
-  font: 700 2rem/1.05 var(--serif); letter-spacing: .045em; text-transform: uppercase; }
-:is(.app, .entry-window) .home-card-position { font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
-:is(.app, .entry-window) .home-card-stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
-  width: 100%; gap: 2px; margin-top: 14px; padding-top: 12px; border-top: 1px solid currentColor; }
-:is(.app, .entry-window) .home-card-stats > div { display: grid; gap: 3px; }
-:is(.app, .entry-window) .home-card-stats strong { font-size: 1.16rem; line-height: 1; }
-:is(.app, .entry-window) .home-card-stats span { font-size: .59rem; font-weight: 800; letter-spacing: .04em; }
-.app .home-athlete-preview .home-card-art.is-preview { width: min(100%, 248px);
-  min-height: 0; aspect-ratio: .78; margin: 0 auto; padding: 13px 15px 16px; }
-.app .home-card-art.is-preview .home-card-topline { font-size: .43rem; }
-.app .home-card-art.is-preview .home-card-upper { padding-top: 14px; }
-.app .home-card-art.is-preview .home-card-rating strong { font-size: 2.65rem; }
-.app .home-card-art.is-preview .home-card-rating b { font-size: .85rem; }
-.app .home-card-art.is-preview .home-card-crest { width: 53px; height: 53px; font-size: 1.25rem; }
-.app .home-card-art.is-preview .home-card-name { font-size: 1.45rem; }
-.app .home-card-art.is-preview .home-card-position { font-size: .59rem; }
-.app .home-card-art.is-preview .home-card-stats { margin-top: 9px; padding-top: 8px; }
-.app .home-card-art.is-preview .home-card-stats strong { font-size: .88rem; }
-.app .home-card-art.is-preview .home-card-stats span { font-size: .48rem; }
+/* The original white card silhouette stays identical for both sports. Only its finish changes. */
+:is(.app, .entry-window) .home-card-art,
+.app .home-athlete-preview .home-card-art.is-preview {
+  width: min(100%, 350px); min-height: 0; aspect-ratio: 2 / 3;
+  margin: 0 auto; padding: 0; overflow: visible; border: 0;
+  border-radius: 0; background: transparent; box-shadow: none;
+}
+:is(.app, .entry-window) .home-card-art::before,
+:is(.app, .entry-window) .home-card-art::after { display: none; }
+:is(.app, .entry-window) .home-card-art svg { display: block; width: 100%; height: 100%;
+  overflow: visible; filter: drop-shadow(0 16px 16px #0008); }
+.app .home-athlete-preview .home-card-art.is-preview { width: min(100%, 248px); }
+:is(.app, .entry-window) .home-card-art svg text { fill: #303531; }
+:is(.app, .entry-window) .home-card-art .card-kicker { font: 700 17px Arial, sans-serif; letter-spacing: 7px; }
+:is(.app, .entry-window) .home-card-art .card-rating { font: 800 79px Arial, sans-serif; letter-spacing: -5px; }
+:is(.app, .entry-window) .home-card-art .card-label { font: 700 20px Arial, sans-serif; letter-spacing: 4px; }
+:is(.app, .entry-window) .home-card-art .card-code { font: 800 32px Arial, sans-serif; letter-spacing: 2px; }
+:is(.app, .entry-window) .home-card-art .card-crest { font: 700 126px Georgia, serif; letter-spacing: -13px; }
+:is(.app, .entry-window) .home-card-art .card-crest-sub { font: 700 14px Arial, sans-serif; letter-spacing: 5px; }
+:is(.app, .entry-window) .home-card-art .card-name { font: 700 65px Georgia, serif; letter-spacing: 5px; }
+:is(.app, .entry-window) .home-card-art .card-position { font: 700 21px Arial, sans-serif; letter-spacing: 4px; text-transform: uppercase; }
+:is(.app, .entry-window) .home-card-art .card-stat-label { font: 700 18px Arial, sans-serif; letter-spacing: 2px; }
+:is(.app, .entry-window) .home-card-art .card-stat-value { font: 800 37px Arial, sans-serif; }
+:is(.app, .entry-window) .home-card-art .card-footer { font: 700 14px Arial, sans-serif; letter-spacing: 3px; }
+:is(.app, .entry-window) .home-card-art .card-monogram { font: 800 10px Arial, sans-serif; }
