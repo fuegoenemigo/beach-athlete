@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 import { installUpdate, isUpdateAvailable } from "./pwa.js";
+import UpdateDialog from "./UpdateDialog.jsx";
 import { CloudSync } from "./cloudSync.js";
 import { isAthleteData } from "./syncPolicy.js";
 import DataSecurity from "./DataSecurity.jsx";
@@ -122,6 +123,7 @@ function App() {
   const [notice, setNotice] = useState("");
   const [criticalNotice, setCriticalNotice] = useState("");
   const [updateAvailable, setUpdateAvailable] = useState(isUpdateAvailable);
+  const [showUpdateDialog, setShowUpdateDialog] = useState(isUpdateAvailable);
   const storageDamaged = damagedStorageKeys.size > 0;
   const [cloudState, setCloudState] = useState(() => storageDamaged
     ? { status: "unavailable", email: "", message: "Lokale Daten sind beschädigt. Speicherung und Synchronisierung wurden zum Schutz angehalten." }
@@ -212,7 +214,7 @@ function App() {
   }, [sessions, exerciseLibrary, volleyballDays, trainingPlans, athleteProfile]);
 
   useEffect(() => {
-    const showUpdate = () => setUpdateAvailable(true);
+    const showUpdate = () => { setUpdateAvailable(true); setShowUpdateDialog(true); };
     window.addEventListener("beach-athlete-update-available", showUpdate);
     return () => window.removeEventListener("beach-athlete-update-available", showUpdate);
   }, []);
@@ -471,6 +473,7 @@ function App() {
   if (!cloudState.authorized || cloudState.profileLoaded === false) {
     return (
       <main className="app app-access-gate">
+        {showUpdateDialog && <UpdateDialog onInstall={installUpdate} onKeepCurrent={() => setShowUpdateDialog(false)} />}
         <header className="app-header">
           <div>
             <p className="eyebrow">DEIN TRAINING. DEINE ENTWICKLUNG.</p>
@@ -502,6 +505,7 @@ function App() {
 
   if (athleteProfile.onboardingCompleted === false && cloudState.status !== 'conflict') {
     return <main className="app app-onboarding">
+      {showUpdateDialog && <UpdateDialog onInstall={installUpdate} onKeepCurrent={() => setShowUpdateDialog(false)} />}
       <p className="eyebrow setup-brand">BEACH ATHLETE</p>
       <section className="setup-card" aria-label="Profil einrichten">
         <ProfileForm key={cloudState.uid} profile={athleteProfile} onboarding
@@ -517,9 +521,10 @@ function App() {
       onTouchCancelCapture={() => { introTouch.current = null; }}
       onWheelCapture={moveIntroWheel}
       onClickCapture={() => { if (notice) setNotice(""); }}>
+      {showUpdateDialog && <UpdateDialog onInstall={installUpdate} onKeepCurrent={() => setShowUpdateDialog(false)} />}
       <AppChrome state={cloudState} onProfile={() => openHomeView("profile")}
         today={currentDate} firstName={athleteProfile.firstName} introProgress={introProgress}
-        needsProfileSetup={nextOnboardingStep(athleteProfile) < 5} />
+        needsProfileSetup={nextOnboardingStep(athleteProfile) < 5} updateAvailable={updateAvailable} />
 
       <nav className="main-navigation" aria-label="Hauptnavigation">
 
@@ -566,15 +571,6 @@ function App() {
 
       </nav>
 
-      {updateAvailable && (
-        <div className="update-notice" role="status">
-          <span>Neue Version verfügbar. Speichere offene Eingaben, bevor du aktualisierst.</span>
-          <button type="button" className="secondary-button" onClick={installUpdate} aria-label="Neue App-Version installieren">
-            Jetzt aktualisieren
-          </button>
-        </div>
-      )}
-
       {criticalNotice && <p className="notice-message" role="alert">{criticalNotice}</p>}
       {notice && <p className="notice-message transient-notice" role="status">{notice}</p>}
 
@@ -595,6 +591,7 @@ function App() {
       {areaVisible("home") && <div className={`app-area-page${pageSlide?.from === 'home' ? ' is-from' : ''}${pageSlide?.to === 'home' ? ' is-to' : ''}`}
         style={areaStyle('home')}><HomeView key={homeViewKey}
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile} accountEmail={cloudState.email}
+        updateAvailable={updateAvailable} onInstallUpdate={installUpdate}
         today={currentDate} selectedDate={selectedDate} entryDates={entryDates} onSelectDate={setChosenDate}
         sessions={sessions} volleyballDays={volleyballDays}
         initialView={activeArea === 'home' ? homeInitialView : null}

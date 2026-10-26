@@ -26,6 +26,7 @@ const FEATURES = {
 }
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile, accountEmail,
+  updateAvailable = false, onInstallUpdate,
   sessions, volleyballDays, today, selectedDate, entryDates, onSelectDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
   onExit = null }) {
   const [featureStack, setFeatureStack] = useState(initialView ? [initialView] : [])
@@ -81,6 +82,10 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile, 
         onClose={goBack}>
       <section className="home-functional-detail">
         {selectedFeature === 'profile' ? <>
+          {updateAvailable && <section className="profile-update-notice" aria-label="App-Aktualisierung">
+            <div><strong>Neue Version verfügbar</strong><p>Dein Update steht bereit.</p></div>
+            <button type="button" className="primary-button" onClick={onInstallUpdate}>Jetzt aktualisieren</button>
+          </section>}
           {nextOnboardingStep(athleteProfile) < 5 && <div className="profile-setup-notice">
             <p>Deinem Profil fehlen noch Angaben für die persönliche Einordnung.</p>
             <button type="button" className="primary-button" onClick={() => setShowProfileSetup(true)}>

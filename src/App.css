@@ -116,22 +116,6 @@ textarea:focus-visible {
 .nav-icon { line-height: 1; }
 .nav-label-short { display: none; }
 
-.update-notice {
-  display: grid;
-  gap: 8px;
-  margin-bottom: 18px;
-  padding: 13px 16px;
-  border: 1px solid #616161;
-  border-radius: 0;
-  color: #f1f1f1;
-  background: #212121;
-  font-size: 0.9rem;
-}
-
-.update-notice .secondary-button {
-  margin-top: 0;
-}
-
 .app-header {
   display: flex;
   justify-content: space-between;

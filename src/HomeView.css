@@ -318,6 +318,10 @@
 .home-functional-detail { padding: 0; }
 .home-functional-detail .home-profile-card { margin-top: 0; }
 .profile-overview { padding: 0 4px 24px; }
+.profile-update-notice { display: grid; gap: 14px; padding: 8px 4px 25px; }
+.profile-update-notice strong { font: 400 1.4rem/1.15 var(--serif); }
+.profile-update-notice p { margin: 6px 0 0; color: #c4c4c4; font-size: .82rem; }
+.profile-update-notice button { width: 100%; min-height: 46px; margin: 0; }
 .profile-overview-identity { display: flex; align-items: center; gap: 16px; padding: 12px 0 27px; }
 .profile-overview-avatar { display: grid; place-items: center; flex: 0 0 66px; width: 66px; height: 66px;
   border: 1px solid #d0d0d0a8; border-radius: 50%; background: linear-gradient(140deg, #414141, #171717);

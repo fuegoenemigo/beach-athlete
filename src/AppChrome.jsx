@@ -1,7 +1,10 @@
 import { greetingName } from './homeSummary.js'
 
-export default function AppChrome({ state, onProfile, today, introProgress, firstName, needsProfileSetup }) {
+export default function AppChrome({ state, onProfile, today, introProgress, firstName, needsProfileSetup, updateAvailable }) {
   const name = greetingName(state.email, firstName)
+  const pendingCount = Number(needsProfileSetup) + Number(updateAvailable)
+  const profileLabel = ['Mein Profil öffnen', needsProfileSetup && 'Kontoeinrichtung abschließen',
+    updateAvailable && 'Aktualisierung verfügbar'].filter(Boolean).join(', ')
   const introHeight = Math.round(64 + (1 - introProgress) * 104)
 
   return <header className={`app-global-header${introProgress >= 1 ? ' is-compact' : ''}`}
@@ -12,9 +15,9 @@ export default function AppChrome({ state, onProfile, today, introProgress, firs
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
       })}</time>
       <button type="button" className="home-avatar app-header-avatar" onClick={onProfile}
-        aria-label={needsProfileSetup ? 'Mein Profil öffnen, Kontoeinrichtung abschließen' : 'Mein Profil öffnen'}
+        aria-label={profileLabel}
         title={state.email || 'Mein Profil'}>{name.charAt(0)}
-        {needsProfileSetup && <span className="app-profile-badge" aria-hidden="true">1</span>}</button>
+        {pendingCount > 0 && <span className="app-profile-badge" aria-hidden="true">{pendingCount}</span>}</button>
     </div>
     <div className="app-intro">
       <div className="app-intro-copy"><h1>
