@@ -607,7 +607,7 @@ function App() {
         athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile} accountEmail={cloudState.email}
         updateAvailable={updateAvailable} onInstallUpdate={installUpdate}
         today={currentDate} selectedDate={selectedDate} entryDates={entryDates} onSelectDate={setChosenDate}
-        sessions={sessions} volleyballDays={volleyballDays}
+        sessions={sessions} volleyballDays={volleyballDays} jumpMeasurements={jumpMeasurements}
         onDeleteTraining={(sessionId) => setSessions((previous) =>
           previous.filter((session) => session.id !== sessionId))}
         initialView={activeArea === 'home' ? homeInitialView : null}
@@ -643,7 +643,8 @@ function App() {
         hidden={!areaVisible('indoor')} style={areaStyle('indoor')}>
         <VolleyballView sport="indoor" volleyballDays={volleyballDays}
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
-          athleteProfile={athleteProfile} jumpMeasurements={jumpMeasurements}
+          athleteProfile={athleteProfile} setAthleteProfile={setAthleteProfile}
+          jumpMeasurements={jumpMeasurements}
           setJumpMeasurements={setJumpMeasurements}
           onOpenArchive={() => openHomeView("archive")}
           navigationTarget={activityTarget?.type === "indoor" ? activityTarget : null}

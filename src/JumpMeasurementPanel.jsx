@@ -1,18 +1,22 @@
 import { useState } from 'react'
 import DateWheel from './DateWheel.jsx'
 import EntryWindow from './EntryWindow.jsx'
-import { isJumpDate, JUMP_TESTS, jumpValuesForDate, parseJumpCentimeters, saveJumpValues } from './jumpMeasurements.js'
+import { JUMP_RATING_GROUPS } from './athleteProfile.js'
+import { isCurrentJumpMeasurement, isJumpDate, JUMP_TESTS,
+  jumpValuesForDate, parseJumpCentimeters, saveJumpValues } from './jumpMeasurements.js'
 
 const today = () => new Date().toLocaleDateString('sv-SE')
 const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE')
 
-export default function JumpMeasurementPanel({ measurementCapability, measurements, setMeasurements, setNotice }) {
+export default function JumpMeasurementPanel({ measurementCapability, ratingGroup, setAthleteProfile,
+  measurements, setMeasurements, setNotice }) {
   const enabled = measurementCapability === 'measured'
   const [open, setOpen] = useState(false)
   const [date, setDate] = useState(today)
   const [values, setValues] = useState(() => jumpValuesForDate(measurements, today()))
   const [error, setError] = useState('')
-  const sorted = [...measurements].sort((a, b) =>
+  const currentMeasurements = measurements.filter(isCurrentJumpMeasurement)
+  const sorted = [...currentMeasurements].sort((a, b) =>
     b.date.localeCompare(a.date) || JUMP_TESTS.findIndex((test) => test.id === a.testId)
       - JUMP_TESTS.findIndex((test) => test.id === b.testId))
 
@@ -33,6 +37,10 @@ export default function JumpMeasurementPanel({ measurementCapability, measuremen
 
   function save(event) {
     event.preventDefault()
+    if (!JUMP_RATING_GROUPS.some((group) => group.id === ratingGroup)) {
+      setError('Bitte wähle zuerst eine Referenzgruppe für deine Sprungwerte.')
+      return
+    }
     if (!enabled || !isJumpDate(date) || date > today()) {
       setError('Bitte wähle ein gültiges Datum bis heute.')
       return
@@ -61,15 +69,15 @@ export default function JumpMeasurementPanel({ measurementCapability, measuremen
       <p className="eyebrow">DEINE LEISTUNG</p>
       <h2 id="jump-capture-title">Sprungmessung</h2>
     </div></div>
-    <p className="helper-text">Erfasse deine beste Sprunghöhe oder Sprungweite auf festem Hallenboden.</p>
+    <p className="helper-text">Erfasse deine beste Berührhöhe oder Sprungweite auf festem Hallenboden.</p>
     <button type="button" className="secondary-button jump-capture-button"
       disabled={!enabled} aria-describedby={!enabled ? 'jump-capture-disabled' : undefined}
       onClick={openForm}>＋ Sprungwerte erfassen</button>
     {!enabled && <p id="jump-capture-disabled" className="helper-text jump-capture-disabled">
       Verfügbar, wenn du im Profil „Ich kann Leistungswerte präzise messen“ aktivierst.
     </p>}
-    {enabled && measurements.length > 0 && <p className="helper-text jump-capture-count">
-      {measurements.length} {measurements.length === 1 ? 'Messwert' : 'Messwerte'} gespeichert
+    {enabled && currentMeasurements.length > 0 && <p className="helper-text jump-capture-count">
+      {currentMeasurements.length} {currentMeasurements.length === 1 ? 'Messwert' : 'Messwerte'} gespeichert
     </p>}
 
     {open && enabled && <EntryWindow title="Sprungwerte erfassen" subtitle="HALLENVOLLEYBALL"
@@ -77,6 +85,14 @@ export default function JumpMeasurementPanel({ measurementCapability, measuremen
       <form className="jump-measurement-form" onSubmit={save} noValidate>
         <p className="helper-text">Trage den besten einzelnen gültigen Sprung ein: ausgeruht, nach dem Aufwärmen,
           mit Pausen zwischen den Versuchen. Ein Wert genügt. Alle Sprünge zählen nur auf festem Boden.</p>
+        <fieldset className="profile-question profile-options">
+          <legend>Referenzgruppe für die Athlete Card</legend>
+          <p>Wähle die Gruppe, mit der deine Sprungwerte verglichen werden sollen.</p>
+          {JUMP_RATING_GROUPS.map((group) => <button className={'profile-choice' + (ratingGroup === group.id ? ' is-selected' : '')}
+            type="button" key={group.id} aria-pressed={ratingGroup === group.id}
+            onClick={() => { setAthleteProfile((current) => ({ ...current, jumpRatingGroup: group.id })); setError('') }}>
+            <span>{group.label}</span></button>)}
+        </fieldset>
         <DateWheel label="Datum der Messung" value={date} onChange={chooseDate} />
         {date > today() && <p className="field-error" role="alert">Das Messdatum darf nicht in der Zukunft liegen.</p>}
         <div className="jump-measurement-fields">
@@ -87,7 +103,7 @@ export default function JumpMeasurementPanel({ measurementCapability, measuremen
               <p className="helper-text" id={`jump-hint-${test.id}`}>{test.hint}</p>
               <div className="jump-value-input">
                 <input id={`jump-${test.id}`} className="field" type="text" inputMode="decimal"
-                  value={values[test.id] ?? ''} placeholder={test.unit === 'Sprungweite' ? 'z. B. 210' : 'z. B. 48'}
+                  value={values[test.id] ?? ''} placeholder={test.placeholder}
                   aria-invalid={invalid} aria-describedby={`jump-hint-${test.id}`}
                   onChange={(event) => {
                     setValues((previous) => ({ ...previous, [test.id]: event.target.value }))
@@ -100,6 +116,8 @@ export default function JumpMeasurementPanel({ measurementCapability, measuremen
           })}
         </div>
         <p className="helper-text">Vorhandene Werte für dieses Datum kannst du hier ändern. Ein leeres Feld bleibt unverändert.</p>
+        {measurements.length > currentMeasurements.length && <p className="helper-text">
+          Frühere Sprunghöhen bleiben in deiner Datensicherung erhalten. Für die neue Bewertung erfasse bitte die Berührhöhe vom Hallenboden aus neu.</p>}
         {error && <p className="field-error" role="alert">{error}</p>}
         <button type="submit" className="primary-button">Sprungwerte speichern</button>
       </form>
@@ -108,7 +126,7 @@ export default function JumpMeasurementPanel({ measurementCapability, measuremen
         <div className="jump-measurement-list">
           {sorted.map((item) => <div className="jump-measurement-item" key={item.id}>
             <div><strong>{JUMP_TESTS.find((test) => test.id === item.testId)?.label}</strong>
-              <small>{formatDate(item.date)} · {item.valueCm} cm</small></div>
+              <small>{formatDate(item.date)} · {item.valueCm} cm {JUMP_TESTS.find((test) => test.id === item.testId)?.unit}</small></div>
             <div className="jump-measurement-actions">
               <button type="button" className="secondary-button" onClick={() => chooseDate(item.date)}>Bearbeiten</button>
               <button type="button" className="secondary-button" aria-label={`Sprungwert vom ${formatDate(item.date)} löschen`}

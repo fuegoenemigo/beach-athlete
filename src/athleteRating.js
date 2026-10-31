@@ -4,6 +4,8 @@ import { canonicalCategory, exerciseMeasurement, isConfirmedSet, isOpenTraining,
 import { STRENGTH_GROUPS, ARM_SUBGROUPS, strengthGroupFor, strengthGroupQualified,
   strengthMuscleFor, strengthRoleFor, weightedStrengthMean } from './strengthClassification.js'
 import { STRENGTH_LOAD_STANDARDS, STRENGTH_REP_STANDARDS } from './strengthStandards.js'
+import { isCurrentJumpMeasurement } from './jumpMeasurements.js'
+import { measuredJumpScore } from './jumpStandards.js'
 
 export const RATING_ATTRIBUTES = [
   { id: 'strength', name: 'Kraft' },
@@ -166,15 +168,18 @@ function datedSessions(sessions) {
       || (a.createdAt ?? '').localeCompare(b.createdAt ?? ''))
 }
 
-export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date().toLocaleDateString('sv-SE')) {
-  const attributes = new Map(RATING_ATTRIBUTES.map(({ id, name }) => [id, track(name)]))
+export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date().toLocaleDateString('sv-SE'), jumpMeasurements = []) {
+  const useMeasuredJump = athleteProfile.measurementCapability === 'measured'
+    && ['women', 'men'].includes(athleteProfile.jumpRatingGroup)
+  const attributes = new Map(RATING_ATTRIBUTES.map(({ id, name }) => [id,
+    track(name, id === 'jump' && useMeasuredJump ? 55 : START)]))
   const groups = new Map(STRENGTH_GROUPS.map((name) => [name, { ...track(name), penalty: 0,
     qualified: false, compoundCount: 0, isolationCount: 0, missingArmMuscles: [...ARM_SUBGROUPS] }]))
   const strengthExercises = new Map()
   const strengthObserved = new Map(STRENGTH_GROUPS.map((name) => [name, new Map()]))
   const baselines = new Map()
   const mobilityDays = []
-  const overall = track('Gesamtwert')
+  const overall = track('Gesamtwert', average([...attributes.values()].map((item) => item.score)))
   const byDay = new Map()
   const nextInactivityDate = new Map()
 
@@ -255,7 +260,14 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
     }
   }
 
-  for (const [date, exercises] of byDay) {
+  if (useMeasuredJump) {
+    for (const item of jumpMeasurements) {
+      if (item.date <= asOfDate && isCurrentJumpMeasurement(item) && !byDay.has(item.date))
+        byDay.set(item.date, new Map())
+    }
+  }
+
+  for (const [date, exercises] of [...byDay].sort(([left], [right]) => left.localeCompare(right))) {
     const activeStrengthGroups = new Set([...exercises.values()]
       .filter((exercise) => attributeFor(exercise) === 'strength')
       .map(strengthGroupFor).filter(Boolean))
@@ -263,7 +275,7 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
       const id = attributeFor(exercise)
       return id === 'mobility' ? 'control' : id === 'strength'
         ? strengthGroupFor(exercise) ? `strength:${strengthGroupFor(exercise)}` : null : id
-    }).filter(Boolean))
+    }).filter((id) => id && (!useMeasuredJump || id !== 'jump')))
     applyInactivityThrough(date, activeIds)
     for (const id of activeIds) nextInactivityDate.set(id, addDays(date, INACTIVITY_DAYS))
     const dayTargets = new Map()
@@ -277,6 +289,7 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
         continue
       }
       if (!id) continue
+      if (id === 'jump' && useMeasuredJump) continue
       if (id === 'strength') {
         const groupName = strengthGroupFor(exercise)
         if (!groupName) continue
@@ -323,6 +336,14 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
       const target = dayTargets.has('control')
         ? coreTarget + Math.min(12, mobilityDays.length * 2) : mobilityTarget
       update(control, date, target)
+    }
+    if (useMeasuredJump && jumpMeasurements.some((item) => item.date === date
+      && isCurrentJumpMeasurement(item))) {
+      const jump = attributes.get('jump')
+      const measured = measuredJumpScore(jumpMeasurements, athleteProfile.jumpRatingGroup, date)
+      jump.score = measured.score
+      jump.observations = measured.measuredTests
+      recordScore(jump, date, jump.score)
     }
     if ([...attributes.values()].some((attribute) => attribute.series.at(-1)?.date === date)) {
       recordOverall(date)

@@ -33,7 +33,7 @@ function gameLabel(gameType) {
 }
 
 export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice, onOpenArchive, navigationTarget, onReturn,
-  athleteProfile, jumpMeasurements = [], setJumpMeasurements }) {
+  athleteProfile, setAthleteProfile, jumpMeasurements = [], setJumpMeasurements }) {
   const beach = sport === "beach";
   const maxSets = beach ? 3 : 5;
   const label = beach ? "Beachvolleyball" : "Hallenvolleyball";
@@ -513,6 +513,7 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
     </section>
 
     {!beach && <JumpMeasurementPanel measurementCapability={athleteProfile?.measurementCapability}
+      ratingGroup={athleteProfile?.jumpRatingGroup} setAthleteProfile={setAthleteProfile}
       measurements={jumpMeasurements} setMeasurements={setJumpMeasurements} setNotice={setNotice} />}
 
     <section className="diary-panel volleyball-history-section">

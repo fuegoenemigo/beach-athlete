@@ -23,6 +23,11 @@ export const MEASUREMENT_CAPABILITIES = [
     detail: 'Übungen, Gewichte, Wiederholungen und Dauer kann ich erfassen; spezielle Messwerte meist nicht.' },
 ]
 
+export const JUMP_RATING_GROUPS = [
+  { id: 'women', label: 'Frauen' },
+  { id: 'men', label: 'Männer' },
+]
+
 export function selectedDiscipline(profile) {
   if (VOLLEYBALL_DISCIPLINES.some((item) => item.id === profile?.volleyballDiscipline))
     return profile.volleyballDiscipline
@@ -73,6 +78,8 @@ export function isAthleteProfile(profile) {
       || INDOOR_POSITIONS.some((item) => item.id === profile.indoorPosition))
     && (profile.measurementCapability === undefined || profile.measurementCapability === ''
       || MEASUREMENT_CAPABILITIES.some((item) => item.id === profile.measurementCapability))
+    && (profile.jumpRatingGroup === undefined || profile.jumpRatingGroup === ''
+      || JUMP_RATING_GROUPS.some((item) => item.id === profile.jumpRatingGroup))
     && (profile.onboardingCompleted === undefined || typeof profile.onboardingCompleted === 'boolean')
     && (profile.bodyweightKg === '' || profile.bodyweightKg == null
       || (Number.isFinite(Number(profile.bodyweightKg)) && Number(profile.bodyweightKg) > 0))

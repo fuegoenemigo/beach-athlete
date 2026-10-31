@@ -53,7 +53,7 @@ export function isAthleteData(data) {
     && (data.jumpMeasurements === undefined || (Array.isArray(data.jumpMeasurements)
       && data.jumpMeasurements.every(isJumpMeasurement)
       && new Set(data.jumpMeasurements.map((item) => item.id)).size === data.jumpMeasurements.length
-      && new Set(data.jumpMeasurements.map((item) => `${item.date}:${item.testId}`)).size
+      && new Set(data.jumpMeasurements.map((item) => `${item.date}:${item.testId}:${item.metric ?? 'legacy'}`)).size
         === data.jumpMeasurements.length))
     && (data.athleteProfile === undefined || isAthleteProfile(data.athleteProfile))
     && (data.trainingPlans === undefined || (Array.isArray(data.trainingPlans)
@@ -100,6 +100,7 @@ export function hasPersonalData(data, defaultLibrary) {
     || Boolean(data.athleteProfile?.volleyballDiscipline)
     || Boolean(data.athleteProfile?.volleyballDisciplines?.length)
     || Boolean(data.athleteProfile?.measurementCapability)
+    || Boolean(data.athleteProfile?.jumpRatingGroup)
     || data.athleteProfile?.onboardingCompleted !== undefined
     || JSON.stringify(data.exerciseLibrary) !== JSON.stringify(defaultLibrary)
 }

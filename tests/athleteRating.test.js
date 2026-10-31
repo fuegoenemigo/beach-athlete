@@ -38,6 +38,36 @@ test('a new athlete starts with five visible 60 ratings and a 60 overall', () =>
   assert.ok(rating.attributes.every((item) => item.score === 60))
 })
 
+test('three measured jump tests feed the card directly, with missing tests at 55', () => {
+  const profile = { measurementCapability: 'measured', jumpRatingGroup: 'women' }
+  const measurements = [
+    { id: 'long', date: '2026-10-12', testId: 'standingLong', metric: 'distance', valueCm: 245 },
+    { id: 'approach', date: '2026-10-13', testId: 'approach', metric: 'touchReach', valueCm: 320 },
+    { id: 'standing', date: '2026-10-14', testId: 'standingArms', metric: 'touchReach', valueCm: 300 },
+  ]
+  const start = athleteRating([], profile, '2026-10-11', measurements)
+  assert.equal(start.attributes[1].score, 55)
+  assert.equal(start.overall.score, 59)
+  const one = athleteRating([], profile, '2026-10-12', measurements)
+  assert.equal(one.attributes[1].score, (96 + 55 + 55) / 3)
+  const all = athleteRating([], profile, '2026-10-14', measurements)
+  assert.equal(all.attributes[1].score, 96)
+  assert.equal(all.overall.score, (60 * 4 + 96) / 5)
+  assert.equal(all.attributes[1].series.at(-1).value, 96)
+  const repeated = athleteRating([], profile, '2026-10-15', [...measurements,
+    { ...measurements[1], id: 'repeated', date: '2026-10-15' }])
+  assert.equal(repeated.attributes[1].score, 96)
+})
+
+test('measured jumps override training estimates and legacy heights are ignored', () => {
+  const profile = { measurementCapability: 'measured', jumpRatingGroup: 'men' }
+  const sessions = [day('2026-10-12', [jump(100)])]
+  const legacy = [{ id: 'old', date: '2026-10-12', testId: 'approach', valueCm: 95 }]
+  const result = athleteRating(sessions, profile, '2026-10-12', legacy)
+  assert.equal(result.attributes[1].score, 55)
+  assert.equal(result.overall.score, 59)
+})
+
 test('strong first performance moves slowly; poor performance and open sessions never lower 60', () => {
   const incomplete = athleteRating([day('2026-10-12', [bench(80)])], { bodyweightKg: '70' })
   assert.equal(incomplete.attributes[0].score, 60)

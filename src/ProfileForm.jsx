@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { BEACH_POSITIONS, INDOOR_POSITIONS, MEASUREMENT_CAPABILITIES,
+import { BEACH_POSITIONS, INDOOR_POSITIONS, JUMP_RATING_GROUPS, MEASUREMENT_CAPABILITIES,
   missingSetupSteps, parseProfileNumber, profilePositionLabel, selectedDiscipline, VOLLEYBALL_DISCIPLINES } from './athleteProfile.js'
 import UIIcon from './UIIcon.jsx'
 
@@ -22,6 +22,7 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
   const [beachPosition, setBeachPosition] = useState(profile.beachPosition ?? '')
   const [indoorPosition, setIndoorPosition] = useState(profile.indoorPosition ?? '')
   const [measurement, setMeasurement] = useState(profile.measurementCapability ?? '')
+  const [jumpRatingGroup, setJumpRatingGroup] = useState(profile.jumpRatingGroup ?? '')
   const [message, setMessage] = useState('')
   const heading = useRef(null)
   useEffect(() => { if (onboarding) heading.current?.focus() }, [index, onboarding])
@@ -79,7 +80,8 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
     onSave({ firstName: name, heightCm, bodyweightKg,
       volleyballDiscipline: discipline, volleyballDisciplines: discipline ? [discipline] : [],
       beachPosition: discipline === 'beach' ? beachPosition : '',
-      indoorPosition: discipline === 'indoor' ? indoorPosition : '', measurementCapability: measurement })
+      indoorPosition: discipline === 'indoor' ? indoorPosition : '',
+      measurementCapability: measurement, jumpRatingGroup })
     setHeight(heightCm)
     setWeight(bodyweightKg)
     if (onSaved) onSaved()
@@ -152,6 +154,14 @@ export default function ProfileForm({ profile, onSave, onboarding = false, onCom
       {MEASUREMENT_CAPABILITIES.map((item) => <button className={'profile-choice profile-choice-detailed' + (measurement === item.id ? ' is-selected' : '')}
         type="button" key={item.id} aria-pressed={measurement === item.id}
         onClick={() => chooseMeasurement(item.id)}><span><strong>{item.label}</strong><small>{item.detail}</small></span><UIIcon name="chevron" /></button>)}
+    </fieldset>}
+
+    {!onboarding && measurement === 'measured' && <fieldset className="profile-question profile-options">
+      <legend>Referenzgruppe für Sprungwerte</legend>
+      <p>Für die Berührhöhe und Sprungweite gelten getrennte Richtwerte. Wähle die Gruppe, mit der deine Sprungwerte verglichen werden sollen.</p>
+      {JUMP_RATING_GROUPS.map((item) => <button className={'profile-choice' + (jumpRatingGroup === item.id ? ' is-selected' : '')}
+        type="button" key={item.id} aria-pressed={jumpRatingGroup === item.id}
+        onClick={() => setJumpRatingGroup(item.id)}><span>{item.label}</span><UIIcon name="chevron" /></button>)}
     </fieldset>}
 
     {message && <p className="helper-text" role="alert">{message}</p>}

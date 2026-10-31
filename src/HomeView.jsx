@@ -16,7 +16,7 @@ const FEATURES = {
   statistics: {
     icon: '📊',
     title: 'Statistiken',
-    text: 'Deine fünf athletischen Werte starten bei 60 und entwickeln sich mit deinem Training. Die Bewertungsregeln für Beach und Halle legen wir anschließend gemeinsam fest.',
+    text: 'Deine fünf athletischen Werte entwickeln sich mit deinem Training. Wenn du Sprungwerte präzise misst, fließen diese direkt in deine Sprungkraftwertung ein.',
   },
   card: {
     icon: '🏅',
@@ -27,7 +27,7 @@ const FEATURES = {
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile, accountEmail,
   updateAvailable = false, onInstallUpdate,
-  sessions, volleyballDays, onDeleteTraining, today, selectedDate, entryDates, onSelectDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
+  sessions, volleyballDays, jumpMeasurements = [], onDeleteTraining, today, selectedDate, entryDates, onSelectDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
   onExit = null }) {
   const [featureStack, setFeatureStack] = useState(initialView ? [initialView] : [])
   const selectedFeature = featureStack.at(-1)
@@ -36,8 +36,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile, 
   const [showProfileSetup, setShowProfileSetup] = useState(false)
   const [profileSubview, setProfileSubview] = useState(null)
   const training = useMemo(() => trainingProgress(sessions), [sessions])
-  const rating = useMemo(() => athleteRating(sessions, athleteProfile, today),
-    [sessions, athleteProfile, today])
+  const rating = useMemo(() => athleteRating(sessions, athleteProfile, today, jumpMeasurements),
+    [sessions, athleteProfile, today, jumpMeasurements])
   function openFeature(feature, date = today) {
     setFeatureDate(date)
     setFocusedArchiveTarget(null)
@@ -140,7 +140,9 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile, 
               <span>{attribute.name}</span><strong>{Math.round(attribute.score)}</strong>
             </div>)}
           </div>
-          <p>Startwert 60 · maximal 99. Über 80 wächst jeder Wert um höchstens zwei Punkte pro Woche. Nach je elf vollen Tagen ohne passendes Training sinkt der jeweilige Wert um einen Punkt, nie unter 60. Körpergewicht wird bei geeigneten Kraftübungen berücksichtigt; regelmäßige Mobility-Einheiten zählen zur Körperkontrolle.</p>
+          <p>{athleteProfile.measurementCapability === 'measured' && athleteProfile.jumpRatingGroup
+            ? 'Gemessene Sprungwerte starten bei 55. Die besten Werte aus Standweitsprung, Anlaufsprung und Standsprung ergeben zu gleichen Teilen die Sprungkraftwertung; noch nicht gemessene Tests zählen mit 55. Einträge derselben Leistung geben keine zusätzlichen Punkte. Die übrigen Trainingswerte starten derzeit bei 60 und steigen schrittweise.'
+            : 'Trainingswerte starten derzeit bei 60 und steigen schrittweise. Wenn du Sprungwerte präzise misst, wähle im Profil oder beim Erfassen eine Referenzgruppe, damit die drei Tests direkt in die Sprungkraftwertung eingehen.'}</p>
         </div>}
       </section>
       </EntryWindow></>
