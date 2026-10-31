@@ -74,9 +74,6 @@ function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
         options={[{ value: 's', label: 'Sekunden' }, { value: 'min', label: 'Minuten' }]}
         onChange={(durationUnit) => onChange({ durationUnit })} />}
     </div>
-    <input className="field training-set-note" aria-label="Notiz zum Satz"
-      placeholder="Notiz zum Satz (optional)" value={entry.notes ?? ''}
-      onChange={(event) => onChange({ notes: event.target.value })} />
   </>
 }
 
