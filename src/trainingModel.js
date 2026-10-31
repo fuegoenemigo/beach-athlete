@@ -245,6 +245,18 @@ export function suggestedTrainingSet(draft, previous, type, exercise = {}) {
   return suggested
 }
 
+export function applyPreviousSetValues(draft, previous, type, exercise = {}) {
+  if (!draft || !previous) return draft
+  const cleared = { ...draft, ...Object.fromEntries(PLAN_SET_VALUES.map((field) => [field, ''])) }
+  const reusable = suggestedTrainingSet(cleared, previous, type, exercise)
+  const values = Object.fromEntries(PLAN_SET_VALUES.filter((field) =>
+    reusable[field] !== '' && reusable[field] != null)
+    .map((field) => [field, reusable[field]]))
+  return { ...draft, ...values,
+    ...(values.weightKg && previous.weightBasis === 'perDumbbell'
+      ? { weightBasis: 'perDumbbell' } : {}) }
+}
+
 export function createExerciseSetDraft(exercise, index = 0, previous = null, typeOverride = null) {
   const type = typeOverride ?? exerciseMeasurement(exercise)
   const source = exercise.plannedSets?.[index] ?? previous
@@ -347,8 +359,20 @@ export function previousSetFor(previous, setIndex) {
   const type = exerciseMeasurement({
     ...previous.item, category: previous.item.category ?? previous.session.category,
   })
-  return (previous.item.entries ?? [])
-    .filter((entry) => isConfirmedSet(entry, type))[setIndex] ?? null
+  const confirmed = (previous.item.entries ?? [])
+    .filter((entry) => isConfirmedSet(entry, type))
+  if (confirmed[setIndex]) return confirmed[setIndex]
+  if (setIndex !== 0 || confirmed.length || !hasLegacyValues(previous.item)) return null
+  const item = previous.item
+  if (type === 'strength' || type === 'reps') {
+    const reps = item.reps !== '' && item.reps != null ? String(item.reps) : ''
+    const weightKg = type === 'strength' && item.weight !== '' && item.weight != null
+      ? String(item.weight) : ''
+    return reps || weightKg ? { reps, weightKg } : null
+  }
+  if (type === 'duration' && item.duration !== '' && item.duration != null)
+    return { durationValue: String(item.duration), durationUnit: 'min' }
+  return null
 }
 
 export function formatTrainingEntry(entry, type, exercise = {}) {

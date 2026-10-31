@@ -77,7 +77,7 @@ function decimals(step) {
 }
 
 export function NumberWheel({ label, value, onChange, min = 0, max = 300, step = 1,
-  allowEmpty = true, suggestion = '', className = '' }) {
+  allowEmpty = true, className = '' }) {
   const precision = decimals(step)
   const numberValue = value === '' || value == null ? null : Number(value)
   const upper = Math.max(max, numberValue ?? min)
@@ -102,9 +102,6 @@ export function NumberWheel({ label, value, onChange, min = 0, max = 300, step =
     <span className="field-label">{label}</span>
     <WheelPicker label={label} selectedIndex={index} count={count}
       optionAt={optionAt} onChangeIndex={(positionIndex) => onChange(optionAt(positionIndex).value)} />
-    {suggestion !== '' && suggestion != null && String(value ?? '') === '' &&
-      <button type="button" className="text-button value-wheel-suggestion"
-        onClick={() => onChange(String(suggestion))}>Letzten Wert übernehmen: {suggestion}</button>}
   </div>
 }
 

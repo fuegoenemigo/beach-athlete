@@ -19,7 +19,7 @@ import {
   formatTrainingEntry,
   canonicalCategory,
   hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
-  previousExercise, previousSetFor, suggestedTrainingSet,
+  previousExercise, previousSetFor, suggestedTrainingSet, applyPreviousSetValues,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
   trainingPlanFromSession,
@@ -277,6 +277,19 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         entries: [createExerciseSetDraft(exercise)] } : exercise
     })
   }
+  function lastExerciseSet(session, exercise, setIndex) {
+    const previous = previousExercise(sessions, session, exercise)
+    const type = exerciseMeasurement({ ...exercise, category: exercise.category ?? session.category })
+    return previous && exerciseMeasurement({ ...previous.item,
+      category: previous.item.category ?? previous.session.category }) === type
+      ? previousSetFor(previous, setIndex) : null
+  }
+  function draftForExercise(session, exercise, setIndex, carryForward = null) {
+    const type = exerciseMeasurement({ ...exercise, category: exercise.category ?? session.category })
+    const draft = createExerciseSetDraft(exercise, setIndex, carryForward, type)
+    return applyPreviousSetValues(draft, lastExerciseSet(session, exercise, setIndex),
+      type, exercise)
+  }
   function openNewTraining(plan = null) {
     if (openSessions.length) {
       setNotice('Bitte setze zuerst dein offenes Training fort oder schließe es ab.'); return
@@ -328,6 +341,10 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         warmupDeviceReading: '', mainDeviceReading: '' } } : {}),
       exercises, createdAt: new Date().toISOString(),
     }
+    if (exercises.length && !guided) {
+      const first = exercises[0]
+      first.entries = [draftForExercise(session, first, 0)]
+    }
     setSessions((previous) => addTrainingIfNoOpen(previous, session))
     setNewSessionOpen(false)
     setPendingPlan(null)
@@ -349,7 +366,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       if (plan) { startGuidedExercise(item, plan); return }
     }
     const exercise = createLoggedExercise(item)
-    exercise.entries = [createExerciseSetDraft(exercise)]
+    exercise.entries = [draftForExercise(activeSession, exercise, 0)]
     updateSession(trainingWithAddedExercise(activeSession, exercise))
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
@@ -377,11 +394,20 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   }
   function openExercise(exercise) {
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
-    if (!(exercise.entries ?? []).some((entry) => entry.completed === false)) {
+    const existingDraft = (exercise.entries ?? []).find((entry) => entry.completed === false)
+    if (!existingDraft) {
       const confirmed = (exercise.entries ?? []).filter((entry) => isConfirmedSet(entry, type))
       updateExercise(exercise.id, { entries: [...(exercise.entries ?? []),
-        createExerciseSetDraft(exercise, confirmed.length,
+        draftForExercise(activeSession, exercise, confirmed.length,
           ['strength', 'reps', 'jump'].includes(type) ? confirmed.at(-1) : null)] })
+    } else {
+      const confirmedCount = (exercise.entries ?? []).filter((entry) => isConfirmedSet(entry, type)).length
+      const previousSet = lastExerciseSet(activeSession, exercise, confirmedCount)
+      if (previousSet) {
+        const filled = suggestedTrainingSet(existingDraft, previousSet, type, exercise)
+        if (JSON.stringify(filled) !== JSON.stringify(existingDraft)) updateExercise(exercise.id,
+          { entries: exercise.entries.map((entry) => entry.id === existingDraft.id ? filled : entry) })
+      }
     }
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
@@ -394,26 +420,24 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     const entries = exercise.entries ?? []
     const draft = entries.find((entry) => entry.completed === false)
-    const previous = previousExercise(sessions, activeSession, exercise)
-    const sameType = previous && exerciseMeasurement({ ...previous.item,
-      category: previous.item.category ?? previous.session.category }) === type
-    const reference = sameType ? previousSetFor(previous,
-      entries.filter((entry) => isConfirmedSet(entry, type)).length) : null
-    const values = suggestedTrainingSet(draft, reference, type, exercise)
+    const confirmedCount = entries.filter((entry) => isConfirmedSet(entry, type)).length
+    const values = draft
     if (timerIsActive(activeSession.id, exercise.id, draft?.id)) {
       setFlowMessage('Bitte stoppe zuerst die Zeitmessung für diesen Satz.'); return
     }
     if (draft && !hasRequiredIntervalDuration(exercise, values)) {
       setFlowMessage('Bitte gib die tatsächlich geschaffte Dauer dieses Intervalls ein.'); return
     }
-    const advanced = confirmAndAdvanceSet(entries, type, athleteProfile.bodyweightKg, reference, exercise)
+    const advanced = confirmAndAdvanceSet(entries, type, athleteProfile.bodyweightKg, null, exercise)
     if (!advanced) {
       setFlowMessage(exercise.libraryId === 'gym:assisted-pullup'
         ? 'Bitte gib Wiederholungen und die Unterstützung der Maschine in kg ein.'
         : 'Bitte gib die Werte für diesen Satz ein.'); return
     }
     if (finish) finishExercise(advanced.slice(0, -1))
-    else updateExercise(exercise.id, { entries: advanced })
+    else updateExercise(exercise.id, { entries: [...advanced.slice(0, -1),
+      applyPreviousSetValues(advanced.at(-1),
+        lastExerciseSet(activeSession, exercise, confirmedCount + 1), type, exercise)] })
     setFlowMessage('')
   }
   function recordTimerDuration(exerciseId, seconds, setId) {

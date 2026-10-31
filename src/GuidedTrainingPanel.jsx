@@ -9,7 +9,7 @@ import TrainingTimer from './TrainingTimer.jsx'
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   exerciseMeasurement, formatTrainingEntry, previousExercise, previousSetFor, isConfirmedSet,
-  hasLegacyValues, defaultMeasurement, suggestedTrainingSet, isSportTrainingCategory,
+  hasLegacyValues, defaultMeasurement, isSportTrainingCategory,
   dumbbellCount, isBodyweightOnly, isExternalLoad, isAssistedPullup,
 } from './trainingModel.js'
 
@@ -21,15 +21,13 @@ const formatDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de
   day: '2-digit', month: '2-digit', year: 'numeric',
 })
 
-function NumberField({ label, value, suggestion, onChange, min = 0, max = 300, step = 1 }) {
-  return <NumberWheel label={label} value={value} suggestion={suggestion}
+function NumberField({ label, value, onChange, min = 0, max = 300, step = 1 }) {
+  return <NumberWheel label={label} value={value}
     min={min} max={max} step={step} onChange={onChange} />
 }
 
-function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }) {
-  const suggested = suggestedTrainingSet(entry, previous, type, exercise)
+function SetFields({ entry, type, exercise, athleteProfile, onChange }) {
   const number = (label, field) => <NumberField label={label} value={entry[field]}
-    suggestion={previous ? suggested[field] : ''}
     min={field === 'reps' ? 1 : 0}
     max={field === 'reps' ? 100 : field === 'weightKg' ? 300
       : field === 'assistanceKg' ? 200 : field === 'heightCm' ? 200
@@ -299,9 +297,11 @@ export default function GuidedTrainingPanel({
           confirmedCount={confirmed.length}
           onDuration={(seconds, setId) => onTimerDuration(exercise.id, seconds, setId)} />}
         <SetFields entry={draft} type={type} exercise={exercise} athleteProfile={athleteProfile}
-          previous={previousEntryFor(confirmed.length)}
           onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
             item.id === draft.id ? { ...item, ...changes } : item) })} />
+        {previousEntryFor(confirmed.length) && <p className="training-previous-values-hint">
+          Die Werte wurden vom letzten Mal übernommen.
+        </p>}
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}
         <div className="training-next-set-actions">
           <button type="button" className="primary-button" onClick={onConfirmSet}>Nächster Satz</button>

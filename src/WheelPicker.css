@@ -9,7 +9,6 @@
 .value-wheel-spacer { flex: none; }
 .value-wheel-option { display: grid; place-items: center; height: 44px; color: #efefef; font-family: var(--serif); font-size: 1.06rem; white-space: nowrap; transition: opacity .1s ease, font-size .1s ease; }
 .value-wheel-option.is-current { font-size: 1.52rem; color: #fff; }
-.value-wheel-suggestion { margin-top: 7px; font-size: .75rem; }
 .date-wheel-columns { display: grid; grid-template-columns: .7fr 1fr 1fr; gap: 6px; }
 .date-wheel-columns .value-wheel-option { font-size: .87rem; }
 .date-wheel-columns .value-wheel-option.is-current { font-size: 1.12rem; }

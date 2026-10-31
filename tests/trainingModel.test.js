@@ -4,7 +4,7 @@ import {
   createLoggedExercise, createTrainingSet, exerciseIdentity, hasLegacyValues,
   previousExercise, previousSetFor, formatTrainingEntry, canonicalCategory,
   hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
-  suggestedTrainingSet, createExerciseSetDraft, trainingPlanFromSession,
+  suggestedTrainingSet, applyPreviousSetValues, createExerciseSetDraft, trainingPlanFromSession,
   dumbbellCount, effectiveTrainingWeight,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   createSportTrainingSession, isSportTrainingAttendance, trainingWithAddedExercise,
@@ -139,8 +139,8 @@ test('the last saved exercise is used as reference, including older aggregate en
     exercises: [{ id: 'legacy', libraryId: id, name: 'Bankdrücken', reps: '8', weight: '60' }] }
   const current = { id: 'now', date: '2026-10-11', category: 'Krafttraining', exercises: [] }
   assert.equal(previousExercise([earlier, latest, current], current, earlier.exercises[0]).item.id, 'legacy')
-  assert.equal(previousSetFor(previousExercise([earlier, latest, current], current,
-    earlier.exercises[0]), 0), null)
+  assert.deepEqual(previousSetFor(previousExercise([earlier, latest, current], current,
+    earlier.exercises[0]), 0), { reps: '8', weightKg: '60' })
 })
 
 test('each current set references only the matching set from the last exercise', () => {
@@ -166,13 +166,15 @@ test('each current set references only the matching set from the last exercise',
   assert.equal(previousSetFor(previous, 3), null)
 })
 
-test('a matching prior set appears as a suggestion and is saved only on confirmation', () => {
+test('a matching prior set prefills the draft and is saved only on confirmation', () => {
   const prior = { reps: '8', weightKg: '60', bodyweightKg: '70', notes: 'old note' }
   const draft = { ...createTrainingSet('strength'), completed: false }
   assert.equal(draft.reps, '')
-  assert.deepEqual([suggestedTrainingSet(draft, prior, 'strength').reps,
-    suggestedTrainingSet(draft, prior, 'strength').weightKg], ['8', '60'])
-  const [saved, next] = confirmAndAdvanceSet([draft], 'strength', '75', prior)
+  const prefilled = applyPreviousSetValues(draft, prior, 'strength')
+  assert.deepEqual([prefilled.reps, prefilled.weightKg], ['8', '60'])
+  assert.equal(prefilled.completed, false)
+  assert.equal(isConfirmedSet(prefilled, 'strength'), false)
+  const [saved, next] = confirmAndAdvanceSet([prefilled], 'strength', '75', prior)
   assert.equal(saved.reps, '8')
   assert.equal(saved.weightKg, '60')
   assert.equal(saved.bodyweightKg, '75')
@@ -181,6 +183,53 @@ test('a matching prior set appears as a suggestion and is saved only on confirma
   assert.equal(next.weightKg, '60')
   assert.equal(next.completed, false)
   assert.equal(isConfirmedSet(next, 'strength'), false)
+})
+
+test('last workout values override plan defaults per matching set, with units preserved', () => {
+  const exercise = { id: 'volleyball:bench', libraryId: 'volleyball:bench',
+    category: 'Krafttraining', type: 'strength', plannedSets: [
+      { reps: '10', weightKg: '40' }, { reps: '8', weightKg: '45' },
+    ] }
+  const first = applyPreviousSetValues(createExerciseSetDraft(exercise, 0),
+    { reps: '9', weightKg: '52.5' }, 'strength', exercise)
+  const second = applyPreviousSetValues(createExerciseSetDraft(exercise, 1),
+    { reps: '7', weightKg: '57.5' }, 'strength', exercise)
+  assert.deepEqual([first.reps, first.weightKg, second.reps, second.weightKg],
+    ['9', '52.5', '7', '57.5'])
+  assert.equal(first.completed, false)
+  assert.equal(second.completed, false)
+  const durationDraft = { ...createTrainingSet('duration', 'min'), durationValue: '2',
+    completed: false }
+  const duration = applyPreviousSetValues(durationDraft,
+    { durationValue: '90', durationUnit: 's' }, 'duration')
+  assert.equal(duration.durationValue, '1.5')
+  assert.equal(duration.durationUnit, 'min')
+})
+
+test('a manually changed prefilled value stays changed when the set is confirmed', () => {
+  const draft = applyPreviousSetValues({ ...createTrainingSet('strength'),
+    completed: false }, { reps: '8', weightKg: '60' }, 'strength')
+  const [saved] = confirmAndAdvanceSet([{ ...draft, reps: '10', weightKg: '65' }],
+    'strength', '75')
+  assert.equal(saved.reps, '10')
+  assert.equal(saved.weightKg, '65')
+})
+
+test('older aggregate workouts can prefill a first set without rewriting stored data', () => {
+  const legacy = { id: 'old', date: '2026-09-01', category: 'Core und Mobility',
+    exercises: [{ id: 'plank', libraryId: 'volleyball:plank', name: 'Plank',
+      type: 'duration', duration: '2' }] }
+  const current = { id: 'new', date: '2026-10-01', category: 'Core und Mobility',
+    exercises: [] }
+  const previous = previousExercise([legacy, current], current,
+    { libraryId: 'volleyball:plank', name: 'Plank', category: 'Core und Mobility' })
+  const first = previousSetFor(previous, 0)
+  assert.deepEqual(first, { durationValue: '2', durationUnit: 'min' })
+  assert.equal(previousSetFor(previous, 1), null)
+  const draft = applyPreviousSetValues({ ...createTrainingSet('duration', 's'),
+    completed: false }, first, 'duration')
+  assert.equal(draft.durationValue, '120')
+  assert.equal(legacy.exercises[0].duration, '2')
 })
 
 test('dumbbell sets store one-hantel input explicitly and leave legacy weights untouched', () => {

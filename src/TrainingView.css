@@ -632,3 +632,4 @@
 }
 
 .training-next-set-actions > button { width: 100%; }
+.training-previous-values-hint { margin: 6px 0 12px; color: #b8b8b8; font-size: .78rem; }
