@@ -16,12 +16,25 @@ export function calendarChangeStatus(changePercent) {
   return 'strong-improved'
 }
 
-export function bestMetric(exercise) {
+export function bestMetric(exercise, profileWeight = '') {
   const type = exerciseMeasurement(exercise)
   const entries = (exercise.entries ?? []).filter((entry) => isConfirmedSet(entry, type))
   if (!entries.length) return null
 
   if (type === 'strength' || type === 'reps') {
+    if (exercise.libraryId === 'gym:assisted-pullup') {
+      const assisted = entries.filter((entry) => positive(entry.reps)
+        && entry.assistanceKg !== '' && entry.assistanceKg != null
+        && Number.isFinite(Number(entry.assistanceKg)) && Number(entry.assistanceKg) >= 0)
+        .map((entry) => {
+          const bodyweight = Number(entry.bodyweightKg || profileWeight)
+          const assistance = Number(entry.assistanceKg)
+          if (!Number.isFinite(bodyweight) || bodyweight <= 0 || assistance >= bodyweight) return null
+          const share = (bodyweight - assistance) / bodyweight
+          return Math.min(Number(entry.reps), 20) * share * share
+        }).filter((value) => value != null)
+      return assisted.length ? { key: 'assistedPullupReps', value: Math.max(...assisted) } : null
+    }
     if (isBodyweightOnly(exercise)) {
       const reps = entries.filter((entry) => positive(entry.reps))
       return reps.length ? { key: 'reps', value: Math.max(...reps.map((entry) =>

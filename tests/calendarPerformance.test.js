@@ -64,6 +64,23 @@ test('only repetitions change the score of a bodyweight exercise', () => {
   assert.equal(scores.get('2026-10-11').status, 'unchanged')
 })
 
+test('assisted pull-ups improve when machine assistance decreases', () => {
+  const pullup = (assistanceKg, bodyweightKg = '75') => ({
+    libraryId: 'gym:assisted-pullup', name: 'Klimmzüge mit Unterstützung',
+    category: 'Krafttraining', type: 'reps',
+    entries: [{ completed: true, reps: '8', assistanceKg, bodyweightKg }],
+  })
+  assert.equal(bestMetric(pullup('30')).value, 8 * .6 ** 2)
+  assert.ok(bestMetric(pullup('15')).value > bestMetric(pullup('30')).value)
+  assert.equal(bestMetric(pullup('75')), null)
+  assert.equal(bestMetric(pullup(undefined)), null)
+  const scores = trainingDayPerformances([
+    session('old', '2026-10-10', [pullup('30')]),
+    session('new', '2026-10-11', [pullup('15')]),
+  ])
+  assert.equal(scores.get('2026-10-11').status, 'strong-improved')
+})
+
 test('only duration changes the score of a bodyweight hold', () => {
   const plank = (extra) => ({ libraryId: 'volleyball:plank', name: 'Plank',
     category: 'Core und Mobility', muscleGroup: 'Core', type: 'duration',

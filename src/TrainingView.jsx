@@ -399,7 +399,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     }
     const advanced = confirmAndAdvanceSet(entries, type, athleteProfile.bodyweightKg, reference, exercise)
     if (!advanced) {
-      setFlowMessage('Bitte gib die Werte für diesen Satz ein.'); return
+      setFlowMessage(exercise.libraryId === 'gym:assisted-pullup'
+        ? 'Bitte gib Wiederholungen und die Unterstützung der Maschine in kg ein.'
+        : 'Bitte gib die Werte für diesen Satz ein.'); return
     }
     updateExercise(exercise.id, { entries: advanced })
     setFlowMessage('')

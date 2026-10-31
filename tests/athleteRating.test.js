@@ -115,6 +115,19 @@ test('bodyweight strength uses only clean repetitions even for old weighted sets
   assert.equal(withExtraWeight.attributes[0].score, regular.attributes[0].score)
 })
 
+test('assisted pull-up strength uses the recorded assistance, not repetitions alone', () => {
+  const assisted = (assistanceKg) => ({ libraryId: 'gym:assisted-pullup',
+    name: 'Klimmzüge mit Unterstützung', category: 'Krafttraining',
+    muscleGroup: 'Rücken', type: 'reps', entries: [{ completed: true,
+      reps: '8', assistanceKg, bodyweightKg: '75' }] })
+  const row = lift('volleyball:row', 'Rücken', 90, '75')
+  const score = (assistanceKg) => athleteRating([
+    day('2026-10-12', [assisted(assistanceKg), row]),
+  ], { bodyweightKg: '75' }, '2026-10-12').attributes[0].groups[1].score
+  assert.ok(score('15') > score('30'))
+  assert.equal(score(undefined), score('30'))
+})
+
 test('a major group unlocks after one compound and two distinct isolations across days', () => {
   const sessions = [
     day('2026-10-01', [bench(140)]),

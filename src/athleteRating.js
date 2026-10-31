@@ -108,8 +108,9 @@ function benchmark(exercise, metric, profileWeight) {
     const entries = confirmedEntries(exercise)
     const weight = entries.find((entry) => positive(entry.bodyweightKg))?.bodyweightKg
       ?? profileWeight
-    if (exercise.libraryId === 'gym:assisted-pullup' && metric.key === 'reps')
-      return strengthTarget(Math.min(80, START + 20 * (metric.value - 8) / 12))
+    if (exercise.libraryId === 'gym:assisted-pullup'
+      && metric.key === 'assistedPullupReps')
+      return strengthTarget(Math.min(79, START + 35 * (metric.value - 3) / 17))
     if (exercise.libraryId === 'gym:farmers-carry' && positive(weight)) {
       const best = Math.max(0, ...entries.filter((entry) => positive(entry.distanceValue)
         && positive(entry.durationValue) && positive(entry.weightKg)
@@ -285,7 +286,7 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
         strengthObserved.get(groupName).set(exercise.libraryId,
           strengthExercises.get(exercise.libraryId))
       }
-      const measured = bestMetric(exercise)
+      const measured = bestMetric(exercise, athleteProfile.bodyweightKg)
       if (!measured) continue
       const metric = comparableMetric(exercise, measured, athleteProfile.bodyweightKg)
       const baseline = baselines.get(exercise.libraryId)

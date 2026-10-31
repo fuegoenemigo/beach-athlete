@@ -103,6 +103,8 @@ export const isBodyweightOnly = (exercise) =>
   BODYWEIGHT_ONLY.has(exercise.libraryId ?? exercise.id)
   || exercise.loadMode === 'bodyweightOnly'
 export const isExternalLoad = (exercise) => EXTERNAL_LOAD.has(exercise.libraryId ?? exercise.id)
+export const isAssistedPullup = (exercise) =>
+  (exercise.libraryId ?? exercise.id) === 'gym:assisted-pullup'
 
 export function effectiveTrainingWeight(entry, exercise) {
   const weight = Number(entry.weightKg || 0)
@@ -181,7 +183,8 @@ export function isConfirmedSet(entry, type) {
 
 export function suggestedTrainingSet(draft, previous, type, exercise = {}) {
   if (!draft || !previous) return draft
-  const fields = type === 'strength' ? isBodyweightOnly(exercise) ? ['reps'] : ['reps', 'weightKg']
+  const fields = isAssistedPullup(exercise) ? ['reps', 'assistanceKg']
+    : type === 'strength' ? isBodyweightOnly(exercise) ? ['reps'] : ['reps', 'weightKg']
     : type === 'reps' ? ['reps']
     : type === 'jump' ? isBodyweightOnly(exercise) ? ['reps', 'heightCm']
       : ['reps', 'heightCm', 'weightKg']
@@ -212,6 +215,9 @@ export function confirmAndAdvanceSet(entries, type, bodyweightKg = '', previous 
   const draft = entries.find((entry) => entry.completed === false)
   const values = suggestedTrainingSet(draft, previous, type, exercise)
   if (!values || !hasMeasuredValue(values, type)) return null
+  if (isAssistedPullup(exercise) && (values.assistanceKg === ''
+    || values.assistanceKg == null || !Number.isFinite(Number(values.assistanceKg))
+    || Number(values.assistanceKg) < 0)) return null
   return [...entries.map((entry) => entry.id === draft.id
     ? { ...values, ...(isBodyweightOnly(exercise) ? { weightKg: '' } : {}),
       completed: true, confirmedAt: new Date().toISOString(),
@@ -256,7 +262,7 @@ export function isLoggedTrainingExercise(exercise) {
         && (entry.weightBasis === undefined || entry.weightBasis === 'perDumbbell')
         && (entry.durationUnit === undefined || ['s', 'min'].includes(entry.durationUnit))
         && (entry.distanceUnit === undefined || ['m', 'km'].includes(entry.distanceUnit))
-        && ['reps', 'weightKg', 'bodyweightKg', 'durationValue', 'distanceValue', 'heightCm']
+        && ['reps', 'weightKg', 'assistanceKg', 'bodyweightKg', 'durationValue', 'distanceValue', 'heightCm']
           .every((field) => nonnegative(entry[field])))))
 }
 
@@ -300,6 +306,11 @@ export function formatTrainingEntry(entry, type, exercise = {}) {
       .filter(Boolean).join(' ')
     : entry.weightKg ? `${entry.weightKg} kg${entry.weightBasis === 'perDumbbell'
       ? dumbbellCount(exercise) === 2 ? ' je Hantel' : ' (eine Hantel)' : ''}` : ''
+  if (isAssistedPullup(exercise)) return [
+    entry.reps ? `${entry.reps} Wdh.` : '',
+    entry.assistanceKg !== '' && entry.assistanceKg != null
+      ? `${entry.assistanceKg} kg Unterstützung` : '',
+  ].filter(Boolean).join(' · ')
   if (type === 'strength') return [
     entry.reps ? `${entry.reps} Wdh.` : '',
     load,

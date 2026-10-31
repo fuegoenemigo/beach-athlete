@@ -10,7 +10,7 @@ import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   exerciseMeasurement, formatTrainingEntry, previousExercise, previousSetFor, isConfirmedSet,
   hasLegacyValues, defaultMeasurement, suggestedTrainingSet, isSportTrainingCategory,
-  dumbbellCount, isBodyweightOnly, isExternalLoad,
+  dumbbellCount, isBodyweightOnly, isExternalLoad, isAssistedPullup,
 } from './trainingModel.js'
 
 const legacyLabels = {
@@ -31,10 +31,12 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
   const number = (label, field) => <NumberField label={label} value={entry[field]}
     suggestion={previous ? suggested[field] : ''}
     min={field === 'reps' ? 1 : 0}
-    max={field === 'reps' ? 100 : field === 'weightKg' ? 300 : field === 'heightCm' ? 200
+    max={field === 'reps' ? 100 : field === 'weightKg' ? 300
+      : field === 'assistanceKg' ? 200 : field === 'heightCm' ? 200
       : field === 'distanceValue' ? entry.distanceUnit === 'km' ? 100 : 10000
         : entry.durationUnit === 'min' ? 240 : 3600}
-    step={field === 'weightKg' ? .5 : field === 'distanceValue' && entry.distanceUnit === 'km' ? .01 : 1}
+    step={field === 'weightKg' || field === 'assistanceKg' ? .5
+      : field === 'distanceValue' && entry.distanceUnit === 'km' ? .01 : 1}
     onChange={(value) => onChange({ [field]: value })} />
   const timed = ['duration', 'distance', 'carry'].includes(type)
   const bodyweightOnly = isBodyweightOnly(exercise)
@@ -46,6 +48,11 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
   return <>
     <div className="training-activity-fields">
       {['strength', 'reps', 'jump'].includes(type) && number('Wiederholungen', 'reps')}
+      {isAssistedPullup(exercise) && <>
+        {bodyweightKg && <p className="training-bodyweight">Eigengewicht: {bodyweightKg} kg</p>}
+        {number('Unterstützung der Maschine (kg)', 'assistanceKg')}
+        <p className="helper-text">Trage ein, wie viele Kilogramm die Maschine von deinem Körpergewicht abnimmt.</p>
+      </>}
       {['strength', 'jump', 'reps', 'duration'].includes(type) && bodyweight && <p className="training-bodyweight">
         Eigengewicht: {bodyweightKg ? `${bodyweightKg} kg` : 'noch nicht im Profil hinterlegt'}
       </p>}

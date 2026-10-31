@@ -227,6 +227,25 @@ test('bodyweight exercises reuse only repetitions and discard prior extra weight
     '12 Wdh.')
 })
 
+test('assisted pull-ups record machine assistance separately from lifted weight', () => {
+  const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'gym:assisted-pullup'))
+  const draft = { ...createTrainingSet('reps'), reps: '8', completed: false }
+  assert.equal(confirmAndAdvanceSet([draft], 'reps', '75', null, exercise), null)
+  const [saved, next] = confirmAndAdvanceSet([{ ...draft, assistanceKg: '30' }],
+    'reps', '75', null, exercise)
+  assert.equal(saved.assistanceKg, '30')
+  assert.equal(saved.bodyweightKg, '75')
+  assert.equal(saved.weightKg, '')
+  assert.equal(formatTrainingEntry(saved, 'reps', exercise), '8 Wdh. · 30 kg Unterstützung')
+  assert.equal(next.assistanceKg, undefined)
+  assert.equal(suggestedTrainingSet(next, saved, 'reps', exercise).assistanceKg, '30')
+  assert.equal(isAthleteData({ ...base(), sessions: [{ id: 't', date: '2026-10-12',
+    category: 'Krafttraining', status: 'completed', exercises: [{
+      ...exercise, entries: [saved],
+    }] }] }), true)
+})
+
 test('lunges save the load per dumbbell while squats save the whole barbell', () => {
   const lunge = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
     item.id === 'volleyball:lunge'))
