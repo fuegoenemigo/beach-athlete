@@ -15,12 +15,14 @@ import { groupedTrainingPlans, isBuiltInPlan, removeTrainingPlan,
 import {
   TRAINING_CATEGORIES, MUSCLE_GROUPS, MEASUREMENT_TYPES,
   defaultMeasurement, exerciseIdentity, exerciseMeasurement,
-  createLoggedExercise, createTrainingSet, hasLegacyValues, trainingWithAddedExercise,
+  createLoggedExercise, createExerciseSetDraft, hasLegacyValues, trainingWithAddedExercise,
+  formatTrainingEntry,
   canonicalCategory,
   hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
   previousExercise, previousSetFor, suggestedTrainingSet,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   isSportTrainingCategory, isSportTrainingAttendance, createSportTrainingSession,
+  trainingPlanFromSession,
 } from './trainingModel.js'
 import { formatTimer, timerStorageKey } from './trainingTimer.js'
 import { strengthRoleFor } from './strengthClassification.js'
@@ -165,6 +167,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   const [flowStep, setFlowStep] = useState('exercise')
   const [flowMessage, setFlowMessage] = useState('')
   const [activeExerciseId, setActiveExerciseId] = useState(null)
+  const [completedSessionId, setCompletedSessionId] = useState(null)
+  const [completedPlanName, setCompletedPlanName] = useState('')
+  const [completedPlanError, setCompletedPlanError] = useState('')
   const [selectedGroup, setSelectedGroup] = useState('')
   const [selectedExerciseCategory, setSelectedExerciseCategory] = useState('Krafttraining')
   const [editingSetId, setEditingSetId] = useState(null)
@@ -204,6 +209,14 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     })
     return () => { window.cancelAnimationFrame(frame); window.cancelAnimationFrame(scrollFrame) }
   }, [navigationTarget])
+  useEffect(() => {
+    if (flowStep !== 'set' || !activeExerciseId) return
+    const frame = window.requestAnimationFrame(() => {
+      document.querySelector('.active-workout')?.closest('.entry-window-panel')
+        ?.scrollTo({ top: 0, behavior: 'instant' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [activeExerciseId, flowStep])
   const activeSession = sessions.find((session) => session.id === activeSessionId)
   const managedLibrary = exerciseLibrary.map((item, sourceIndex) => {
     const enriched = enrichExercise({ ...item, category: canonicalCategory(item.category, item.name) })
@@ -261,9 +274,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         guidedProtocolId: plan.id,
         targetDurationSeconds: mainDurationSeconds(guided) }
       return index === 0 ? { ...exercise,
-        entries: [{ ...createTrainingSet(exercise.type,
-          exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
-          completed: false }] } : exercise
+        entries: [createExerciseSetDraft(exercise)] } : exercise
     })
   }
   function openNewTraining(plan = null) {
@@ -338,9 +349,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       if (plan) { startGuidedExercise(item, plan); return }
     }
     const exercise = createLoggedExercise(item)
-    exercise.entries = [{ ...createTrainingSet(exercise.type,
-      exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
-      completed: false }]
+    exercise.entries = [createExerciseSetDraft(exercise)]
     updateSession(trainingWithAddedExercise(activeSession, exercise))
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
@@ -369,17 +378,17 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
   function openExercise(exercise) {
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     if (!(exercise.entries ?? []).some((entry) => entry.completed === false)) {
+      const confirmed = (exercise.entries ?? []).filter((entry) => isConfirmedSet(entry, type))
       updateExercise(exercise.id, { entries: [...(exercise.entries ?? []),
-        { ...createTrainingSet(type,
-          exercise.defaultDurationUnit ?? (exercise.intervalWorkMinutes ? 'min' : 's')),
-          completed: false }] })
+        createExerciseSetDraft(exercise, confirmed.length,
+          ['strength', 'reps', 'jump'].includes(type) ? confirmed.at(-1) : null)] })
     }
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
     setEditingSetId(null)
     setFlowMessage('')
   }
-  function confirmSet() {
+  function confirmSet(finish = false) {
     const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
     if (!exercise) return
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
@@ -403,7 +412,8 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         ? 'Bitte gib Wiederholungen und die Unterstützung der Maschine in kg ein.'
         : 'Bitte gib die Werte für diesen Satz ein.'); return
     }
-    updateExercise(exercise.id, { entries: advanced })
+    if (finish) finishExercise(advanced.slice(0, -1))
+    else updateExercise(exercise.id, { entries: advanced })
     setFlowMessage('')
   }
   function recordTimerDuration(exerciseId, seconds, setId) {
@@ -471,17 +481,18 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     setFlowStep('exercise')
     setFlowMessage('')
   }
-  function finishExercise() {
+  function finishExercise(entriesOverride = null, discardDraft = false) {
     const exercise = activeSession.exercises.find((item) => item.id === activeExerciseId)
     if (!exercise) return
-    const draft = (exercise.entries ?? []).find((entry) => entry.completed === false)
+    const entries = entriesOverride ?? exercise.entries ?? []
+    const draft = entries.find((entry) => entry.completed === false)
     if (timerIsActive(activeSession.id, exercise.id, draft?.id)) {
       setFlowMessage('Bitte stoppe zuerst die laufende Zeitmessung.'); return
     }
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
-    const kept = finishTrainingExerciseEntries(exercise.entries ?? [], type)
+    const kept = finishTrainingExerciseEntries(entries, type, discardDraft)
     if (!kept) {
-      setFlowMessage('Bestätige den begonnenen Satz mit dem Haken oder entferne seine Werte.'); return
+      setFlowMessage('Wähle unter „Nächster Satz“, ob du den aktuellen Satz übernehmen oder verwerfen möchtest.'); return
     }
     if (!kept.length && !hasLegacyValues(exercise)) {
       setFlowMessage('Bestätige mindestens einen Satz, bevor du die Übung beendest.'); return
@@ -543,7 +554,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       return
     }
     const exercise = createLoggedExercise(item)
-    exercise.entries = [{ ...createTrainingSet(exercise.type), completed: false }]
+    exercise.entries = [createExerciseSetDraft(exercise)]
     updateSession(trainingWithAddedExercise(activeSession, exercise))
     setActiveExerciseId(exercise.id)
     setFlowStep('set')
@@ -586,7 +597,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         && hasMeasuredValue(entry, exerciseMeasurement({ ...exercise,
           category: activeSession.category }))))
     if (unfinished) {
-      setFlowMessage('Bei einer Übung sind Satzwerte noch nicht mit dem Haken bestätigt.'); return
+      setFlowMessage('Bei einer Übung ist ein Satz noch offen. Beende ihn über „Nächster Satz“.'); return
     }
     const exercises = activeSession.exercises.map((exercise) => {
       const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
@@ -598,11 +609,31 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     if (!exercises.length && !activeSession.durationMinutes && !activeSession.notes?.trim()) {
       setFlowMessage('Bitte erfasse mindestens eine Übung, eine Dauer oder eine Notiz.'); return
     }
+    const offerPlan = isOpenTraining(activeSession) && exercises.some((exercise) =>
+      (exercise.entries ?? []).some((entry) => isConfirmedSet(entry, exerciseMeasurement(exercise))))
     updateSession({ exercises, status: 'completed', completedAt: new Date().toISOString() })
+    if (offerPlan) {
+      setCompletedSessionId(activeSession.id)
+      setCompletedPlanName(activeSession.planName ? `${activeSession.planName} · Kopie`
+        : `${canonicalCategory(activeSession.category)} · ${formatDate(activeSession.date)}`)
+      setCompletedPlanError('')
+    }
     setActiveSessionId(null)
     setActiveExerciseId(null)
     setFlowStep('exercise')
     setNotice('Trainingseinheit abgeschlossen.')
+  }
+  function saveCompletedAsPlan() {
+    const session = sessions.find((item) => item.id === completedSessionId)
+    if (!session) { setCompletedSessionId(null); return }
+    const name = completedPlanName.trim()
+    if (!name) { setCompletedPlanError('Bitte gib dem Trainingsplan einen Namen.'); return }
+    const plan = trainingPlanFromSession(session, crypto.randomUUID(), name)
+    if (!plan) { setCompletedPlanError('Diese Einheit enthält keine bestätigten Sätze.'); return }
+    setTrainingPlans((previous) => [...previous, plan])
+    setCompletedSessionId(null)
+    setCompletedPlanError('')
+    setNotice('Trainingsplan mit deinen Satzwerten gespeichert.')
   }
   function beginPlan(plan) {
     setShowPlans(true)
@@ -824,7 +855,9 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           {pendingPlan.exercises.map((item, index) => <li className="training-exercise-row"
             key={`${item.libraryId}-${index}`}>
             <span className="training-exercise-main"><strong>{index + 1}. {item.name}</strong>
-              {item.target && <small>{item.target}</small>}</span>
+              {item.target && <small>{item.target}</small>}
+              {item.plannedSets?.map((set, setIndex) => <small key={setIndex}>
+                Satz {setIndex + 1}: {formatTrainingEntry(set, item.type, item)}</small>)}</span>
             <ExerciseInfo exercise={item} />
           </li>)}
         </ol></>}
@@ -909,11 +942,26 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
       customStrengthRole={customStrengthRole} setCustomStrengthRole={setCustomStrengthRole}
       onAddExercise={addExercise} onOpenExercise={openExercise}
       onCreateCustom={createCustomExercise} onUpdateSession={updateSession}
-      onUpdateExercise={updateExercise} onRemoveExercise={removeExercise} onConfirmSet={confirmSet}
+      onUpdateExercise={updateExercise} onRemoveExercise={removeExercise}
+      onConfirmSet={() => confirmSet()} onConfirmAndFinish={() => confirmSet(true)}
       onTimerDuration={recordTimerDuration}
-      onFinishExercise={finishExercise} onSave={saveTraining}
+      onFinishExercise={() => finishExercise(null, true)} onSave={saveTraining}
       onRecategorize={recategorizeSession} onClose={closeTraining}
       onCancel={cancelTraining} />}
+    </EntryWindow>}
+    {completedSessionId && <EntryWindow title="Training abgeschlossen" subtitle="DEIN TRAININGSPLAN"
+      onClose={() => setCompletedSessionId(null)}>
+      <section className="diary-panel training-start-window">
+        <p className="helper-text">Du kannst die Übungen, Satzanzahl, Wiederholungen und Gewichte dieser Einheit als Plan für dein nächstes Training speichern.</p>
+        <label className="field-label" htmlFor="completed-plan-name">Name des Trainingsplans</label>
+        <input id="completed-plan-name" className="field" value={completedPlanName}
+          onChange={(event) => { setCompletedPlanName(event.target.value); setCompletedPlanError('') }} />
+        {completedPlanError && <p className="training-flow-error" role="alert">{completedPlanError}</p>}
+        <div className="training-finish-actions">
+          <button type="button" className="primary-button" onClick={saveCompletedAsPlan}>Als Trainingsplan speichern</button>
+          <button type="button" className="secondary-button" onClick={() => setCompletedSessionId(null)}>Jetzt nicht</button>
+        </div>
+      </section>
     </EntryWindow>}
     {!activeSession && <section className="diary-panel training-plans">
       <div className="section-heading">

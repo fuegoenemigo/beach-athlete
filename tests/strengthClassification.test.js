@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { DEFAULT_EXERCISES, enrichExercise } from '../src/volleyballTraining.js'
 import { STRENGTH_GROUPS, strengthGroupFor, strengthGroupQualified,
-  strengthRoleFor, weightedStrengthMean } from '../src/strengthClassification.js'
+  strengthRoleFor, strengthRatingWeightFor, weightedStrengthMean } from '../src/strengthClassification.js'
 import { STRENGTH_LOAD_STANDARDS, STRENGTH_REP_STANDARDS,
   STRENGTH_SPECIAL_IDS } from '../src/strengthStandards.js'
 
@@ -11,8 +11,10 @@ const exercise = (id, muscleGroup, strengthRole = 'compound', score = 80) =>
 
 test('all built-in strength exercises have a clear role and no Ganzkörper group', () => {
   const strength = DEFAULT_EXERCISES.filter((item) => item.category === 'Krafttraining')
-  assert.equal(strength.length, 60)
+  assert.equal(strength.length, 66)
   assert.ok(strength.every((item) => ['compound', 'isolation'].includes(item.strengthRole)))
+  assert.ok(strength.filter((item) => ['Bizeps', 'Trizeps'].includes(item.muscleGroup))
+    .every((item) => item.strengthRole === 'isolation'))
   assert.ok(strength.every((item) => STRENGTH_GROUPS.includes(strengthGroupFor(item))))
   assert.ok(strength.every((item) => STRENGTH_LOAD_STANDARDS[item.id]
     || STRENGTH_REP_STANDARDS[item.id] || STRENGTH_SPECIAL_IDS.has(item.id)))
@@ -49,4 +51,23 @@ test('arms need shoulders, biceps and triceps independently', () => {
   assert.equal(strengthGroupQualified([shoulder, triceps], 'Arme'), false)
   assert.equal(strengthGroupQualified([shoulder, biceps, triceps], 'Arme'), true)
   assert.equal(strengthRoleFor(shoulder), 'compound')
+  assert.equal(strengthRoleFor(exercise('gym:close-bench', 'Trizeps')), 'isolation')
+  assert.equal(strengthRatingWeightFor(biceps), 2)
+  assert.equal(strengthRatingWeightFor(triceps), 2)
+  assert.equal(weightedStrengthMean([
+    { ...shoulder, score: 60 }, { ...biceps, score: 90 }, { ...triceps, score: 90 },
+  ]), 80)
+})
+
+test('new back and biceps exercises have independent card standards', () => {
+  const added = ['gym:seated-row-close', 'gym:seated-row-wide',
+    'gym:straight-arm-pulldown', 'gym:standing-cable-pullover',
+    'gym:plate-loaded-curl', 'gym:rope-cable-curl']
+  assert.equal(new Set(added).size, 6)
+  for (const id of added) {
+    const item = DEFAULT_EXERCISES.find((entry) => entry.id === id)
+    assert.ok(item, id)
+    assert.equal(item.type, 'strength')
+    assert.ok(STRENGTH_LOAD_STANDARDS[id], id)
+  }
 })

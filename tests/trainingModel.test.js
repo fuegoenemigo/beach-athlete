@@ -4,7 +4,7 @@ import {
   createLoggedExercise, createTrainingSet, exerciseIdentity, hasLegacyValues,
   previousExercise, previousSetFor, formatTrainingEntry, canonicalCategory,
   hasMeasuredValue, hasRequiredIntervalDuration, isConfirmedSet, confirmAndAdvanceSet,
-  suggestedTrainingSet,
+  suggestedTrainingSet, createExerciseSetDraft, trainingPlanFromSession,
   dumbbellCount, effectiveTrainingWeight,
   finishTrainingExerciseEntries, isOpenTraining, addTrainingIfNoOpen,
   createSportTrainingSession, isSportTrainingAttendance, trainingWithAddedExercise,
@@ -177,8 +177,10 @@ test('a matching prior set appears as a suggestion and is saved only on confirma
   assert.equal(saved.weightKg, '60')
   assert.equal(saved.bodyweightKg, '75')
   assert.equal(saved.notes, undefined)
-  assert.equal(next.reps, '')
-  assert.equal(confirmAndAdvanceSet([next], 'strength'), null)
+  assert.equal(next.reps, '8')
+  assert.equal(next.weightKg, '60')
+  assert.equal(next.completed, false)
+  assert.equal(isConfirmedSet(next, 'strength'), false)
 })
 
 test('dumbbell sets store one-hantel input explicitly and leave legacy weights untouched', () => {
@@ -252,12 +254,39 @@ test('assisted pull-ups record machine assistance separately from lifted weight'
   assert.equal(saved.bodyweightKg, '75')
   assert.equal(saved.weightKg, '')
   assert.equal(formatTrainingEntry(saved, 'reps', exercise), '8 Wdh. · 30 kg Unterstützung')
-  assert.equal(next.assistanceKg, undefined)
+  assert.equal(next.assistanceKg, '30')
   assert.equal(suggestedTrainingSet(next, saved, 'reps', exercise).assistanceKg, '30')
   assert.equal(isAthleteData({ ...base(), sessions: [{ id: 't', date: '2026-10-12',
     category: 'Krafttraining', status: 'completed', exercises: [{
       ...exercise, entries: [saved],
     }] }] }), true)
+})
+
+test('a finished workout becomes a reusable plan with exact sets and no personal metadata', () => {
+  const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
+    item.id === 'gym:dumbbell-bench'))
+  exercise.entries = [
+    { ...createTrainingSet('strength'), reps: '10', weightKg: '22',
+      weightBasis: 'perDumbbell', bodyweightKg: '75', completed: true },
+    { ...createTrainingSet('strength'), reps: '8', weightKg: '24',
+      weightBasis: 'perDumbbell', bodyweightKg: '75', completed: true },
+  ]
+  const session = { id: 'training-1', date: '2026-10-31', category: 'Krafttraining',
+    status: 'completed', exercises: [exercise] }
+  const plan = trainingPlanFromSession(session, 'plan-1', 'Oberkörper')
+  assert.equal(plan.exercises.length, 1)
+  assert.deepEqual(plan.exercises[0].plannedSets.map((set) => [set.reps, set.weightKg]),
+    [['10', '22'], ['8', '24']])
+  assert.equal(JSON.stringify(plan).includes('bodyweightKg'), false)
+  assert.equal(isAthleteData({ ...base(), trainingPlans: [plan] }), true)
+  const resumed = createLoggedExercise(plan.exercises[0])
+  const first = createExerciseSetDraft(resumed)
+  assert.equal(first.reps, '10')
+  assert.equal(first.weightKg, '22')
+  const [, second] = confirmAndAdvanceSet([first], 'strength', '75', null, resumed)
+  assert.equal(second.reps, '8')
+  assert.equal(second.weightKg, '24')
+  assert.equal(second.completed, false)
 })
 
 test('lunges save the load per dumbbell while squats save the whole barbell', () => {
@@ -333,14 +362,18 @@ test('a drafted set only counts after confirmation and an empty draft never coun
   assert.equal(isConfirmedSet({ ...createTrainingSet('strength'), reps: '8' }, 'strength'), true)
 })
 
-test('confirming a set opens the next and ending an exercise drops only the empty draft', () => {
+test('confirming a set preselects the next while unfinished values stay unconfirmed', () => {
   const first = { ...createTrainingSet('strength'), reps: '8', weightKg: '60', completed: false }
   const advanced = confirmAndAdvanceSet([first], 'strength')
   assert.equal(advanced.length, 2)
   assert.equal(advanced[0].completed, true)
   assert.equal(advanced[1].completed, false)
-  assert.equal(finishTrainingExerciseEntries(advanced, 'strength').length, 1)
-  assert.equal(confirmAndAdvanceSet(advanced, 'strength'), null)
+  assert.equal(advanced[1].reps, '8')
+  assert.equal(advanced[1].weightKg, '60')
+  assert.equal(finishTrainingExerciseEntries(advanced, 'strength'), null)
+  assert.equal(finishTrainingExerciseEntries(advanced, 'strength', true).length, 1)
+  assert.equal(finishTrainingExerciseEntries(advanced.slice(0, -1), 'strength').length, 1)
+  assert.equal(confirmAndAdvanceSet(advanced, 'strength').length, 3)
   assert.equal(finishTrainingExerciseEntries([
     advanced[0], { ...advanced[1], reps: '6' },
   ], 'strength'), null)

@@ -68,6 +68,17 @@ test('measured jumps override training estimates and legacy heights are ignored'
   assert.equal(result.overall.score, 59)
 })
 
+test('new cable-row variants can raise the back group and strength card', () => {
+  const exercises = [
+    lift('gym:seated-row-close', 'Rücken', 65, '75'),
+    lift('gym:seated-row-wide', 'Rücken', 58, '75'),
+  ]
+  const rating = athleteRating([day('2026-10-12', exercises)],
+    { bodyweightKg: '75' }, '2026-10-12')
+  assert.ok(rating.attributes[0].groups.find((group) => group.name === 'Rücken').score > 60)
+  assert.ok(rating.attributes[0].score > 60)
+})
+
 test('strong first performance moves slowly; poor performance and open sessions never lower 60', () => {
   const incomplete = athleteRating([day('2026-10-12', [bench(80)])], { bodyweightKg: '70' })
   assert.equal(incomplete.attributes[0].score, 60)

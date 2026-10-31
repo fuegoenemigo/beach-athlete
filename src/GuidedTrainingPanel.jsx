@@ -97,11 +97,12 @@ export default function GuidedTrainingPanel({
   customName, setCustomName, customType, setCustomType, customGroup, setCustomGroup,
   customStrengthRole, setCustomStrengthRole,
   onAddExercise, onOpenExercise, onCreateCustom, onUpdateSession,
-  onUpdateExercise, onRemoveExercise, onConfirmSet, onFinishExercise,
+  onUpdateExercise, onRemoveExercise, onConfirmSet, onConfirmAndFinish, onFinishExercise,
   onTimerDuration,
   onSave, onClose, onRecategorize, onCancel,
 }) {
   const [showCustomExercise, setShowCustomExercise] = useState(false)
+  const [nextSetMenuFor, setNextSetMenuFor] = useState(null)
   const exercise = session.exercises.find((item) => item.id === activeExerciseId)
   const type = exercise && exerciseMeasurement({ ...exercise, category: session.category })
   const entries = exercise?.entries ?? []
@@ -250,6 +251,9 @@ export default function GuidedTrainingPanel({
       <p className="history-meta">{exercise.category === 'Krafttraining'
         ? exercise.muscleGroup || 'Ohne Muskelgruppe' : exercise.category || session.category}</p>
       {exercise.target && <p className="training-target">Vorschlag: {exercise.target}</p>}
+      {exercise.plannedSets?.length > 0 && <p className="training-target">
+        Dein Plan: {exercise.plannedSets.length} {exercise.plannedSets.length === 1 ? 'Satz' : 'Sätze'} mit vorausgewählten Werten.
+      </p>}
       {hasLegacyValues(exercise) && <div className="training-legacy">
         <strong>Früherer Sammeleintrag</strong>
         <p className="helper-text">Die alten Werte bleiben erhalten. Damals wurden keine einzelnen Sätze erfasst.</p>
@@ -291,8 +295,10 @@ export default function GuidedTrainingPanel({
         <p className="eyebrow">SATZ {confirmed.length + 1}</p>
         <h3>Werte eintragen</h3>
         <PreviousExerciseReference number={confirmed.length + 1} value={referenceFor(confirmed.length)} />
-        {previousEntryFor(confirmed.length) && <p className="training-suggestion-help">
-          Vorschläge werden beim Bestätigen übernommen. Drehe ein Rad, um den Wert zu ändern.
+        {(confirmed.length > 0 || previousEntryFor(confirmed.length)) && <p className="training-suggestion-help">
+          {confirmed.length > 0
+            ? 'Die Werte des vorherigen Satzes sind vorausgewählt. Du kannst jedes Rad ändern.'
+            : 'Werte der letzten Einheit kannst du über die Vorschläge übernehmen oder selbst einstellen.'}
         </p>}
         {['duration', 'distance', 'carry'].includes(type) && <TrainingTimer
           key={draft.id} sessionId={session.id} exercise={exercise} entry={draft}
@@ -303,7 +309,22 @@ export default function GuidedTrainingPanel({
           onChange={(changes) => onUpdateExercise(exercise.id, { entries: entries.map((item) =>
             item.id === draft.id ? { ...item, ...changes } : item) })} />
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}
-        <button type="button" className="primary-button" onClick={onConfirmSet}>✓ Satz bestätigen · nächster Satz</button>
+        <div className="training-next-set-actions">
+          <button type="button" className="primary-button" onClick={() => {
+            setNextSetMenuFor(null); onConfirmSet()
+          }}>Nächster Satz</button>
+          <button type="button" className="secondary-button training-next-set-more"
+            aria-label="Weitere Optionen für nächsten Satz" aria-expanded={nextSetMenuFor === exercise.id}
+            onClick={() => setNextSetMenuFor((current) => current === exercise.id ? null : exercise.id)}>▾</button>
+        </div>
+        {nextSetMenuFor === exercise.id && <div className="training-next-set-options">
+          <button type="button" className="secondary-button" onClick={() => {
+            setNextSetMenuFor(null); onConfirmAndFinish()
+          }}>Diesen Satz übernehmen und Übung beenden</button>
+          <button type="button" className="secondary-button" onClick={() => {
+            setNextSetMenuFor(null); onFinishExercise()
+          }}>Übung ohne diesen Satz beenden</button>
+        </div>}
       </div>}
       <label className="field-label" htmlFor="exercise-notes">Notizen zur Übung</label>
       <textarea id="exercise-notes" className="field notes-field" rows="2"
@@ -311,7 +332,6 @@ export default function GuidedTrainingPanel({
           { notes: event.target.value })} />
       {flowMessage && !draft && <p className="training-flow-error" role="alert">{flowMessage}</p>}
       <div className="training-finish-actions">
-        <button type="button" className="secondary-button" onClick={onFinishExercise}>✓ Übung abschließen</button>
         <button type="button" className="text-button" onClick={() => setStep('exercise')}>Zur Übungsauswahl</button>
         <button type="button" className="text-button" onClick={() => onRemoveExercise(exercise)}>Übung entfernen</button>
       </div>

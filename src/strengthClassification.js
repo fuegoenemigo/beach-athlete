@@ -9,18 +9,25 @@ const COMPOUND_IDS = new Set([
   'gym:dumbbell-bench', 'gym:dumbbell-incline', 'gym:chest-press',
   'gym:dips', 'gym:lat-pulldown', 'gym:close-pulldown',
   'gym:seated-row', 'gym:dumbbell-row', 'gym:barbell-row',
+  'gym:seated-row-close', 'gym:seated-row-wide',
   'gym:tbar-row', 'gym:assisted-pullup',
   'gym:dumbbell-press', 'gym:arnold-press',
   'gym:leg-press', 'gym:hack-squat', 'gym:front-squat',
   'gym:goblet-squat', 'gym:hip-thrust', 'gym:glute-bridge',
-  'gym:step-up', 'gym:reverse-lunge', 'gym:close-bench',
+  'gym:step-up', 'gym:reverse-lunge',
   'gym:kettlebell-swing', 'gym:farmers-carry',
 ])
 
 export function strengthRoleFor(exercise) {
+  if (['Bizeps', 'Trizeps'].includes(strengthMuscleFor(exercise))) return 'isolation'
   if (exercise.strengthRole === 'compound' || exercise.strengthRole === 'isolation')
     return exercise.strengthRole
   return COMPOUND_IDS.has(exercise.libraryId ?? exercise.id) ? 'compound' : 'isolation'
+}
+
+export function strengthRatingWeightFor(exercise) {
+  return ['Bizeps', 'Trizeps'].includes(strengthMuscleFor(exercise))
+    || strengthRoleFor(exercise) === 'compound' ? 2 : 1
 }
 
 export function strengthMuscleFor(exercise) {
@@ -51,7 +58,7 @@ export function strengthGroupQualified(exercises, groupName) {
 
 export function weightedStrengthMean(exercises) {
   const totalWeight = exercises.reduce((sum, exercise) => sum
-    + (strengthRoleFor(exercise) === 'compound' ? 2 : 1), 0)
+    + strengthRatingWeightFor(exercise), 0)
   return exercises.reduce((sum, exercise) => sum + exercise.score
-    * (strengthRoleFor(exercise) === 'compound' ? 2 : 1), 0) / totalWeight
+    * strengthRatingWeightFor(exercise), 0) / totalWeight
 }

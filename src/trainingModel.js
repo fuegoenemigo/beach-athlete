@@ -145,6 +145,7 @@ export function createLoggedExercise(item) {
     ...(item.performanceRole ? { performanceRole: item.performanceRole } : {}),
     ...(item.defaultDurationUnit ? { defaultDurationUnit: item.defaultDurationUnit } : {}),
     ...(item.target ? { target: item.target } : {}),
+    ...(Array.isArray(item.plannedSets) ? { plannedSets: item.plannedSets.map((set) => ({ ...set })) } : {}),
     entries: [], notes: '',
   }
 }
@@ -158,6 +159,39 @@ export function createTrainingSet(type = 'strength', durationUnit = 's') {
     ...(type === 'carry' ? { weightKg: '' } : {}),
     durationValue: '', durationUnit }
   return { ...base, durationValue: '', durationUnit }
+}
+
+const PLAN_SET_VALUES = ['reps', 'weightKg', 'assistanceKg', 'durationValue',
+  'distanceValue', 'heightCm']
+
+export function plannedSetValues(entry) {
+  const values = Object.fromEntries(PLAN_SET_VALUES.filter((field) =>
+    entry[field] !== '' && entry[field] != null).map((field) => [field, String(entry[field])]))
+  if (entry.weightBasis === 'perDumbbell') values.weightBasis = 'perDumbbell'
+  if (entry.durationUnit) values.durationUnit = entry.durationUnit
+  if (entry.distanceUnit) values.distanceUnit = entry.distanceUnit
+  return values
+}
+
+export function trainingPlanFromSession(session, id, name) {
+  const exercises = session.exercises.flatMap((exercise) => {
+    const type = exerciseMeasurement({ ...exercise, category: exercise.category ?? session.category })
+    const plannedSets = (exercise.entries ?? []).filter((entry) => isConfirmedSet(entry, type))
+      .map(plannedSetValues)
+    if (!plannedSets.length) return []
+    return [{ libraryId: exercise.libraryId ?? exerciseIdentity(exercise),
+      name: exercise.name, type, category: exercise.category ?? session.category,
+      ...(exercise.muscleGroup ? { muscleGroup: exercise.muscleGroup } : {}),
+      ...(exercise.strengthRole ? { strengthRole: exercise.strengthRole } : {}),
+      ...(exercise.loadMode ? { loadMode: exercise.loadMode } : {}),
+      plannedSets }]
+  })
+  if (!exercises.length) return null
+  const category = canonicalCategory(session.category, session.subcategory)
+  if (!TRAINING_CATEGORIES.includes(category)) return null
+  return { id, name: name.trim(), category,
+    categories: [...new Set([category, ...exercises.map((item) => item.category)])],
+    exercises, description: 'Aus einer abgeschlossenen Trainingseinheit gespeichert.' }
 }
 
 export function hasMeasuredValue(entry, type) {
@@ -211,6 +245,15 @@ export function suggestedTrainingSet(draft, previous, type, exercise = {}) {
   return suggested
 }
 
+export function createExerciseSetDraft(exercise, index = 0, previous = null, typeOverride = null) {
+  const type = typeOverride ?? exerciseMeasurement(exercise)
+  const source = exercise.plannedSets?.[index] ?? previous
+  const base = createTrainingSet(type, source?.durationUnit ?? exercise.defaultDurationUnit
+    ?? (exercise.intervalWorkMinutes ? 'min' : 's'))
+  if (source?.distanceUnit && 'distanceUnit' in base) base.distanceUnit = source.distanceUnit
+  return { ...(source ? suggestedTrainingSet(base, source, type, exercise) : base), completed: false }
+}
+
 export function confirmAndAdvanceSet(entries, type, bodyweightKg = '', previous = null, exercise = {}) {
   const draft = entries.find((entry) => entry.completed === false)
   const values = suggestedTrainingSet(draft, previous, type, exercise)
@@ -218,17 +261,24 @@ export function confirmAndAdvanceSet(entries, type, bodyweightKg = '', previous 
   if (isAssistedPullup(exercise) && (values.assistanceKg === ''
     || values.assistanceKg == null || !Number.isFinite(Number(values.assistanceKg))
     || Number(values.assistanceKg) < 0)) return null
+  const confirmedCount = entries.filter((entry) => isConfirmedSet(entry, type)).length
+  const carryForward = ['strength', 'reps', 'jump'].includes(type)
+    ? { ...values, ...(dumbbellCount(exercise) && values.weightKg !== ''
+      ? { weightBasis: 'perDumbbell' } : {}) } : null
+  const nextDraft = createExerciseSetDraft({ ...exercise,
+    defaultDurationUnit: draft.durationUnit ?? exercise.defaultDurationUnit },
+  confirmedCount + 1, carryForward, type)
   return [...entries.map((entry) => entry.id === draft.id
     ? { ...values, ...(isBodyweightOnly(exercise) && type !== 'strength' ? { weightKg: '' } : {}),
       completed: true, confirmedAt: new Date().toISOString(),
       ...(dumbbellCount(exercise) && values.weightKg !== ''
         ? { weightBasis: 'perDumbbell' } : {}),
       ...(bodyweightKg ? { bodyweightKg } : {}) } : entry),
-  { ...createTrainingSet(type, draft.durationUnit ?? 's'), completed: false }]
+  { ...nextDraft, completed: false }]
 }
 
-export function finishTrainingExerciseEntries(entries, type) {
-  if (entries.some((entry) => entry.completed === false && hasMeasuredValue(entry, type)))
+export function finishTrainingExerciseEntries(entries, type, discardDraft = false) {
+  if (!discardDraft && entries.some((entry) => entry.completed === false && hasMeasuredValue(entry, type)))
     return null
   return entries.filter((entry) => isConfirmedSet(entry, type))
 }
@@ -248,7 +298,13 @@ export function isTrainingPlan(plan) {
     && plan.exercises.every((item) => item && typeof item.libraryId === 'string'
       && typeof item.name === 'string'
       && (item.category === undefined || item.category === plan.category
-        || plan.categories?.includes(item.category)))
+        || plan.categories?.includes(item.category))
+      && (item.plannedSets === undefined || (Array.isArray(item.plannedSets)
+        && item.plannedSets.every((set) => set && typeof set === 'object'
+          && PLAN_SET_VALUES.every((field) => nonnegative(set[field]))
+          && (set.weightBasis === undefined || set.weightBasis === 'perDumbbell')
+          && (set.durationUnit === undefined || ['s', 'min'].includes(set.durationUnit))
+          && (set.distanceUnit === undefined || ['m', 'km'].includes(set.distanceUnit))))))
 }
 
 const nonnegative = (value) => value === '' || value == null

@@ -626,3 +626,12 @@
   .training-activity-fields,
   .training-start-grid { grid-template-columns: 1fr; }
 }
+.training-next-set-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  gap: 8px;
+}
+
+.training-next-set-actions .primary-button { width: 100%; }
+.training-next-set-more { font-size: 1.25rem; }
+.training-next-set-options { display: grid; gap: 8px; margin-top: 8px; }
