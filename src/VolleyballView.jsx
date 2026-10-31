@@ -11,6 +11,7 @@ import EntryWindow from "./EntryWindow.jsx";
 import DateWheel from './DateWheel.jsx';
 import { NumberWheel, ChoiceWheel } from './WheelPicker.jsx';
 import { isOpenVolleyballDay, isRecentDate } from "./activityHistory.js";
+import JumpMeasurementPanel from './JumpMeasurementPanel.jsx';
 
 const today = () => new Date().toLocaleDateString("sv-SE");
 const freshSet = () => ({ fitness: "5", opponentStrength: "equal", intensity: "5", technique: "5", won: "true" });
@@ -31,7 +32,8 @@ function gameLabel(gameType) {
     matchDay: "🏐 Spieltag", tournament: "🏆 Turnier" })[gameType] ?? gameType;
 }
 
-export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice, onOpenArchive, navigationTarget, onReturn }) {
+export default function VolleyballView({ sport, volleyballDays, setVolleyballDays, setNotice, onOpenArchive, navigationTarget, onReturn,
+  athleteProfile, jumpMeasurements = [], setJumpMeasurements }) {
   const beach = sport === "beach";
   const maxSets = beach ? 3 : 5;
   const label = beach ? "Beachvolleyball" : "Hallenvolleyball";
@@ -509,6 +511,9 @@ export default function VolleyballView({ sport, volleyballDays, setVolleyballDay
       </EntryWindow>}
 
     </section>
+
+    {!beach && <JumpMeasurementPanel measurementCapability={athleteProfile?.measurementCapability}
+      measurements={jumpMeasurements} setMeasurements={setJumpMeasurements} setNotice={setNotice} />}
 
     <section className="diary-panel volleyball-history-section">
       <div className="section-heading"><div><p className="eyebrow">DEIN VERLAUF</p>

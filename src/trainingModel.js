@@ -184,7 +184,7 @@ export function isConfirmedSet(entry, type) {
 export function suggestedTrainingSet(draft, previous, type, exercise = {}) {
   if (!draft || !previous) return draft
   const fields = isAssistedPullup(exercise) ? ['reps', 'assistanceKg']
-    : type === 'strength' ? isBodyweightOnly(exercise) ? ['reps'] : ['reps', 'weightKg']
+    : type === 'strength' ? ['reps', 'weightKg']
     : type === 'reps' ? ['reps']
     : type === 'jump' ? isBodyweightOnly(exercise) ? ['reps', 'heightCm']
       : ['reps', 'heightCm', 'weightKg']
@@ -219,7 +219,7 @@ export function confirmAndAdvanceSet(entries, type, bodyweightKg = '', previous 
     || values.assistanceKg == null || !Number.isFinite(Number(values.assistanceKg))
     || Number(values.assistanceKg) < 0)) return null
   return [...entries.map((entry) => entry.id === draft.id
-    ? { ...values, ...(isBodyweightOnly(exercise) ? { weightKg: '' } : {}),
+    ? { ...values, ...(isBodyweightOnly(exercise) && type !== 'strength' ? { weightKg: '' } : {}),
       completed: true, confirmedAt: new Date().toISOString(),
       ...(dumbbellCount(exercise) && values.weightKg !== ''
         ? { weightBasis: 'perDumbbell' } : {}),
@@ -298,7 +298,8 @@ export function previousSetFor(previous, setIndex) {
 export function formatTrainingEntry(entry, type, exercise = {}) {
   const duration = entry.durationValue
     ? `${entry.durationValue} ${entry.durationUnit === 'min' ? 'Min.' : 'Sek.'}` : ''
-  const load = isBodyweightOnly(exercise) ? ''
+  const load = isBodyweightOnly(exercise) ? Number(entry.weightKg) > 0
+    ? `+ ${entry.weightKg} kg Zusatzgewicht` : ''
     : exercise.loadMode === 'bodyweight' && !isExternalLoad(exercise)
     ? [entry.bodyweightKg ? `Eigengewicht ${entry.bodyweightKg} kg` : '',
       entry.weightKg ? `+ ${entry.weightKg} kg zusätzlich${entry.weightBasis === 'perDumbbell'

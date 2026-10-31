@@ -1,6 +1,7 @@
 import { isAthleteProfile, withoutLastName } from './athleteProfile.js'
 import { isRating, strengthOptions } from './volleyballValues.js'
 import { isLoggedTrainingExercise, isTrainingPlan } from './trainingModel.js'
+import { isJumpMeasurement } from './jumpMeasurements.js'
 
 export function isVolleyballDateTaken(days, date) {
   return days.some((day) => day.date === date
@@ -49,6 +50,11 @@ export function isAthleteData(data) {
   return data && Array.isArray(data.sessions)
     && Array.isArray(data.exerciseLibrary)
     && Array.isArray(data.volleyballDays)
+    && (data.jumpMeasurements === undefined || (Array.isArray(data.jumpMeasurements)
+      && data.jumpMeasurements.every(isJumpMeasurement)
+      && new Set(data.jumpMeasurements.map((item) => item.id)).size === data.jumpMeasurements.length
+      && new Set(data.jumpMeasurements.map((item) => `${item.date}:${item.testId}`)).size
+        === data.jumpMeasurements.length))
     && (data.athleteProfile === undefined || isAthleteProfile(data.athleteProfile))
     && (data.trainingPlans === undefined || (Array.isArray(data.trainingPlans)
       && data.trainingPlans.every(isTrainingPlan)))
@@ -78,6 +84,7 @@ export function dataHash(data) {
     sessions: data.sessions,
     exerciseLibrary: data.exerciseLibrary,
     volleyballDays: data.volleyballDays,
+    jumpMeasurements: data.jumpMeasurements ?? [],
     trainingPlans: data.trainingPlans ?? [],
     athleteProfile: withoutLastName(data.athleteProfile) ?? { bodyweightKg: '' },
   })
@@ -85,6 +92,7 @@ export function dataHash(data) {
 
 export function hasPersonalData(data, defaultLibrary) {
   return data.sessions.length > 0 || data.volleyballDays.length > 0
+    || (data.jumpMeasurements?.length ?? 0) > 0
     || (data.trainingPlans?.length ?? 0) > 0
     || Boolean(data.athleteProfile?.bodyweightKg)
     || Boolean(data.athleteProfile?.heightCm)
@@ -103,6 +111,7 @@ export function localDataForAccount(data, storedUid, currentUid, defaultLibrary,
     sessions: [],
     exerciseLibrary: structuredClone(defaultLibrary),
     volleyballDays: [],
+    jumpMeasurements: [],
     trainingPlans: [],
     athleteProfile: { bodyweightKg: '' },
   }

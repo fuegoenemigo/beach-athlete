@@ -42,6 +42,9 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
   const bodyweightOnly = isBodyweightOnly(exercise)
   const bodyweight = exercise.loadMode === 'bodyweight'
     && !bodyweightOnly && !isExternalLoad(exercise)
+  const showWeight = (bodyweightOnly && type === 'strength')
+    || (!bodyweightOnly && (['strength', 'jump', 'carry'].includes(type)
+      || (type === 'reps' && bodyweight)))
   const dumbbells = dumbbellCount(exercise)
   const interval = Boolean(exercise.intervalWorkMinutes)
   const bodyweightKg = entry.bodyweightKg || athleteProfile.bodyweightKg
@@ -53,12 +56,11 @@ function SetFields({ entry, type, exercise, athleteProfile, previous, onChange }
         {number('Unterstützung der Maschine (kg)', 'assistanceKg')}
         <p className="helper-text">Trage ein, wie viele Kilogramm die Maschine von deinem Körpergewicht abnimmt.</p>
       </>}
-      {['strength', 'jump', 'reps', 'duration'].includes(type) && bodyweight && <p className="training-bodyweight">
+      {['strength', 'jump', 'reps', 'duration'].includes(type) && (bodyweight || (bodyweightOnly && type === 'strength')) && <p className="training-bodyweight">
         Eigengewicht: {bodyweightKg ? `${bodyweightKg} kg` : 'noch nicht im Profil hinterlegt'}
       </p>}
-      {!bodyweightOnly && (type === 'strength' || type === 'jump' || type === 'carry'
-        || (type === 'reps' && bodyweight))
-        && number(bodyweight && dumbbells === 2 ? 'Zusatzgewicht je Hantel (kg, optional)'
+      {showWeight && number(bodyweightOnly ? 'Zusatzgewicht gesamt (kg, optional)'
+          : bodyweight && dumbbells === 2 ? 'Zusatzgewicht je Hantel (kg, optional)'
           : bodyweight && dumbbells === 1 ? 'Zusatzgewicht der Hantel (kg, optional)'
             : bodyweight ? 'Zusatzgewicht gesamt (kg, optional)'
           : dumbbells === 2 ? 'Gewicht je Hantel (kg, optional)'

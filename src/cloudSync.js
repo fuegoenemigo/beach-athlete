@@ -237,6 +237,7 @@ export class CloudSync {
       sessions: remote.sessions,
       exerciseLibrary: remote.exerciseLibrary,
       volleyballDays: remote.volleyballDays,
+      jumpMeasurements: remote.jumpMeasurements ?? [],
       trainingPlans: remote.trainingPlans ?? [],
       athleteProfile: withoutLastName(remote.athleteProfile) ?? { bodyweightKg: '' },
     }
@@ -309,6 +310,7 @@ export class CloudSync {
       sessions: this.data.sessions,
       exerciseLibrary: this.data.exerciseLibrary,
       volleyballDays: this.data.volleyballDays,
+      jumpMeasurements: this.data.jumpMeasurements ?? [],
       trainingPlans: this.data.trainingPlans ?? [],
       athleteProfile: withoutLastName(this.data.athleteProfile) ?? { bodyweightKg: '' },
     }
@@ -334,7 +336,7 @@ export class CloudSync {
         }
         transaction.set(reference, {
           ...payload,
-          schemaVersion: 2,
+          schemaVersion: 3,
           revision,
           updatedAt: serverTimestamp(),
         })

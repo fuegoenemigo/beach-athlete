@@ -56,6 +56,11 @@ function loadVolleyballDays() {
     (items) => isAthleteData({ sessions: [], exerciseLibrary: [], volleyballDays: items }));
 }
 
+function loadJumpMeasurements() {
+  return loadStoredArray("beach-athlete-jumps", [],
+    (items) => isAthleteData({ sessions: [], exerciseLibrary: [], volleyballDays: [], jumpMeasurements: items }));
+}
+
 function loadAthleteProfile() {
   try {
     const stored = JSON.parse(localStorage.getItem("beach-athlete-profile"));
@@ -89,6 +94,7 @@ function downloadJson(filename, value) {
 function App() {
   const [sessions, setSessions] = useState(loadSessions);
   const [volleyballDays, setVolleyballDays] = useState(loadVolleyballDays);
+  const [jumpMeasurements, setJumpMeasurements] = useState(loadJumpMeasurements);
   const [activeArea, setActiveArea] = useState("home");
   const [currentDate, setCurrentDate] = useState(today);
   const [chosenDate, setChosenDate] = useState(null);
@@ -197,6 +203,7 @@ function App() {
         setExerciseLibrary(data.exerciseLibrary);
         setTrainingPlans(data.trainingPlans);
         setVolleyballDays(data.volleyballDays);
+        setJumpMeasurements(data.jumpMeasurements ?? []);
         setAthleteProfile(withoutLastName(data.athleteProfile) ?? { bodyweightKg: "" });
       },
       defaultLibrary: DEFAULT_EXERCISES,
@@ -210,8 +217,8 @@ function App() {
   }, [storageDamaged]);
 
   useEffect(() => {
-    cloudRef.current?.updateData({ sessions, exerciseLibrary, volleyballDays, trainingPlans, athleteProfile });
-  }, [sessions, exerciseLibrary, volleyballDays, trainingPlans, athleteProfile]);
+    cloudRef.current?.updateData({ sessions, exerciseLibrary, volleyballDays, jumpMeasurements, trainingPlans, athleteProfile });
+  }, [sessions, exerciseLibrary, volleyballDays, jumpMeasurements, trainingPlans, athleteProfile]);
 
   useEffect(() => {
     const showUpdate = () => { setUpdateAvailable(true); setShowUpdateDialog(true); };
@@ -226,6 +233,10 @@ function App() {
   useEffect(() => {
     if (!storageDamaged) saveLocally("beach-athlete-volleyball", volleyballDays, setCriticalNotice);
   }, [volleyballDays, storageDamaged]);
+
+  useEffect(() => {
+    if (!storageDamaged) saveLocally("beach-athlete-jumps", jumpMeasurements, setCriticalNotice);
+  }, [jumpMeasurements, storageDamaged]);
 
   useEffect(() => {
     if (!storageDamaged) saveLocally("beach-athlete-exercises", exerciseLibrary, setCriticalNotice);
@@ -247,12 +258,13 @@ function App() {
 
   function exportData() {
     const backup = {
-      schemaVersion: 2,
+      schemaVersion: 3,
       sessions,
       exerciseLibrary,
       trainingPlans,
       athleteProfile,
       volleyballDays,
+      jumpMeasurements,
       exportedAt: new Date().toISOString(),
     };
 
@@ -263,7 +275,7 @@ function App() {
   function exportRawData() {
     try {
       const rawLocalStorage = Object.fromEntries(
-        ["beach-athlete-diary", "beach-athlete-exercises", "beach-athlete-volleyball", "beach-athlete-training-plans", "beach-athlete-profile"]
+        ["beach-athlete-diary", "beach-athlete-exercises", "beach-athlete-volleyball", "beach-athlete-jumps", "beach-athlete-training-plans", "beach-athlete-profile"]
           .map((key) => [key, localStorage.getItem(key)])
       );
       downloadJson(`beach-athlete-rohdaten-${today()}.json`, { rawLocalStorage });
@@ -294,13 +306,14 @@ function App() {
         trainingPlans: backup.trainingPlans ?? [],
         athleteProfile: withoutLastName(backup.athleteProfile) ?? { bodyweightKg: "" },
         volleyballDays: backup.volleyballDays ?? [],
+        jumpMeasurements: backup.jumpMeasurements ?? [],
       };
       if (!isAthleteData(imported)) {
         throw new Error("Ungültige Sicherungsdatei");
       }
 
       const confirmed = window.confirm(
-        "Möchtest du Training, Trainingsvorlagen, Übungsbibliothek sowie Beach- und Hallenvolleyball-Spieltage durch die Sicherung ersetzen?"
+        "Möchtest du Training, Trainingsvorlagen, Übungsbibliothek, Spieltage und Sprungmessungen durch die Sicherung ersetzen?"
       );
 
       if (!confirmed) return;
@@ -309,6 +322,7 @@ function App() {
       setExerciseLibrary(imported.exerciseLibrary);
       setTrainingPlans(imported.trainingPlans);
       setVolleyballDays(imported.volleyballDays);
+      setJumpMeasurements(imported.jumpMeasurements);
       setAthleteProfile(imported.athleteProfile);
       setNotice("Daten wurden erfolgreich wiederhergestellt.");
     } catch {
@@ -629,6 +643,8 @@ function App() {
         hidden={!areaVisible('indoor')} style={areaStyle('indoor')}>
         <VolleyballView sport="indoor" volleyballDays={volleyballDays}
           setVolleyballDays={setVolleyballDays} setNotice={setNotice}
+          athleteProfile={athleteProfile} jumpMeasurements={jumpMeasurements}
+          setJumpMeasurements={setJumpMeasurements}
           onOpenArchive={() => openHomeView("archive")}
           navigationTarget={activityTarget?.type === "indoor" ? activityTarget : null}
           onReturn={returnFromActivity} />

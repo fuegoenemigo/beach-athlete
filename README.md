@@ -67,6 +67,8 @@ Bei neuen Beach-Testspielen wird der Gegner pro Spiel erfasst. Für ältere Spie
 
 ## GitHub Pages und iPhone
 
+Der aktuelle Arbeitsstand ergänzt im Hallenreiter eine Eingabe für vier Sprungtests auf festem Boden. Sie ist nur mit der Profileinstellung „Ich kann Leistungswerte präzise messen“ aktiv; sonst erscheint ein deaktivierter Button mit Hinweis. Sprungwerte werden als eigene Messungen lokal, in der Cloud und in JSON-Backups gespeichert. Ältere Backups ohne Sprungwerte bleiben importierbar. Die Bewertung der Athlete Card verwendet diese neuen Messungen noch nicht; die neue 55-bis-96-Punkteskala ist derzeit ein Konzept.
+
 Die GitHub-Actions-Datei `.github/workflows/pages.yml` baut und veröffentlicht die App bei einem Push auf `main`. Das Repository ist [fuegoenemigo/beach-athlete](https://github.com/fuegoenemigo/beach-athlete), die veröffentlichte App ist unter [fuegoenemigo.github.io/beach-athlete](https://fuegoenemigo.github.io/beach-athlete/) erreichbar. Die Pages-Quelle ist **GitHub Actions**. Der Build verwendet den Pfad `/<Repositoryname>/`.
 
 Auf GitHub Free benötigt Pages ein öffentliches Repository. Der Programmcode und die App-Adresse sind dann öffentlich erreichbar. Persönliche Projektnotizen (`docs/`), lokale Firebase-Konfiguration und exportierte Backups sind vom Git-Upload ausgeschlossen. Deine späteren Trainingsdaten dürfen ausschließlich unter deinem angemeldeten Firebase-Benutzer gespeichert werden.

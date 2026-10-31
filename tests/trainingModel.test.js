@@ -209,7 +209,7 @@ test('one-arm dumbbell exercises keep the entered single-hantel load', () => {
   assert.equal(formatTrainingEntry(saved, 'strength', exercise), '8 Wdh. · 26 kg (eine Hantel)')
 })
 
-test('bodyweight exercises reuse only repetitions and discard prior extra weight', () => {
+test('bodyweight strength exercises retain optional external load separately from body mass', () => {
   const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) =>
     item.id === 'volleyball:pullup'))
   assert.equal(exercise.loadMode, 'bodyweightOnly')
@@ -217,14 +217,28 @@ test('bodyweight exercises reuse only repetitions and discard prior extra weight
   const draft = suggestedTrainingSet(createTrainingSet('strength'), previous,
     'strength', exercise)
   assert.equal(draft.reps, '12')
-  assert.equal(draft.weightKg, '')
+  assert.equal(draft.weightKg, '10')
   const [saved] = confirmAndAdvanceSet([{ ...draft, completed: false }],
     'strength', '75', previous, exercise)
   assert.equal(saved.reps, '12')
-  assert.equal(saved.weightKg, '')
+  assert.equal(saved.weightKg, '10')
   assert.equal(saved.bodyweightKg, '75')
   assert.equal(formatTrainingEntry(saved, 'strength', exercise),
-    '12 Wdh.')
+    '12 Wdh. · + 10 kg Zusatzgewicht')
+})
+
+test('calf raises and back extensions can save added weight without changing repetitions', () => {
+  for (const id of ['volleyball:calf', 'gym:back-extension']) {
+    const exercise = createLoggedExercise(DEFAULT_EXERCISES.find((item) => item.id === id))
+    const [saved] = confirmAndAdvanceSet([{
+      ...createTrainingSet('strength'), reps: '18', weightKg: '7.5', completed: false,
+    }], 'strength', '75', null, exercise)
+    assert.equal(saved.reps, '18')
+    assert.equal(saved.weightKg, '7.5')
+    assert.equal(saved.bodyweightKg, '75')
+    assert.equal(formatTrainingEntry(saved, 'strength', exercise),
+      '18 Wdh. · + 7.5 kg Zusatzgewicht')
+  }
 })
 
 test('assisted pull-ups record machine assistance separately from lifted weight', () => {

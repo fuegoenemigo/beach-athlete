@@ -823,6 +823,37 @@ input[type="date"] {
 
 .volleyball-list-toggle { margin-top: 0; }
 
+.jump-capture-panel .section-heading { margin-bottom: 10px; }
+.jump-capture-panel > .helper-text { margin: 0 0 14px; }
+.jump-capture-button { width: 100%; min-height: 48px; margin-top: 0; text-align: center; }
+.jump-capture-button:disabled { opacity: .42; }
+.jump-capture-panel > .jump-capture-disabled { margin: 9px 0 0; font-size: .75rem; }
+.jump-capture-panel > .jump-capture-count { margin: 9px 0 0; font-size: .75rem; }
+.jump-measurement-form { display: grid; gap: 14px; }
+.jump-measurement-form > .helper-text { margin: 0; line-height: 1.5; }
+.jump-measurement-fields { display: grid; gap: 12px; }
+.jump-measurement-field { padding: 14px; border: 1px solid var(--border); background: #1c1c1c; }
+.jump-measurement-field .field-label { margin: 0 0 6px; }
+.jump-measurement-field .helper-text { margin: 0 0 10px; font-size: .75rem; line-height: 1.45; }
+.jump-value-input { display: flex; align-items: center; gap: 10px; }
+.jump-value-input .field { flex: 1; }
+.jump-value-input > span { color: var(--muted); }
+.jump-measurement-field .field-error { margin: 8px 0 0; }
+.jump-measurement-form > .primary-button { min-height: 48px; margin: 0; }
+.jump-measurement-history { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border); }
+.jump-measurement-history h3 { margin: 0 0 14px; }
+.jump-measurement-list { display: grid; gap: 9px; }
+.jump-measurement-item { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px; border: 1px solid var(--border); background: #1c1c1c; }
+.jump-measurement-item strong, .jump-measurement-item small { display: block; }
+.jump-measurement-item strong { font-size: .82rem; }
+.jump-measurement-item small { margin-top: 4px; color: var(--muted); font-size: .75rem; }
+.jump-measurement-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.jump-measurement-actions .secondary-button { margin: 0; padding: 8px 10px; font-size: .72rem; }
+@media (max-width: 520px) {
+  .jump-measurement-item { align-items: stretch; flex-direction: column; }
+}
+
 .volleyball-history-section > .volleyball-day-list {
   display: grid;
   gap: 12px;
