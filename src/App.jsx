@@ -594,6 +594,8 @@ function App() {
         updateAvailable={updateAvailable} onInstallUpdate={installUpdate}
         today={currentDate} selectedDate={selectedDate} entryDates={entryDates} onSelectDate={setChosenDate}
         sessions={sessions} volleyballDays={volleyballDays}
+        onDeleteTraining={(sessionId) => setSessions((previous) =>
+          previous.filter((session) => session.id !== sessionId))}
         initialView={activeArea === 'home' ? homeInitialView : null}
         archiveTarget={archiveTarget} onOpenActivity={openActivity} onCreateEntry={createCalendarEntry}
         onExit={homeReturnArea ? () => selectArea(homeReturnArea) : null}>

@@ -13,13 +13,23 @@ const monthName = (key) => new Date(`${key}-01T12:00:00`).toLocaleDateString('de
   month: 'long', year: 'numeric',
 })
 
-export default function ArchiveView({ sessions, volleyballDays, target = null, trainingOnly = false, layer = 0 }) {
+export default function ArchiveView({ sessions, volleyballDays, onDeleteTraining,
+  target = null, trainingOnly = false, layer = 0 }) {
   const [filter, setFilter] = useState(trainingOnly ? 'training' : target?.type ?? 'all')
   const [openMonth, setOpenMonth] = useState(target?.date.slice(0, 7) ?? null)
   const [openEntry, setOpenEntry] = useState(target?.id ?? null)
   const months = monthlyArchive(sessions, trainingOnly ? [] : volleyballDays, !trainingOnly)
   const selectedMonth = months.find((month) => month.key === openMonth)
   const selectedEntry = selectedMonth?.entries.find((entry) => entry.id === openEntry)
+
+  function deleteTraining(entry) {
+    if (entry.type !== 'training' || !onDeleteTraining) return
+    const label = `${activityTitle(entry)} vom ${fullDate(entry.date)}`
+    if (!window.confirm(`${label} wirklich löschen? Die erfassten Werte gehen verloren.`)) return
+    onDeleteTraining(entry.item.id)
+    if (openEntry === entry.id) setOpenEntry(null)
+    if (selectedMonth?.entries.length === 1) setOpenMonth(null)
+  }
 
   return <div className="archive-view">
     <p className="helper-text">{trainingOnly
@@ -45,10 +55,16 @@ export default function ArchiveView({ sessions, volleyballDays, target = null, t
       <div className="archive-entries">
         {selectedMonth.entries.filter((entry) => filter === 'all' || entry.type === filter)
           .map((entry) => <article className="diary-panel archive-entry" key={entry.id}>
-            <button type="button" className="archive-entry-toggle" onClick={() => setOpenEntry(entry.id)}>
-              <span><small>{fullDate(entry.date)}</small><strong>{activityTitle(entry)}</strong></span>
-              <span aria-hidden="true">›</span>
-            </button>
+            <div className="archive-entry-row">
+              <button type="button" className="archive-entry-toggle" onClick={() => setOpenEntry(entry.id)}>
+                <span><small>{fullDate(entry.date)}</small><strong>{activityTitle(entry)}</strong></span>
+                <span aria-hidden="true">›</span>
+              </button>
+              {entry.type === 'training' && onDeleteTraining && <button type="button"
+                className="archive-entry-delete"
+                aria-label={`${activityTitle(entry)} vom ${fullDate(entry.date)} löschen`}
+                onClick={() => deleteTraining(entry)}>Löschen</button>}
+            </div>
           </article>)}
       </div>
     </EntryWindow>}

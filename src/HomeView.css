@@ -376,6 +376,10 @@
 .archive-counts { margin: 4px 0 0; color: #c1c1c1; font-size: 0.84rem; }
 .archive-entries { display: grid; gap: 8px; margin-top: 14px; }
 .archive-entry { margin: 0; background: #181818; }
+.archive-entry-row { display: flex; align-items: center; gap: 12px; }
+.archive-entry-row .archive-entry-toggle { flex: 1; min-width: 0; width: auto; }
+.archive-entry-delete { flex: none; min-height: 44px; padding: 0 4px; border: 0;
+  color: #d99a95; background: transparent; font: inherit; font-size: .8rem; }
 .archive-entry-toggle > span:first-child { display: grid; gap: 3px; }
 .archive-entry-toggle small { color: #c1c1c1; }
 .archive-entry-toggle strong { font-size: 0.95rem; }

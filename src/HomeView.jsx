@@ -27,7 +27,7 @@ const FEATURES = {
 
 export default function HomeView({ children, athleteProfile, setAthleteProfile, accountEmail,
   updateAvailable = false, onInstallUpdate,
-  sessions, volleyballDays, today, selectedDate, entryDates, onSelectDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
+  sessions, volleyballDays, onDeleteTraining, today, selectedDate, entryDates, onSelectDate, initialView = null, archiveTarget = null, onOpenActivity, onCreateEntry,
   onExit = null }) {
   const [featureStack, setFeatureStack] = useState(initialView ? [initialView] : [])
   const selectedFeature = featureStack.at(-1)
@@ -97,7 +97,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile, 
             onEdit={() => setProfileSubview('edit')}
             onArchive={() => setProfileSubview('trainingArchive')}
             onData={() => setProfileSubview('data')} />
-        </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays} target={focusedArchiveTarget} />}
+        </> : <ArchiveView sessions={sessions} volleyballDays={volleyballDays}
+          onDeleteTraining={onDeleteTraining} target={focusedArchiveTarget} />}
       </section>
       </EntryWindow>
       {selectedFeature === 'profile' && showProfileSetup && <EntryWindow title="Kontoeinrichtung" subtitle="DEIN PROFIL"
@@ -116,7 +117,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile, 
       </EntryWindow>}
       {selectedFeature === 'profile' && profileSubview === 'trainingArchive' && <EntryWindow title="Trainingsarchiv" subtitle=""
         onClose={() => setProfileSubview(null)} layer={1}>
-        <ArchiveView sessions={sessions} volleyballDays={[]} trainingOnly layer={1} />
+        <ArchiveView sessions={sessions} volleyballDays={[]} onDeleteTraining={onDeleteTraining}
+          trainingOnly layer={1} />
       </EntryWindow>}
       {selectedFeature === 'profile' && profileSubview === 'data' && <EntryWindow title="Konto & Daten" subtitle=""
         onClose={() => setProfileSubview(null)} layer={1}>{children}</EntryWindow>}</>
