@@ -502,3 +502,6 @@ select.field { padding-right: 6px; }
 :is(.app, .entry-window) .home-card-art .card-stat-label { font: 700 18px Arial, sans-serif; letter-spacing: 2px; }
 :is(.app, .entry-window) .home-card-art .card-stat-value { font: 800 37px Arial, sans-serif; }
 :is(.app, .entry-window) .home-card-art .card-monogram { font: 800 10px Arial, sans-serif; }
+:is(.app, .entry-window) .home-card-art .card-trend-up { stroke: #368a5c; }
+:is(.app, .entry-window) .home-card-art .card-trend-same { stroke: #838c88; }
+:is(.app, .entry-window) .home-card-art .card-trend-down { stroke: #bb625c; }

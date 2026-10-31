@@ -13,6 +13,17 @@ export const CARD_STATS = [
   { id: 'control', short: 'KTR' },
 ]
 
+// Compare the numbers the card actually shows, so an invisible fractional change
+// does not produce an arrow beside an unchanged displayed value.
+export function playerCardTrend(track) {
+  const series = track?.series ?? []
+  const latestDate = series.at(-1)?.date
+  const previous = [...series].reverse().find((point) => point.date !== latestDate)
+  if (!previous || !Number.isFinite(Number(previous.value))) return 'same'
+  const difference = Math.round(Number(track.score)) - Math.round(Number(previous.value))
+  return difference > 0 ? 'up' : difference < 0 ? 'down' : 'same'
+}
+
 export function playerCardIdentity(profile = {}) {
   const discipline = selectedDiscipline(profile)
   const positionId = discipline === 'beach' ? profile.beachPosition : profile.indoorPosition

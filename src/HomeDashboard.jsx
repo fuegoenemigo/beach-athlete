@@ -9,7 +9,7 @@ import HomeDayStrip from './HomeDayStrip.jsx'
 const format = (date, options) => new Date(`${date}T12:00:00`).toLocaleDateString('de-DE', options)
 const shortDate = (date) => format(date, { day: 'numeric', month: 'long' })
 
-export default function HomeDashboard({ sessions, volleyballDays, today, selectedDate, entryDates, onSelectDate, cardScore, cardAttributes, athleteProfile,
+export default function HomeDashboard({ sessions, volleyballDays, today, selectedDate, entryDates, onSelectDate, cardOverall, cardAttributes, athleteProfile,
   onFeature, onOpenActivity, onCreateEntry }) {
   const entries = useMemo(() => activityEntries(sessions, volleyballDays), [sessions, volleyballDays])
   const dayEntries = entries.filter((entry) => entry.date === selectedDate)
@@ -76,7 +76,7 @@ export default function HomeDashboard({ sessions, volleyballDays, today, selecte
           Ansehen <UIIcon name="chevron" />
         </button>
       </div>
-      <PlayerCardArt score={cardScore} profile={athleteProfile} attributes={cardAttributes} preview />
+      <PlayerCardArt overall={cardOverall} profile={athleteProfile} attributes={cardAttributes} preview />
     </section>
   </div>
 }

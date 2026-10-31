@@ -1,5 +1,5 @@
 import { useId } from 'react'
-import { CARD_STATS, playerCardIdentity } from './playerCardPresentation.js'
+import { CARD_STATS, playerCardIdentity, playerCardTrend } from './playerCardPresentation.js'
 
 const OUTLINE = 'M50 49 L168 41 Q206 33 239 17 L269 32 L300 5 L331 32 L361 17 Q394 33 432 41 L550 49 Q565 56 566 71 L566 722 Q566 779 526 795 L320 885 Q300 894 280 885 L74 795 Q34 779 34 722 L34 71 Q35 56 50 49 Z'
 const INNER = 'M62 65 L169 57 Q212 47 242 36 L268 50 L300 28 L332 50 L358 36 Q388 47 431 57 L538 65 Q546 70 546 79 L546 715 Q546 762 513 777 L317 859 Q300 867 283 859 L87 777 Q54 762 54 715 L54 79 Q54 70 62 65 Z'
@@ -9,17 +9,36 @@ const PALETTES = {
   neutral: { light: '#ffffff', middle: '#efefec', shade: '#d1d4d1', line: '#9a9c92', shine: '#ffffff' },
 }
 
-export default function PlayerCardArt({ score, profile, attributes = [], preview = false }) {
+const TREND_LABELS = { up: 'gestiegen', same: 'gleich geblieben', down: 'gesunken' }
+
+function TrendMark({ trend, x, y, large = false }) {
+  const span = large ? 11 : 8
+  const rise = large ? 10 : 7
+  const path = trend === 'up'
+    ? `M ${x - span} ${y + rise / 2} Q ${x - 2} ${y - rise / 2} ${x} ${y - rise / 2} Q ${x + 2} ${y - rise / 2} ${x + span} ${y + rise / 2}`
+    : trend === 'down'
+      ? `M ${x - span} ${y - rise / 2} Q ${x - 2} ${y + rise / 2} ${x} ${y + rise / 2} Q ${x + 2} ${y + rise / 2} ${x + span} ${y - rise / 2}`
+      : `M ${x - span + 2} ${y} H ${x + span - 2}`
+  return <path className={`card-trend card-trend-${trend}`} d={path} fill="none"
+    strokeWidth={large ? 6 : 5.5} strokeLinecap="round" strokeLinejoin="round" />
+}
+
+export default function PlayerCardArt({ overall, profile, attributes = [], preview = false }) {
   const identity = playerCardIdentity(profile)
-  const values = new Map(attributes.map((attribute) => [attribute.id, attribute.score]))
+  const values = new Map(attributes.map((attribute) => [attribute.id, attribute]))
   const palette = PALETTES[identity.discipline] || PALETTES.neutral
   const id = useId().replaceAll(':', '')
-  const rating = Math.round(score)
+  const rating = Math.round(overall?.score ?? 60)
+  const overallTrend = playerCardTrend(overall)
   const name = identity.name.toLocaleUpperCase('de-DE')
   const polaroidNameLength = name.length > 9 ? 115 : undefined
+  const trendDescription = CARD_STATS.map(({ id: statId, short }) => {
+    const attribute = values.get(statId)
+    return `${short} ${Math.round(attribute?.score ?? 60)} ${TREND_LABELS[playerCardTrend(attribute)]}`
+  }).join(', ')
 
   return <div className={`home-card-art is-${identity.discipline || 'neutral'}${preview ? ' is-preview' : ''}`}
-    role="img" aria-label={`Athlete Card für ${identity.name}, ${identity.position || 'Position noch offen'}, Gesamtwert ${rating} von 99`}>
+    role="img" aria-label={`Athlete Card für ${identity.name}, ${identity.position || 'Position noch offen'}, Gesamtwert ${rating} von 99 ${TREND_LABELS[overallTrend]}, ${trendDescription}`}>
     <svg viewBox="20 0 560 900" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={`${id}-surface`} x1="0" y1="0" x2="1" y2="1">
@@ -83,8 +102,9 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
         fill="none" stroke="#fff" strokeWidth="3" opacity=".85" />
       <path d="M300 48 L310 60 L300 72 L290 60 Z" fill="#525752" />
       <text x="300" y="109" textAnchor="middle" className="card-kicker">BEACH ATHLETE</text>
-      <text x="426" y="204" className="card-rating">{rating}</text>
-      <text x="434" y="234" className="card-label">GES</text>
+      <text x="405" y="204" className="card-rating">{rating}</text>
+      <TrendMark trend={overallTrend} x={527} y={174} large />
+      <text x="447" y="234" className="card-label">GES</text>
       <path d="M429 250 H516" stroke={palette.line} strokeWidth="3" />
       <g transform="translate(-30 -51) scale(1.32) rotate(-6 155 300)"
         filter={`url(#${id}-polaroid-shadow)`}>
@@ -121,9 +141,11 @@ export default function PlayerCardArt({ score, profile, attributes = [], preview
       <path d="M91 647 H509" stroke={palette.line} strokeWidth="2.5" opacity=".8" />
       {CARD_STATS.map(({ id: statId, short }, index) => {
         const x = 112 + index * 94
+        const attribute = values.get(statId)
         return <g key={statId} textAnchor="middle">
           <text x={x} y="696" className="card-stat-label">{short}</text>
-          <text x={x} y="745" className="card-stat-value">{Math.round(values.get(statId) ?? 60)}</text>
+          <text x={x - 14} y="745" className="card-stat-value">{Math.round(attribute?.score ?? 60)}</text>
+          <TrendMark trend={playerCardTrend(attribute)} x={x + 31} y={729} />
         </g>
       })}
       <path d="M91 766 H509" stroke={palette.line} strokeWidth="2" opacity=".65" />
