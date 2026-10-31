@@ -148,16 +148,6 @@ button:focus-visible, summary:focus-visible, a:focus-visible { outline: 2px soli
 .home-week-metrics strong { font-size: 1.25rem; font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums; }
 .home-week-metrics strong small { font-size: .65rem; font-weight: 400; }
 .home-week-metrics span { color: #b9b9b9; font-size: .67rem; }
-.home-athlete-preview { padding: 13px 14px 15px; border: 1px solid #757575; border-radius: 0; background: linear-gradient(120deg, #3737375e, #1b1b1b66 55%, #1616169e); }
-.home-athlete-heading { display: flex; align-items: end; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-.home-athlete-heading .eyebrow { margin: 0 0 5px; }
-.home-athlete-heading h2 { margin: 0; font-family: var(--serif); font-size: 1.55rem; font-weight: 400; letter-spacing: -.03em; }
-.home-athlete-heading button { display: flex; align-items: center; gap: 3px; padding: 7px 0 5px 8px; border: 0; color: #d0d0d0; background: transparent; font-size: .69rem; }
-.home-athlete-heading .ui-icon { width: 14px; height: 14px; }
-.home-athlete-preview .home-card-art.is-preview { min-height: 228px; margin-top: 0; padding: 16px; }
-.home-athlete-preview .home-card-crest { width: 78px; height: 78px; border-radius: 0; font-size: 1.65rem; }
-.home-athlete-preview .home-card-rating { font-size: 2.8rem; }
-.home-athlete-preview .home-card-name { font-size: 1.15rem; }
 .home-today-entries { display: grid; gap: 6px; margin-bottom: 9px; }
 .home-today-entries button { display: flex; align-items: center; gap: 10px; padding: 10px 8px; min-height: 52px; border: 1px solid #454545; border-radius: 0; color: var(--cream); background: #22222280; text-align: left; }
 .home-today-entries button > span { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: .8rem; }
@@ -489,7 +479,13 @@ select.field { padding-right: 6px; }
 :is(.app, .entry-window) .home-card-art::after { display: none; }
 :is(.app, .entry-window) .home-card-art svg { display: block; width: 100%; height: 100%;
   overflow: visible; filter: drop-shadow(0 16px 16px #0008); }
-.app .home-athlete-preview .home-card-art.is-preview { width: 100%; }
+.app .home-athlete-preview { padding: 16px 4px 18px; }
+.app .home-athlete-preview .home-card-art.is-preview { width: min(100%, 360px); }
+@media (max-width: 699px) {
+  .app .home-athlete-preview .home-card-art.is-preview {
+    width: min(100%, clamp(240px, calc(62.222dvh - 182px), 330px));
+  }
+}
 .entry-window .player-card-detail { grid-template-columns: minmax(0, 1fr); }
 .entry-window .player-card-detail > .home-card-art {
   width: min(calc(100% + 32px), 572px); justify-self: center;

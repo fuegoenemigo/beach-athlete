@@ -69,13 +69,7 @@ export default function HomeDashboard({ sessions, volleyballDays, today, selecte
       </div>
     </section>
 
-    <section className="home-athlete-preview" aria-labelledby="home-athlete-title">
-      <div className="home-athlete-heading">
-        <div><p className="eyebrow">DEIN PROFIL</p><h2 id="home-athlete-title">Athlete Card</h2></div>
-        <button type="button" onClick={() => onFeature('card')}>
-          Ansehen <UIIcon name="chevron" />
-        </button>
-      </div>
+    <section className="home-athlete-preview" aria-label="Athlete Card">
       <PlayerCardArt overall={cardOverall} profile={athleteProfile} attributes={cardAttributes} preview />
     </section>
   </div>
