@@ -63,11 +63,48 @@ export const STRENGTH_LOAD_STANDARDS = {
 }
 
 export const STRENGTH_REP_STANDARDS = {
-  'volleyball:pullup': [3, 20],
-  'volleyball:pushup': [12, 35],
-  'gym:dips': [8, 28],
-  'volleyball:calf': [15, 40],
-  'gym:back-extension': [12, 30],
+  'volleyball:pullup': [1, 3, 6, 10, 13, 16],
+  'volleyball:pushup': [10, 12, 16, 20, 24, 28],
+  'gym:dips': [6, 8, 12, 15, 19, 22],
+  'volleyball:calf': [13, 15, 19, 23, 28, 32],
+  'gym:back-extension': [10, 12, 15, 18, 21, 24],
+}
+
+export const STRENGTH_SCORE_ANCHORS = [55, 60, 70, 80, 90, 96]
+export const BENCH_WORKING_KG_AT_75 = [27.5, 35, 50, 65, 82.5, 95]
+export const CARRY_LOAD_RATIOS = [0.275, 0.4, 0.65, 0.9, 1.2, 1.5]
+
+export function interpolateStrengthAnchors(value, anchors) {
+  if (!Number.isFinite(value)) return null
+  if (value <= anchors[0] * (1 + 1e-12)) return 55
+  if (value >= anchors.at(-1) * (1 - 1e-12)) return 96
+  for (let index = 1; index < anchors.length; index += 1) {
+    if (value <= anchors[index]) return STRENGTH_SCORE_ANCHORS[index - 1]
+      + (STRENGTH_SCORE_ANCHORS[index] - STRENGTH_SCORE_ANCHORS[index - 1])
+      * (value - anchors[index - 1]) / (anchors[index] - anchors[index - 1])
+  }
+  return 96
+}
+
+export function strengthLoadScore(exerciseId, loadKg, bodyweightKg, repetitions = 8) {
+  const reference = STRENGTH_LOAD_STANDARDS[exerciseId]
+  if (!reference || !Number.isFinite(loadKg) || !Number.isFinite(bodyweightKg)
+    || bodyweightKg <= 0 || !Number.isFinite(repetitions) || repetitions <= 0) return null
+  const standardReps = exerciseId === 'gym:kettlebell-swing' ? 15 : 8
+  const workingRatio = loadKg * (1 + repetitions / 30)
+    / bodyweightKg / (1 + standardReps / 30)
+  const factor = reference[1] / 1.45
+  return interpolateStrengthAnchors(workingRatio,
+    BENCH_WORKING_KG_AT_75.map((load) => load / 75 * factor))
+}
+
+export function strengthRepScore(exerciseId, repetitions, extraWeightKg = 0, bodyweightKg = 0) {
+  const anchors = STRENGTH_REP_STANDARDS[exerciseId]
+  if (!anchors || !Number.isFinite(repetitions) || repetitions <= 0) return null
+  const base = interpolateStrengthAnchors(repetitions, anchors)
+  const bonus = bodyweightKg > 0 && extraWeightKg > 0
+    ? Math.min(10, 20 * extraWeightKg / bodyweightKg) : 0
+  return Math.min(96, base + bonus)
 }
 
 export const STRENGTH_SPECIAL_IDS = new Set([

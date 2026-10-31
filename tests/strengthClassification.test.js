@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { DEFAULT_EXERCISES, enrichExercise } from '../src/volleyballTraining.js'
-import { STRENGTH_GROUPS, strengthGroupFor, strengthGroupQualified,
-  strengthRoleFor, strengthRatingWeightFor, weightedStrengthMean } from '../src/strengthClassification.js'
+import { STRENGTH_GROUPS, strengthGroupFor,
+  strengthRoleFor, strengthRatingWeightFor } from '../src/strengthClassification.js'
 import { STRENGTH_LOAD_STANDARDS, STRENGTH_REP_STANDARDS,
   STRENGTH_SPECIAL_IDS } from '../src/strengthStandards.js'
 
-const exercise = (id, muscleGroup, strengthRole = 'compound', score = 80) =>
-  ({ libraryId: id, muscleGroup, strengthRole, score })
+const exercise = (id, muscleGroup, strengthRole = 'compound') =>
+  ({ libraryId: id, muscleGroup, strengthRole })
 
 test('all built-in strength exercises have a clear role and no Ganzkörper group', () => {
   const strength = DEFAULT_EXERCISES.filter((item) => item.category === 'Krafttraining')
@@ -27,36 +27,23 @@ test('all built-in strength exercises have a clear role and no Ganzkörper group
     muscleGroup: 'Ganzkörper' }).muscleGroup, 'Beine')
 })
 
-test('major groups require two different compounds or one compound and two isolations', () => {
+test('strength exercise classification and rating weights stay separate', () => {
   const compound = exercise('bench', 'Brust')
-  const otherCompound = exercise('incline', 'Brust')
   const isolationA = exercise('fly', 'Brust', 'isolation')
-  const isolationB = exercise('cable-fly', 'Brust', 'isolation')
-  assert.equal(strengthGroupQualified([compound], 'Brust'), false)
-  assert.equal(strengthGroupQualified([compound, compound], 'Brust'), false)
-  assert.equal(strengthGroupQualified([isolationA, isolationB], 'Brust'), false)
-  assert.equal(strengthGroupQualified([compound, isolationA], 'Brust'), false)
-  assert.equal(strengthGroupQualified([compound, otherCompound], 'Brust'), true)
-  assert.equal(strengthGroupQualified([compound, isolationA, isolationB], 'Brust'), true)
-  assert.equal(weightedStrengthMean([
-    { ...compound, score: 90 }, { ...isolationA, score: 60 }, { ...isolationB, score: 60 },
-  ]), 75)
+  assert.equal(strengthRoleFor(compound), 'compound')
+  assert.equal(strengthRoleFor(isolationA), 'isolation')
+  assert.equal(strengthRatingWeightFor(compound), 2)
+  assert.equal(strengthRatingWeightFor(isolationA), 1)
 })
 
-test('arms need shoulders, biceps and triceps independently', () => {
+test('biceps and triceps remain isolations with main-exercise rating weight', () => {
   const shoulder = exercise('press', 'Schultern')
   const biceps = exercise('curl', 'Bizeps', 'isolation')
   const triceps = exercise('pushdown', 'Trizeps', 'isolation')
-  assert.equal(strengthGroupQualified([shoulder, biceps], 'Arme'), false)
-  assert.equal(strengthGroupQualified([shoulder, triceps], 'Arme'), false)
-  assert.equal(strengthGroupQualified([shoulder, biceps, triceps], 'Arme'), true)
   assert.equal(strengthRoleFor(shoulder), 'compound')
   assert.equal(strengthRoleFor(exercise('gym:close-bench', 'Trizeps')), 'isolation')
   assert.equal(strengthRatingWeightFor(biceps), 2)
   assert.equal(strengthRatingWeightFor(triceps), 2)
-  assert.equal(weightedStrengthMean([
-    { ...shoulder, score: 60 }, { ...biceps, score: 90 }, { ...triceps, score: 90 },
-  ]), 80)
 })
 
 test('new back and biceps exercises have independent card standards', () => {

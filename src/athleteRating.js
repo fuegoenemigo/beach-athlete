@@ -1,9 +1,10 @@
 import { bestMetric } from './calendarPerformance.js'
 import { canonicalCategory, exerciseMeasurement, isConfirmedSet, isOpenTraining,
   isSportTrainingAttendance, isBodyweightOnly, effectiveTrainingWeight } from './trainingModel.js'
-import { STRENGTH_GROUPS, ARM_SUBGROUPS, strengthGroupFor, strengthGroupQualified,
-  strengthMuscleFor, strengthRoleFor, weightedStrengthMean } from './strengthClassification.js'
-import { STRENGTH_LOAD_STANDARDS, STRENGTH_REP_STANDARDS } from './strengthStandards.js'
+import { STRENGTH_GROUPS, ARM_SUBGROUPS, strengthGroupFor,
+  strengthMuscleFor } from './strengthClassification.js'
+import { STRENGTH_REP_STANDARDS, CARRY_LOAD_RATIOS, interpolateStrengthAnchors,
+  strengthLoadScore, strengthRepScore } from './strengthStandards.js'
 import { isCurrentJumpMeasurement } from './jumpMeasurements.js'
 import { measuredJumpScore } from './jumpStandards.js'
 
@@ -15,12 +16,13 @@ export const RATING_ATTRIBUTES = [
   { id: 'control', name: 'Körperkontrolle' },
 ]
 
-const START = 60
-const MAX = 99
+const START = 55
+const MAX = 96
+const LEGACY_BENCHMARK_START = 60
 const LEARNING_RATE = 0.18
 const INACTIVITY_DAYS = 11
 const clamp = (value) => Math.max(START, Math.min(MAX, value))
-const strengthTarget = (value) => Math.min(96, clamp(value))
+const strengthTarget = clamp
 const average = (values) => values.reduce((sum, value) => sum + value, 0) / values.length
 const positive = (value) => value !== '' && value != null && Number.isFinite(Number(value))
   && Number(value) > 0
@@ -72,6 +74,28 @@ function update(trackState, date, target) {
   trackState.series.push({ date, value: trackState.score })
 }
 
+function updateStrength(trackState, date, target) {
+  const week = monday(date)
+  if (trackState.week !== week) {
+    trackState.week = week
+    trackState.weekStart = trackState.score
+  }
+  const step = trackState.observations === 0 ? 5 : trackState.weekStart >= 80 ? 2 : 4
+  trackState.score = clamp(Math.max(trackState.score,
+    Math.min(target, trackState.weekStart + step)))
+  if (trackState.lastUpdatedWeek !== week) {
+    trackState.observations += 1
+    trackState.lastUpdatedWeek = week
+  }
+  recordScore(trackState, date, trackState.score)
+}
+
+function bestTwoScore(exercises) {
+  const scores = exercises.map((exercise) => exercise.score)
+    .sort((left, right) => right - left).slice(0, 2)
+  return scores.length ? average(scores) : START
+}
+
 function attributeFor(exercise) {
   const category = canonicalCategory(exercise.category)
   if (category === 'Krafttraining') return 'strength'
@@ -103,8 +127,13 @@ function comparableMetric(exercise, metric, profileWeight) {
 function benchmark(exercise, metric, profileWeight) {
   if (isBodyweightOnly(exercise) && metric.key === 'reps'
     && STRENGTH_REP_STANDARDS[exercise.libraryId]) {
-    const [regular, exceptional] = STRENGTH_REP_STANDARDS[exercise.libraryId]
-    return strengthTarget(START + 35 * (metric.value - regular) / (exceptional - regular))
+    const entries = confirmedEntries(exercise)
+    return strengthTarget(Math.max(...entries.filter((entry) => positive(entry.reps))
+      .map((entry) => {
+        const bodyweight = Number(entry.bodyweightKg || profileWeight)
+        return strengthRepScore(exercise.libraryId, Number(entry.reps),
+          Number(entry.weightKg || 0), bodyweight)
+      })))
   }
   if (canonicalCategory(exercise.category) === 'Krafttraining') {
     const entries = confirmedEntries(exercise)
@@ -112,25 +141,23 @@ function benchmark(exercise, metric, profileWeight) {
       ?? profileWeight
     if (exercise.libraryId === 'gym:assisted-pullup'
       && metric.key === 'assistedPullupReps')
-      return strengthTarget(Math.min(79, START + 35 * (metric.value - 3) / 17))
+      return interpolateStrengthAnchors(metric.value, STRENGTH_REP_STANDARDS['volleyball:pullup'])
     if (exercise.libraryId === 'gym:farmers-carry' && positive(weight)) {
       const best = Math.max(0, ...entries.filter((entry) => positive(entry.distanceValue)
         && positive(entry.durationValue) && positive(entry.weightKg)
         && Number(entry.distanceValue) * (entry.distanceUnit === 'km' ? 1000 : 1) >= 30
         && seconds(entry) <= 45).map((entry) =>
         effectiveTrainingWeight(entry, exercise) / Number(weight)))
-      return strengthTarget(START + 35 * (best - 0.6) / 1.2)
+      return best > 0 ? interpolateStrengthAnchors(best, CARRY_LOAD_RATIOS) : null
     }
-    const reference = STRENGTH_LOAD_STANDARDS[exercise.libraryId]
-    if (reference && positive(weight) && metric.key.startsWith('estimatedStrength')) {
+    if (positive(weight) && metric.key.startsWith('estimatedStrength')) {
       const standardReps = exercise.libraryId === 'gym:kettlebell-swing' ? 15 : 8
-      const workingRatio = metric.value / Number(weight) / (1 + standardReps / 30)
-      return strengthTarget(START + 35 * (workingRatio - reference[0])
-        / (reference[1] - reference[0]))
+      const workingLoad = metric.value / (1 + standardReps / 30)
+      return strengthLoadScore(exercise.libraryId, workingLoad, Number(weight), standardReps)
     }
   }
-  if (metric.key === 'jumpHeight') return clamp(START + 35 * Math.log2(metric.value / 35))
-  if (metric.key === 'coreHold') return clamp(START + 18 * Math.log(metric.value / 45))
+  if (metric.key === 'jumpHeight') return clamp(LEGACY_BENCHMARK_START + 35 * Math.log2(metric.value / 35))
+  if (metric.key === 'coreHold') return clamp(LEGACY_BENCHMARK_START + 18 * Math.log(metric.value / 45))
   if (exercise.guidedEndurance && metric.key.startsWith('guided')) {
     const protocol = exercise.guidedProtocolId ?? ''
     if (protocol.includes('advanced')) return 92
@@ -141,16 +168,16 @@ function benchmark(exercise, metric, profileWeight) {
   if (metric.key.startsWith('distance:')) {
     const distance = Number(metric.key.split(':')[1])
     if (exercise.libraryId === 'volleyball:sprint' && distance === 30)
-      return clamp(START + 110 * Math.log(metric.value / 5))
+      return clamp(LEGACY_BENCHMARK_START + 110 * Math.log(metric.value / 5))
     if (exercise.libraryId === 'volleyball:shuttle' && distance === 20)
-      return clamp(START + 100 * Math.log(metric.value / 3.6))
+      return clamp(LEGACY_BENCHMARK_START + 100 * Math.log(metric.value / 3.6))
     const eligible = confirmedEntries(exercise).filter((item) => positive(item.durationValue)
       && seconds(item) >= 600 && positive(item.distanceValue))
     if (eligible.length && canonicalCategory(exercise.category) === 'Ausdauer') {
       const bike = /bike|radfahren/i.test(exercise.libraryId ?? '')
       const speed = Math.max(...eligible.map((item) => Number(item.distanceValue)
         * (item.distanceUnit === 'km' ? 1000 : 1) / seconds(item)))
-      return clamp(START + 42 * Math.log(speed / (bike ? 5 : 2.5)))
+      return clamp(LEGACY_BENCHMARK_START + 42 * Math.log(speed / (bike ? 5 : 2.5)))
     }
   }
   return null
@@ -171,10 +198,9 @@ function datedSessions(sessions) {
 export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date().toLocaleDateString('sv-SE'), jumpMeasurements = []) {
   const useMeasuredJump = athleteProfile.measurementCapability === 'measured'
     && ['women', 'men'].includes(athleteProfile.jumpRatingGroup)
-  const attributes = new Map(RATING_ATTRIBUTES.map(({ id, name }) => [id,
-    track(name, id === 'jump' && useMeasuredJump ? 55 : START)]))
-  const groups = new Map(STRENGTH_GROUPS.map((name) => [name, { ...track(name), penalty: 0,
-    qualified: false, compoundCount: 0, isolationCount: 0, missingArmMuscles: [...ARM_SUBGROUPS] }]))
+  const attributes = new Map(RATING_ATTRIBUTES.map(({ id, name }) => [id, track(name)]))
+  const groups = new Map(STRENGTH_GROUPS.map((name) => [name, { ...track(name), penalty: 0 }]))
+  const armMuscles = new Map(ARM_SUBGROUPS.map((name) => [name, track(name)]))
   const strengthExercises = new Map()
   const strengthObserved = new Map(STRENGTH_GROUPS.map((name) => [name, new Map()]))
   const baselines = new Map()
@@ -192,20 +218,25 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
     for (const name of activeGroups) {
       const group = groups.get(name)
       const observed = [...strengthObserved.get(name).values()]
-      group.compoundCount = observed.filter((exercise) =>
-        strengthRoleFor(exercise) === 'compound').length
-      group.isolationCount = observed.length - group.compoundCount
-      group.missingArmMuscles = name === 'Arme' ? ARM_SUBGROUPS.filter((muscle) =>
-        !observed.some((exercise) => strengthMuscleFor(exercise) === muscle)) : []
-      group.qualified = strengthGroupQualified(observed, name)
-      group.penalty *= 1 - LEARNING_RATE
-      if (group.qualified) {
-        const score = name === 'Arme'
-          ? average(ARM_SUBGROUPS.map((muscle) => weightedStrengthMean(observed
-            .filter((exercise) => strengthMuscleFor(exercise) === muscle))))
-          : weightedStrengthMean(observed)
-        group.score = clamp(score - group.penalty)
+      const week = monday(date)
+      if (group.lastPenaltyWeek !== week) {
+        group.penalty = Math.max(0, group.penalty - 1)
+        group.lastPenaltyWeek = week
       }
+      if (name === 'Arme') {
+        for (const muscle of ARM_SUBGROUPS) {
+          const muscleExercises = observed.filter((exercise) =>
+            strengthMuscleFor(exercise) === muscle)
+          if (!muscleExercises.length) continue
+          const subtrack = armMuscles.get(muscle)
+          subtrack.score = bestTwoScore(muscleExercises)
+          subtrack.observations += 1
+          recordScore(subtrack, date, subtrack.score)
+        }
+        group.score = clamp(average([...armMuscles.values()].map((item) => item.score))
+          - group.penalty)
+      } else if (observed.length) group.score = clamp(bestTwoScore(observed)
+        - group.penalty)
       group.observations += 1
       recordScore(group, date, group.score)
     }
@@ -290,15 +321,7 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
       }
       if (!id) continue
       if (id === 'jump' && useMeasuredJump) continue
-      if (id === 'strength') {
-        const groupName = strengthGroupFor(exercise)
-        if (!groupName) continue
-        if (!strengthExercises.has(exercise.libraryId)) strengthExercises.set(exercise.libraryId,
-          { ...track(exercise.name), libraryId: exercise.libraryId,
-            muscleGroup: strengthMuscleFor(exercise), strengthRole: strengthRoleFor(exercise) })
-        strengthObserved.get(groupName).set(exercise.libraryId,
-          strengthExercises.get(exercise.libraryId))
-      }
+      if (id === 'strength' && !strengthGroupFor(exercise)) continue
       const measured = bestMetric(exercise, athleteProfile.bodyweightKg)
       if (!measured) continue
       const metric = comparableMetric(exercise, measured, athleteProfile.bodyweightKg)
@@ -309,10 +332,20 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
       const relative = reference.key === metric.key && reference.value > 0
         ? (id === 'strength' ? strengthTarget : clamp)(START
           + 35 * Math.log2(metric.value / reference.value)) : null
-      const target = absolute ?? (baseline ? relative : null)
+      const improvement = id === 'strength' && absolute != null && reference.value > 0
+        && metric.key === reference.key && metric.value > reference.value
+        ? Math.min(10, 10 * Math.log2(metric.value / reference.value)) : 0
+      const target = improvement ? Math.max(absolute, Math.min(80, absolute + improvement))
+        : absolute ?? (baseline ? relative : null)
       if (target == null) continue
       if (id === 'strength') {
-        update(strengthExercises.get(exercise.libraryId), date, target)
+        const groupName = strengthGroupFor(exercise)
+        if (!strengthExercises.has(exercise.libraryId)) strengthExercises.set(exercise.libraryId,
+          { ...track(exercise.name), libraryId: exercise.libraryId,
+            muscleGroup: strengthMuscleFor(exercise) })
+        strengthObserved.get(groupName).set(exercise.libraryId,
+          strengthExercises.get(exercise.libraryId))
+        updateStrength(strengthExercises.get(exercise.libraryId), date, target)
         continue
       }
       if (!dayTargets.has(id)) dayTargets.set(id, new Map())
@@ -351,5 +384,6 @@ export function athleteRating(sessions, athleteProfile = {}, asOfDate = new Date
   }
   applyInactivityThrough(asOfDate)
   return { overall, attributes: RATING_ATTRIBUTES.map(({ id }) => ({ id, ...attributes.get(id),
-    groups: id === 'strength' ? [...groups.values()] : [] })) }
+    groups: id === 'strength' ? [...groups.values()].map((group) => ({ ...group,
+      subgroups: group.name === 'Arme' ? [...armMuscles.values()] : [] })) : [] })) }
 }

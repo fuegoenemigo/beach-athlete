@@ -12,7 +12,7 @@ const shortDate = (date) => new Date(`${date}T12:00:00`).toLocaleDateString('de-
 const displayScore = (value) => Math.round(value)
 
 export function RatingBadge({ rating }) {
-  return <span className="statistics-rating-badge">{displayScore(rating.score)} <small>/ 99</small></span>
+  return <span className="statistics-rating-badge">{displayScore(rating.score)} <small>/ 96</small></span>
 }
 
 export function TrainingTrend({ result }) {
@@ -38,7 +38,7 @@ function ExerciseList({ exercises }) {
 export default function TrainingStatistics({ rating, onOpenCategory }) {
   const [showMethod, setShowMethod] = useState(false)
   return <div className="training-statistics">
-    <p>Fünf athletische Werte entstehen aus deinen vier Trainingsbereichen. Alle starten bei 60 und verändern sich mit wiederholten, vergleichbaren Einträgen. Tippe auf einen Wert für Details.</p>
+    <p>Fünf athletische Werte entstehen aus deinen vier Trainingsbereichen. Alle starten bei 55. Tippe auf einen Wert für Details.</p>
     <div className="training-statistics-categories">
       {rating.attributes.map((attribute) => <button type="button" className="training-stat-card"
         key={attribute.id} onClick={() => onOpenCategory(attribute.id)}
@@ -55,9 +55,9 @@ export default function TrainingStatistics({ rating, onOpenCategory }) {
     {showMethod && <EntryWindow title="Wie entsteht die Bewertung?" subtitle="DEINE ENTWICKLUNG"
       onClose={() => setShowMethod(false)}><div className="training-stat-method">
       <p>Die Karte ist ein motivierender App-Wert, keine medizinische oder sportwissenschaftliche Diagnose. Geeignete Übungen erhalten grobe Referenzwerte; andere zählen über ihren Vergleich mit der eigenen früheren Ausführung.</p>
-      <p>Pro Trainingstag nähert sich ein Attribut um 18 % dem berechneten Zielwert. Es fällt nie unter 60. Oberhalb von 80 sind höchstens zwei zusätzliche Punkte pro Kalenderwoche möglich.</p>
+      <p>Alle Werte liegen zwischen 55 und 96. Kraft entwickelt sich mit bestätigter Leistung höchstens einmal pro Kalenderwoche: zuerst um bis zu fünf, danach unter 80 um bis zu vier und ab 80 um bis zu zwei Punkte. Gemessene Sprungwerte wirken direkt. Die übrigen Bereiche werden künftig genauer kalibriert.</p>
       <p>Ohne passendes abgeschlossenes Training sinkt ein bereits gestiegener Wert nach je elf vollen Tagen um einen Punkt. Bei Kraft läuft diese Frist getrennt für Brust, Rücken, Beine und Arme; ihr neuer Durchschnitt bestimmt den Kraftwert. Ein Training setzt nur die passende Frist zurück.</p>
-      <p>Für Kraft werden gemessene Last und Wiederholungen bei ausgewählten Grundübungen zum Körpergewicht ins Verhältnis gesetzt. Sprünge, feste Sprintstrecken, Core-Halteübungen und abgeschlossene Ausdauerprotokolle zählen entsprechend ihrer Messart.</p>
+      <p>Für Kraft zählen die besten zwei verschiedenen Übungen je Muskelbereich. Arbeitsgewicht und Wiederholungen werden anhand vorläufiger Prüfanker bewertet; auch persönliche Steigerung zählt begrenzt. Die drei präzisen Sprungmessungen haben eigene Prüfanker für Frauen und Männer.</p>
       <p>Ein Mobility-Tag zählt, wenn mindestens zwei Mobility-Übungen oder insgesamt zwei Minuten Mobility dokumentiert wurden. Regelmäßigkeit innerhalb von 28 Tagen hebt den Körperkontrollwert begrenzt an. Volleyball-Ergebnisse und bloße Anwesenheit zählen nicht.</p>
     </div></EntryWindow>}
   </div>
@@ -67,7 +67,7 @@ export function StrengthStatistics({ rating, progress }) {
   const [selectedGroup, setSelectedGroup] = useState(null)
   const group = rating.groups.find((item) => item.name === selectedGroup)
   return <div className="training-statistics">
-    <p>Brust, Rücken, Beine und Arme zählen gleich stark. Brust, Rücken und Beine werden mit zwei Grundübungen oder einer Grundübung und zwei Isolationsübungen bewertet. Das ergibt 50/50 oder 50/25/25; bei weiteren Übungen bleibt das Verhältnis Grundübung zu Isolation 2:1. Arme benötigen je eine Übung für Schultern, Bizeps und Trizeps.</p>
+    <p>Brust, Rücken, Beine und Arme zählen gleich stark. Je Muskelbereich zählen die zwei besten verschiedenen Übungen; eine erste Übung kann den Wert bereits steigern. Arme sind der Mittelwert aus Schultern, Bizeps und Trizeps. Noch nicht trainierte Bereiche bleiben bei 55.</p>
     <div className="training-stat-summary"><RatingBadge rating={rating} /></div>
     {rating.groups.length ? <div className="training-stat-groups">
       {rating.groups.map((item) => <div className="training-stat-group" key={item.name}>
@@ -77,12 +77,15 @@ export function StrengthStatistics({ rating, progress }) {
           <RatingBadge rating={item} />
         </button>
       </div>)}
-    </div> : <p>Alle Muskelgruppen beginnen bei 60. Nach einer bewertbaren Kraftübung erscheint hier ihr Verlauf.</p>}
+    </div> : <p>Alle Muskelgruppen beginnen bei 55. Nach einer bewertbaren Kraftübung erscheint hier ihr Verlauf.</p>}
     {group && <EntryWindow title={group.name} subtitle="KRAFT · MUSKELGRUPPE"
       onClose={() => setSelectedGroup(null)}><div className="training-stat-group-content">
-          {!group.qualified && <p className="helper-text">{group.name === 'Arme'
-            ? `Für die Wertung fehlt noch: ${group.missingArmMuscles.join(', ') || 'keine Untergruppe'}.`
-            : `Erfasst: ${group.compoundCount} Grundübungen und ${group.isolationCount} Isolationsübungen. Für die Wertung brauchst du zwei Grundübungen oder eine Grundübung und zwei Isolationsübungen.`}</p>}
+          {group.name === 'Arme' && <div className="training-stat-groups">
+            {group.subgroups.map((item) => <div className="training-stat-group" key={item.name}>
+              <span className="training-stat-card-heading"><strong>{item.name}</strong>
+                <RatingBadge rating={item} /></span>
+            </div>)}
+          </div>}
           <h3>Übungen</h3>
           <ExerciseList exercises={progress.groups.filter((item) => group.name === 'Arme'
             ? ['Schultern', 'Bizeps', 'Trizeps'].includes(item.name)
@@ -93,7 +96,7 @@ export function StrengthStatistics({ rating, progress }) {
 
 export function CategoryStatistics({ rating, exercises }) {
   return <div className="training-statistics">
-    <p>Der Wert startet bei 60 und nähert sich mit vergleichbaren Trainingstagen deiner dokumentierten Leistung an.</p>
+    <p>Der Wert startet bei 55 und entwickelt sich mit vergleichbaren Trainingstagen.</p>
     <TrainingLineChart label={rating.name} series={rating.series} score={rating.score} />
     <div className="training-stat-summary"><RatingBadge rating={rating} /></div>
     <h3>Übungen</h3>

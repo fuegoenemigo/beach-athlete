@@ -28,17 +28,17 @@ export default function PlayerCardArt({ overall, profile, attributes = [], previ
   const values = new Map(attributes.map((attribute) => [attribute.id, attribute]))
   const palette = PALETTES[identity.discipline] || PALETTES.neutral
   const id = useId().replaceAll(':', '')
-  const rating = Math.round(overall?.score ?? 60)
+  const rating = Math.round(overall?.score ?? 55)
   const overallTrend = playerCardTrend(overall)
   const name = identity.name.toLocaleUpperCase('de-DE')
   const polaroidNameLength = name.length > 9 ? 115 : undefined
   const trendDescription = CARD_STATS.map(({ id: statId, short }) => {
     const attribute = values.get(statId)
-    return `${short} ${Math.round(attribute?.score ?? 60)} ${TREND_LABELS[playerCardTrend(attribute)]}`
+    return `${short} ${Math.round(attribute?.score ?? 55)} ${TREND_LABELS[playerCardTrend(attribute)]}`
   }).join(', ')
 
   return <div className={`home-card-art is-${identity.discipline || 'neutral'}${preview ? ' is-preview' : ''}`}
-    role="img" aria-label={`Athlete Card für ${identity.name}, ${identity.position || 'Position noch offen'}, Gesamtwert ${rating} von 99 ${TREND_LABELS[overallTrend]}, ${trendDescription}`}>
+    role="img" aria-label={`Athlete Card für ${identity.name}, ${identity.position || 'Position noch offen'}, Gesamtwert ${rating} von 96 ${TREND_LABELS[overallTrend]}, ${trendDescription}`}>
     <svg viewBox="20 0 560 900" aria-hidden="true" focusable="false">
       <defs>
         <linearGradient id={`${id}-surface`} x1="0" y1="0" x2="1" y2="1">
@@ -144,7 +144,7 @@ export default function PlayerCardArt({ overall, profile, attributes = [], previ
         const attribute = values.get(statId)
         return <g key={statId} textAnchor="middle">
           <text x={x} y="696" className="card-stat-label">{short}</text>
-          <text x={x - 14} y="745" className="card-stat-value">{Math.round(attribute?.score ?? 60)}</text>
+          <text x={x - 14} y="745" className="card-stat-value">{Math.round(attribute?.score ?? 55)}</text>
           <TrendMark trend={playerCardTrend(attribute)} x={x + 31} y={729} />
         </g>
       })}

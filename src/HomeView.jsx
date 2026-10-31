@@ -141,8 +141,8 @@ export default function HomeView({ children, athleteProfile, setAthleteProfile, 
             </div>)}
           </div>
           <p>{athleteProfile.measurementCapability === 'measured' && athleteProfile.jumpRatingGroup
-            ? 'Gemessene Sprungwerte starten bei 55. Die besten Werte aus Standweitsprung, Anlaufsprung und Standsprung ergeben zu gleichen Teilen die Sprungkraftwertung; noch nicht gemessene Tests zählen mit 55. Einträge derselben Leistung geben keine zusätzlichen Punkte. Die übrigen Trainingswerte starten derzeit bei 60 und steigen schrittweise.'
-            : 'Trainingswerte starten derzeit bei 60 und steigen schrittweise. Wenn du Sprungwerte präzise misst, wähle im Profil oder beim Erfassen eine Referenzgruppe, damit die drei Tests direkt in die Sprungkraftwertung eingehen.'}</p>
+            ? 'Alle Kartenwerte starten bei 55. Die besten Werte aus Standweitsprung, Anlaufsprung und Standsprung ergeben zu gleichen Teilen die Sprungkraftwertung; noch nicht gemessene Tests zählen mit 55. Kraft entwickelt sich mit bestätigtem Training schrittweise.'
+            : 'Alle Kartenwerte starten bei 55. Kraft entwickelt sich mit bestätigtem Training schrittweise. Wenn du Sprungwerte präzise misst, wähle im Profil oder beim Erfassen eine Referenzgruppe, damit die drei Tests direkt in die Sprungkraftwertung eingehen.'}</p>
         </div>}
       </section>
       </EntryWindow></>

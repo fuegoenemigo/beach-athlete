@@ -43,22 +43,3 @@ export function strengthGroupFor(exercise) {
   if (ARM_SUBGROUPS.includes(muscle)) return 'Arme'
   return null
 }
-
-export function strengthGroupQualified(exercises, groupName) {
-  const groupExercises = [...new Map(exercises
-    .filter((exercise) => strengthGroupFor(exercise) === groupName)
-    .map((exercise) => [exercise.libraryId ?? exercise.id, exercise])).values()]
-  if (groupName === 'Arme') return ARM_SUBGROUPS.every((muscle) =>
-    groupExercises.some((exercise) => strengthMuscleFor(exercise) === muscle))
-  const compoundCount = groupExercises.filter((exercise) =>
-    strengthRoleFor(exercise) === 'compound').length
-  const isolationCount = groupExercises.length - compoundCount
-  return compoundCount >= 2 || (compoundCount >= 1 && isolationCount >= 2)
-}
-
-export function weightedStrengthMean(exercises) {
-  const totalWeight = exercises.reduce((sum, exercise) => sum
-    + strengthRatingWeightFor(exercise), 0)
-  return exercises.reduce((sum, exercise) => sum + exercise.score
-    * strengthRatingWeightFor(exercise), 0) / totalWeight
-}
