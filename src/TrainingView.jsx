@@ -492,7 +492,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
     const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
     const kept = finishTrainingExerciseEntries(entries, type, discardDraft)
     if (!kept) {
-      setFlowMessage('Wähle unter „Nächster Satz“, ob du den aktuellen Satz übernehmen oder verwerfen möchtest.'); return
+      setFlowMessage('Schließe den aktuellen Satz ab oder beende die Übung ohne diesen Satz.'); return
     }
     if (!kept.length && !hasLegacyValues(exercise)) {
       setFlowMessage('Bestätige mindestens einen Satz, bevor du die Übung beendest.'); return
@@ -597,7 +597,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
         && hasMeasuredValue(entry, exerciseMeasurement({ ...exercise,
           category: activeSession.category }))))
     if (unfinished) {
-      setFlowMessage('Bei einer Übung ist ein Satz noch offen. Beende ihn über „Nächster Satz“.'); return
+      setFlowMessage('Bei einer Übung ist ein Satz noch offen. Schließe ihn ab oder beende die Übung ohne diesen Satz.'); return
     }
     const exercises = activeSession.exercises.map((exercise) => {
       const type = exerciseMeasurement({ ...exercise, category: activeSession.category })
@@ -979,7 +979,7 @@ export default function TrainingView({ sessions, setSessions, exerciseLibrary,
           else setShowPlans(false)
         }}>
       {!planDraft && <>
-        <p className="helper-text">Wähle einen Trainingsbereich und öffne dort eine passende Vorlage.</p>
+        <p className="helper-text">Wähle eine eigene Vorlage oder eine App-Vorlage.</p>
         {openSessions.length > 0 && <p className="helper-text">Zum Starten einer Vorlage zuerst das offene Training abschließen.</p>}
         <div className="training-plan-groups">{planGroups.filter(({ category }) =>
           !expandedPlanCategory || category === expandedPlanCategory).map(({ category, plans }) =>

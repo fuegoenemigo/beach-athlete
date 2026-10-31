@@ -102,7 +102,6 @@ export default function GuidedTrainingPanel({
   onSave, onClose, onRecategorize, onCancel,
 }) {
   const [showCustomExercise, setShowCustomExercise] = useState(false)
-  const [nextSetMenuFor, setNextSetMenuFor] = useState(null)
   const exercise = session.exercises.find((item) => item.id === activeExerciseId)
   const type = exercise && exerciseMeasurement({ ...exercise, category: session.category })
   const entries = exercise?.entries ?? []
@@ -295,11 +294,6 @@ export default function GuidedTrainingPanel({
         <p className="eyebrow">SATZ {confirmed.length + 1}</p>
         <h3>Werte eintragen</h3>
         <PreviousExerciseReference number={confirmed.length + 1} value={referenceFor(confirmed.length)} />
-        {(confirmed.length > 0 || previousEntryFor(confirmed.length)) && <p className="training-suggestion-help">
-          {confirmed.length > 0
-            ? 'Die Werte des vorherigen Satzes sind vorausgewählt. Du kannst jedes Rad ändern.'
-            : 'Werte der letzten Einheit kannst du über die Vorschläge übernehmen oder selbst einstellen.'}
-        </p>}
         {['duration', 'distance', 'carry'].includes(type) && <TrainingTimer
           key={draft.id} sessionId={session.id} exercise={exercise} entry={draft}
           confirmedCount={confirmed.length}
@@ -310,21 +304,11 @@ export default function GuidedTrainingPanel({
             item.id === draft.id ? { ...item, ...changes } : item) })} />
         {flowMessage && <p className="training-flow-error" role="alert">{flowMessage}</p>}
         <div className="training-next-set-actions">
-          <button type="button" className="primary-button" onClick={() => {
-            setNextSetMenuFor(null); onConfirmSet()
-          }}>Nächster Satz</button>
-          <button type="button" className="secondary-button training-next-set-more"
-            aria-label="Weitere Optionen für nächsten Satz" aria-expanded={nextSetMenuFor === exercise.id}
-            onClick={() => setNextSetMenuFor((current) => current === exercise.id ? null : exercise.id)}>▾</button>
+          <button type="button" className="primary-button" onClick={onConfirmSet}>Nächster Satz</button>
+          <button type="button" className="secondary-button" onClick={onConfirmAndFinish}>
+            Satz abschließen und Übung beenden
+          </button>
         </div>
-        {nextSetMenuFor === exercise.id && <div className="training-next-set-options">
-          <button type="button" className="secondary-button" onClick={() => {
-            setNextSetMenuFor(null); onConfirmAndFinish()
-          }}>Diesen Satz übernehmen und Übung beenden</button>
-          <button type="button" className="secondary-button" onClick={() => {
-            setNextSetMenuFor(null); onFinishExercise()
-          }}>Übung ohne diesen Satz beenden</button>
-        </div>}
       </div>}
       <label className="field-label" htmlFor="exercise-notes">Notizen zur Übung</label>
       <textarea id="exercise-notes" className="field notes-field" rows="2"
@@ -332,7 +316,9 @@ export default function GuidedTrainingPanel({
           { notes: event.target.value })} />
       {flowMessage && !draft && <p className="training-flow-error" role="alert">{flowMessage}</p>}
       <div className="training-finish-actions">
-        <button type="button" className="text-button" onClick={() => setStep('exercise')}>Zur Übungsauswahl</button>
+        <button type="button" className="text-button" onClick={onFinishExercise}>
+          Übung ohne diesen Satz beenden
+        </button>
         <button type="button" className="text-button" onClick={() => onRemoveExercise(exercise)}>Übung entfernen</button>
       </div>
     </>}

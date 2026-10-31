@@ -502,7 +502,6 @@
 
 .training-reference strong { display: block; color: #c7c7c7; font-size: 0.8rem; }
 .training-reference span { display: block; margin-top: 5px; }
-.training-suggestion-help { margin: -5px 0 12px; color: #b8b8b8; font-size: 0.78rem; }
 .training-activity-fields input::placeholder { color: #979797; opacity: 1; }
 
 .training-plan-evidence { display: block; margin: 7px 0; color: #bababa; font-size: 0.82rem; }
@@ -628,10 +627,8 @@
 }
 .training-next-set-actions {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 52px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 
-.training-next-set-actions .primary-button { width: 100%; }
-.training-next-set-more { font-size: 1.25rem; }
-.training-next-set-options { display: grid; gap: 8px; margin-top: 8px; }
+.training-next-set-actions > button { width: 100%; }

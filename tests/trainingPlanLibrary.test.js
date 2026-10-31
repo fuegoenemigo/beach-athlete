@@ -4,6 +4,7 @@ import { isTrainingPlan, TRAINING_CATEGORIES } from '../src/trainingModel.js'
 import { isAthleteData } from '../src/syncPolicy.js'
 import { BUILT_IN_PLANS, groupedTrainingPlans, removeTrainingPlan,
   restoreBuiltInPlans, visibleTrainingPlans, plansForCategory } from '../src/trainingPlanLibrary.js'
+import { searchTrainingPlans } from '../src/volleyballTraining.js'
 
 test('a training choice shows only matching plans and includes mixed plans in both categories', () => {
   const plans = [
@@ -23,8 +24,24 @@ test('built-in edits replace their original and custom plans join the right cate
   const visible = visibleTrainingPlans([edited, custom])
   assert.equal(visible.filter((plan) => plan.id === original.id).length, 1)
   assert.equal(visible.find((plan) => plan.id === original.id).name, edited.name)
-  assert.ok(groupedTrainingPlans(visible).find((group) => group.category === 'Core und Mobility')
+  assert.ok(groupedTrainingPlans(visible).find((group) => group.category === 'Eigene Vorlagen')
     .plans.some((plan) => plan.id === custom.id))
+})
+
+test('personal plans appear first, then both plan types sort alphabetically by name', () => {
+  const personal = [
+    { id: 'own-z', name: 'Zirkel', category: 'Krafttraining', exercises: [] },
+    { id: 'own-a', name: 'Arme', category: 'Krafttraining', exercises: [] },
+  ]
+  const visible = visibleTrainingPlans(personal)
+  assert.deepEqual(visible.slice(0, 2).map((plan) => plan.id), ['own-a', 'own-z'])
+  assert.deepEqual(visible.slice(2).map((plan) => plan.name),
+    [...visible.slice(2).map((plan) => plan.name)].sort((a, b) => a.localeCompare(b, 'de-DE')))
+  assert.deepEqual(groupedTrainingPlans(visible).map((group) => group.category),
+    ['Eigene Vorlagen', 'App-Vorlagen'])
+  const choice = searchTrainingPlans(plansForCategory(visible, 'Krafttraining'), '')
+  assert.deepEqual(choice.slice(0, 2).map((plan) => plan.id), ['own-a', 'own-z'])
+  assert.deepEqual(personal.map((plan) => plan.id), ['own-z', 'own-a'])
 })
 
 test('new built-in endurance and mobility plans appear alongside existing personal plans', () => {
