@@ -6,7 +6,9 @@ import {
   getDocFromServer,
   onSnapshot,
   runTransaction,
+  setDoc,
   serverTimestamp,
+  Timestamp,
   updateDoc,
 } from 'firebase/firestore'
 import { firebaseAuth, firestore } from './firebase.js'
@@ -17,6 +19,7 @@ const LOCAL_OWNER_KEY = 'beach-athlete-local-owner'
 const ACCOUNT_DATA_PREFIX = 'beach-athlete-local-data-'
 const ACCESS_PREFIX = 'beach-athlete-access-'
 const MAX_DOCUMENT_BYTES = 900_000
+const ACTIVITY_UPDATE_INTERVAL_MS = 5 * 60 * 1000
 
 function readMeta(uid) {
   try {
@@ -51,9 +54,14 @@ export class CloudSync {
     this.active = false
     this.profileLoaded = false
     this.authorized = false
-    this.onOnline = () => this.retry()
+    this.lastActivityRecordedAt = 0
+    this.activityWriting = false
+    this.onOnline = () => { this.recordActivity(); this.retry() }
     this.onVisible = () => {
-      if (document.visibilityState === 'visible') this.retry()
+      if (document.visibilityState === 'visible') {
+        this.recordActivity()
+        this.retry()
+      }
     }
   }
 
@@ -108,6 +116,8 @@ export class CloudSync {
     this.user = user
     this.profileLoaded = false
     this.authorized = false
+    this.lastActivityRecordedAt = 0
+    this.activityWriting = false
     this.meta = user ? readMeta(user.uid) : null
     this.conflict = null
     if (!user) {
@@ -139,8 +149,34 @@ export class CloudSync {
       return
     }
     this.reference = doc(firestore, 'users', user.uid, 'data', 'current')
+    this.recordActivity()
     this.publish('loading')
     await this.reconcile(generation)
+  }
+
+  async recordActivity() {
+    const user = this.user
+    const generation = this.generation
+    if (!this.active || !this.authorized || !user || !navigator.onLine
+      || document.visibilityState !== 'visible'
+      || this.activityWriting
+      || Date.now() - this.lastActivityRecordedAt < ACTIVITY_UPDATE_INTERVAL_MS) return
+    this.activityWriting = true
+    const signedInAt = user.metadata?.lastSignInTime
+    const signedInDate = signedInAt ? new Date(signedInAt) : null
+    try {
+      await setDoc(doc(firestore, 'users', user.uid, 'activity', 'lastSeen'), {
+        email: user.email ?? '',
+        lastOpenedAt: serverTimestamp(),
+        ...(signedInDate && !Number.isNaN(signedInDate.getTime())
+          ? { lastSignInAt: Timestamp.fromDate(signedInDate) } : {}),
+      }, { merge: true })
+      if (generation === this.generation) this.lastActivityRecordedAt = Date.now()
+    } catch {
+      // Der optionale Aktivitätswert darf Anmeldung und Datensynchronisierung nicht blockieren.
+    } finally {
+      if (generation === this.generation) this.activityWriting = false
+    }
   }
 
   async checkAccess(generation) {

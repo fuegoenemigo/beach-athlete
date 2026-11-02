@@ -15,6 +15,7 @@ export default function DataSecurity({ cloudState, onResolve, onRetry, onExport,
         onExport={onExport} />
 
       <p>Kontakt zur privaten Testversion und zu deinen Daten: Marc Korus · <a href="mailto:marc.j.korus@gmx.de">marc.j.korus@gmx.de</a>.</p>
+      <p className="helper-text">Für den Testkreis speichern wir zu deinem Konto auch deine E-Mail-Adresse, den Zeitpunkt deiner letzten Anmeldung und den letzten Aufruf der App in Firebase. So können wir erkennen, welche Testkonten noch genutzt werden. Beim Öffnen der App und bei einer Rückkehr nach längerer Pause wird der letzte Aufruf aktualisiert.</p>
 
       {storageDamaged && (
         <div className="cloud-conflict" role="alert">

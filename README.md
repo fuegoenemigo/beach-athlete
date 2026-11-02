@@ -83,6 +83,8 @@ Offline bleiben vorhandene Daten und Eingaben auf dem jeweiligen Gerät nutzbar.
 
 ## Firebase: Infrastruktur eingerichtet
 
+Für den Testkreis schreibt die App nach erfolgreicher Zugangsprüfung einen separaten Aktivitätseintrag unter `users/<uid>/activity/lastSeen` mit `email`, `lastSignInAt` und `lastOpenedAt`. Beim erneuten Öffnen bzw. Zurückkehren in die App wird der letzte Aufruf höchstens alle fünf Minuten aktualisiert. Offline wird kein neuer Zeitstempel geschrieben. Der Eintrag dient nur dem Überblick in der Firestore-Konsole und verändert weder Trainingsdaten noch deren Revisionsabgleich; bei einer Kontolöschung muss auch dieses Dokument entfernt werden.
+
 Firebase-Projekt: `beach-athlete-fuegoenemigo`; Web-App: `Beach Athlete Web`. Die kostenlose Firestore-Standarddatenbank wurde beim ersten Deployment in `nam5` (USA) angelegt. Die Firestore-Regeln unter `firestore.rules` und der E-Mail/Passwort-Anbieter aus `firebase.json` sind veröffentlicht. Die Web-Konfiguration liegt lokal in der ignorierten `.env.local` und als GitHub-Repository-Variablen für den Pages-Build vor.
 
 Die Regeln erlauben Lese- und Schreibzugriff nur dem angemeldeten Besitzer unter `users/<uid>/`. Die App synchronisiert Training, Trainingsvorlagen, Übungsbibliothek sowie Beach- und Hallen-Spieltage in einem versionierten Dokument je Konto. Sie übernimmt vorhandene lokale Daten beim ersten Login, lädt auf einem neuen Gerät den Cloud-Stand und hält bei konkurrierenden Änderungen zur Auswahl an. Ein Testkonto hat Anmeldung sowie erlaubte und verweigerte Firestore-Zugriffe erfolgreich geprüft; die Datenübernahme und Synchronisierung wurden zusätzlich mit dem persönlichen Konto auf dem iPhone bestätigt.
