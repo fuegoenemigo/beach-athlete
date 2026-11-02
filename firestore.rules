@@ -25,5 +25,10 @@ service cloud.firestore {
         && request.auth.uid == userId
         && admitted(userId);
     }
+
+    match /users/{userId}/activity/lastSeen {
+      allow get: if request.auth != null
+        && request.auth.token.email == 'marc.j.korus@gmx.de';
+    }
   }
 }

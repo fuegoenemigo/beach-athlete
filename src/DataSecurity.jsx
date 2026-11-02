@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import CloudAccount from './CloudAccount.jsx'
+import AdminUsersTable from './AdminUsersTable.jsx'
 
 export default function DataSecurity({ cloudState, onResolve, onRetry, onExport,
   onExportRaw, onImport, storageDamaged }) {
+  const [showAdminUsers, setShowAdminUsers] = useState(false)
+  const isAdmin = cloudState.authorized
+    && cloudState.email === 'marc.j.korus@gmx.de'
   return (
     <section id="data-security" className="diary-panel home-data-security">
       <div className="section-heading">
@@ -16,6 +21,14 @@ export default function DataSecurity({ cloudState, onResolve, onRetry, onExport,
 
       <p>Kontakt zur privaten Testversion und zu deinen Daten: Marc Korus · <a href="mailto:marc.j.korus@gmx.de">marc.j.korus@gmx.de</a>.</p>
       <p className="helper-text">Für den Testkreis speichern wir zu deinem Konto auch deine E-Mail-Adresse, den Zeitpunkt deiner letzten Anmeldung und den letzten Aufruf der App in Firebase. So können wir erkennen, welche Testkonten noch genutzt werden. Beim Öffnen der App und bei einer Rückkehr nach längerer Pause wird der letzte Aufruf aktualisiert.</p>
+
+      {isAdmin && <>
+        <button className="secondary-button" type="button"
+          onClick={() => setShowAdminUsers((current) => !current)}>
+          {showAdminUsers ? 'Testnutzer ausblenden' : 'Testnutzer anzeigen'}
+        </button>
+        {showAdminUsers && <AdminUsersTable />}
+      </>}
 
       {storageDamaged && (
         <div className="cloud-conflict" role="alert">
