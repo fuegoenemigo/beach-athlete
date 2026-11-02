@@ -6,7 +6,7 @@ export default function DataSecurity({ cloudState, onResolve, onRetry, onExport,
   onExportRaw, onImport, storageDamaged }) {
   const [showAdminUsers, setShowAdminUsers] = useState(false)
   const isAdmin = cloudState.authorized
-    && cloudState.email === 'marc.j.korus@gmx.de'
+    && cloudState.email === 'hansitinitus@gmail.com'
   return (
     <section id="data-security" className="diary-panel home-data-security">
       <div className="section-heading">

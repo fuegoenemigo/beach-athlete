@@ -28,7 +28,7 @@ service cloud.firestore {
 
     match /users/{userId}/activity/lastSeen {
       allow get: if request.auth != null
-        && request.auth.token.email == 'marc.j.korus@gmx.de';
+        && request.auth.token.email == 'hansitinitus@gmail.com';
     }
   }
 }
